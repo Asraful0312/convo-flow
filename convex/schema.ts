@@ -15,16 +15,16 @@ export default defineSchema({
     isAnonymous: v.optional(v.boolean()),
     
     //custom fields
-    subscriptionTier: v.union(v.literal("free"), v.literal("pro"), v.literal("business"), v.literal("enterprise")),
-    subscriptionStatus: v.union(
+    subscriptionTier: v.optional(v.union(v.literal("free"), v.literal("pro"), v.literal("business"), v.literal("enterprise"))),
+    subscriptionStatus: v.optional(v.union(
       v.literal("active"),
       v.literal("canceled"),
       v.literal("past_due"),
       v.literal("trialing"),
-    ),
+    )),
     stripeCustomerId: v.optional(v.string()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
+    createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
   })
     .index("by_email", ["email"])
     .index("by_subscription", ["subscriptionTier", "subscriptionStatus"]),
