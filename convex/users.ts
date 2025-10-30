@@ -12,35 +12,7 @@ export const getUserByEmail = query({
   },
 })
 
-// Create a new user
-export const createUser = mutation({
-  args: {
-    email: v.string(),
-    name: v.string(),
-    avatarUrl: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const existingUser = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
-      .first()
 
-    if (existingUser) {
-      throw new Error("User with this email already exists")
-    }
-
-    const now = Date.now()
-    return await ctx.db.insert("users", {
-      email: args.email,
-      name: args.name,
-      avatarUrl: args.avatarUrl,
-      subscriptionTier: "free",
-      subscriptionStatus: "active",
-      createdAt: now,
-      updatedAt: now,
-    })
-  },
-})
 
 // Update user subscription
 export const updateSubscription = mutation({
