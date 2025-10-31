@@ -10,12 +10,15 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { User, Bell, Zap, CreditCard, Shield, Webhook, Check, ExternalLink, Copy, Plus, Trash2 } from "lucide-react"
 import { mockUser } from "@/lib/mock-data"
+import { useAuthActions } from "@convex-dev/auth/react"
 
 export default function SettingsPage() {
   const [webhooks, setWebhooks] = useState([
     { id: "1", url: "https://api.example.com/webhook", events: ["response.created", "response.completed"] },
   ])
   const [newWebhookUrl, setNewWebhookUrl] = useState("")
+
+  const {signOut} = useAuthActions()
 
   const integrations = [
     {
@@ -148,6 +151,8 @@ export default function SettingsPage() {
               <Button className="bg-[#6366f1] hover:bg-[#4f46e5]">Update Password</Button>
             </CardContent>
           </Card>
+
+          <Button onClick={signOut} variant="secondary" className="w-full">Sign Out</Button>
         </TabsContent>
 
         {/* Notifications Tab */}
@@ -408,6 +413,8 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      
     </div>
   )
 }

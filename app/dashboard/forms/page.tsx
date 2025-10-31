@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,9 +12,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { mockForms } from "@/lib/mock-data"
+import { useMutation, useQuery } from "convex/react"
+import { api } from "@/convex/_generated/api"
+import { Id } from "@/convex/_generated/dataModel"
 
 export default function FormsPage() {
+  const forms = useQuery(api.forms.getFormsForUser)
+  const deleteForm = useMutation(api.forms.deleteForm)
+  
+  const handleDelete = async (formId: Id<"forms">) => {
+    if (!confirm("Delete this form and all its data? This cannot be undone.")) return
+    await deleteForm({ formId })
+
+  }
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Header */}
@@ -44,8 +56,8 @@ export default function FormsPage() {
 
       {/* Forms Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mockForms.map((form) => (
-          <Card key={form.id} className="hover:shadow-lg transition-shadow group">
+        {forms?.map((form) => (
+          <Card key={form._id} className="hover:shadow-lg transition-shadow group">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="space-y-1 flex-1">
@@ -68,8 +80,8 @@ export default function FormsPage() {
                       Duplicate
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive">
-                      <Trash2 className="w-4 h-4 mr-2" />
+                    <DropdownMenuItem onClick={()=>handleDelete(form._id)} className="text-destructive">
+                      <Trash2 className="w-4 h-4 mr-2 text-destructive" />
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -79,7 +91,7 @@ export default function FormsPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  <span className="font-medium text-foreground">42</span> responses
+                  <span className="font-medium text-foreground">{form.responseCount}</span> responses
                 </span>
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -92,12 +104,12 @@ export default function FormsPage() {
                 </span>
               </div>
               <div className="flex gap-2">
-                <Link href={`/dashboard/forms/${form.id}/edit`} className="flex-1">
+                <Link href={`/dashboard/forms/${form._id}/edit`} className="flex-1">
                   <Button variant="outline" size="sm" className="w-full bg-transparent">
                     Edit
                   </Button>
                 </Link>
-                <Link href={`/dashboard/forms/${form.id}/responses`} className="flex-1">
+                <Link href={`/dashboard/forms/${form._id}/responses`} className="flex-1">
                   <Button variant="outline" size="sm" className="w-full bg-transparent">
                     Responses
                   </Button>

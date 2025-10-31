@@ -1,21 +1,39 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAction, useMutation } from "convex/react"
+import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Sparkles, Loader2, Wand2, MessageSquare } from "lucide-react"
+import { Sparkles, Loader2, Wand2, MessageSquare, Save } from "lucide-react"
 import { FormPreview } from "@/components/form-preview"
 import type { Question } from "@/lib/types"
+import CandidLogo from "@/components/shared/candid-logo"
+
+type GeneratedForm = {
+  title: string
+  description: string
+  questions: (Question & { id: string })[]
+  settings?: {
+    branding?: { primaryColor?: string; logoUrl?: string }
+    notifications?: { emailOnResponse?: boolean; notificationEmail?: string }
+  }
+  aiConfig?: {
+    personality?: "professional" | "friendly" | "casual" | "formal"
+    voiceEnabled?: boolean
+  }
+}
 
 export default function NewFormPage() {
+  const router = useRouter()
   const [description, setDescription] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedForm, setGeneratedForm] = useState<{
-    title: string
-    description: string
-    questions: Question[]
-  } | null>(null)
+  const [generatedForm, setGeneratedForm] = useState<GeneratedForm | null>(null)
   const [conversationHistory, setConversationHistory] = useState<Array<{ role: "user" | "ai"; content: string }>>([])
+
+  const generateFormAction = useAction(api.ai.generateForm)
+  const createFormMutation = useMutation(api.forms.create)
 
   const examplePrompts = [
     "Create a customer feedback survey with rating scales and open-ended questions",
@@ -24,85 +42,107 @@ export default function NewFormPage() {
     "Design a job application form with resume upload and screening questions",
   ]
 
+
   const handleGenerate = async () => {
     if (!description.trim()) return
-
     setIsGenerating(true)
-    setConversationHistory([...conversationHistory, { role: "user", content: description }])
-
-    // Simulate AI generation - in production this would call OpenAI API
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-
-    // Mock generated form based on description
-    const mockForm = {
-      title: "Generated Form",
-      description: "AI-generated form based on your description",
-      questions: [
-        {
-          id: "q1",
-          form_id: "new",
-          order: 1,
-          type: "text" as const,
-          text: "What is your name?",
-          required: true,
-        },
-        {
-          id: "q2",
-          form_id: "new",
-          order: 2,
-          type: "email" as const,
-          text: "What is your email address?",
-          required: true,
-        },
-        {
-          id: "q3",
-          form_id: "new",
-          order: 3,
-          type: "choice" as const,
-          text: "How did you hear about us?",
-          options: ["Search Engine", "Social Media", "Friend", "Other"],
-          required: true,
-        },
-      ],
-    }
-
-    setGeneratedForm(mockForm)
-    setConversationHistory([
-      ...conversationHistory,
-      { role: "user", content: description },
-      {
-        role: "ai",
-        content: `I've created a form with ${mockForm.questions.length} questions based on your description. You can preview it on the right and make any adjustments you'd like.`,
-      },
-    ])
-    setIsGenerating(false)
+    const fullConversation = [...conversationHistory, { role: "user" as const, content: description }]
+    setConversationHistory(fullConversation)
     setDescription("")
+
+    try {
+      const generated = await generateFormAction({
+        prompt: description,
+        conversationHistory,
+      })
+
+      const formWithClientIds = {
+        ...generated,
+        questions: generated.questions.map((q: any, i: number) => ({ ...q, id: `client-q-${i}` })),
+      }
+      setGeneratedForm(formWithClientIds)
+      setConversationHistory([
+        ...fullConversation,
+        { role: "ai", content: `Generated a form with ${generated.questions.length} questions. You can refine or save it!` },
+      ])
+    } catch (error) {
+      console.error(error)
+      setConversationHistory([
+        ...fullConversation,
+        { role: "ai", content: "Sorry, I couldn't generate the form. Try rephrasing." },
+      ])
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const handleRefine = async (refinement: string) => {
+    if (!refinement.trim() || !generatedForm) return
     setIsGenerating(true)
-    setConversationHistory([...conversationHistory, { role: "user", content: refinement }])
+    const fullConversation = [...conversationHistory, { role: "user" as const, content: refinement }]
+    setConversationHistory(fullConversation)
+    setDescription("")
 
-    // Simulate AI refinement
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      const refined = await generateFormAction({
+        prompt: refinement,
+        conversationHistory,
+      })
 
-    setConversationHistory([
-      ...conversationHistory,
-      { role: "user", content: refinement },
-      { role: "ai", content: "I've updated the form based on your feedback. Check out the changes!" },
-    ])
-    setIsGenerating(false)
+      const formWithClientIds = {
+        ...refined,
+        questions: refined.questions.map((q: any, i: number) => ({ ...q, id: `client-q-${i}` })),
+      }
+      setGeneratedForm(formWithClientIds)
+      setConversationHistory([
+        ...fullConversation,
+        { role: "ai", content: `Updated! Now with ${refined.questions.length} questions. Keep refining or save.` },
+      ])
+    } catch (error) {
+      console.error(error)
+      setConversationHistory([
+        ...fullConversation,
+        { role: "ai", content: "Couldn't refine. Try a clearer instruction." },
+      ])
+    } finally {
+      setIsGenerating(false)
+    }
   }
+
+  const handleSave = async () => {
+    if (!generatedForm) return
+    try {
+      const formId = await createFormMutation({
+  title: generatedForm.title,
+  description: generatedForm.description,
+  questions: generatedForm.questions.map((q) => ({
+    text: q.text,
+    type: q.type,
+    required: q.required,
+    options: q.options,
+  })),
+  settings: {
+    branding: generatedForm.settings?.branding,
+    notifications: generatedForm.settings?.notifications,
+  },
+  aiConfig: generatedForm.aiConfig, // 👈 pass separately, not inside settings
+})
+
+      router.push(`/dashboard/forms/${formId}/edit`)
+    } catch (error) {
+      console.error("Save failed:", error)
+    }
+  }
+
+  console.log("generated form", generatedForm)
 
   return (
     <div className="h-[calc(100vh-64px)] flex">
-      {/* Left Panel - AI Chat Interface */}
+      {/* LEFT: AI Chat */}
       <div className="w-full lg:w-1/2 border-r border-border flex flex-col bg-background">
-        <div className="p-6 border-b border-border">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
+        <div className="px-6 border-b border-border">
+          <div className="flex items-center gap-3 py-4">
+            <CandidLogo />
             <div>
               <h1 className="text-2xl font-bold">Create with AI</h1>
               <p className="text-sm text-muted-foreground">Describe your form and let AI build it</p>
@@ -110,16 +150,16 @@ export default function NewFormPage() {
           </div>
         </div>
 
-        {/* Conversation Area */}
+        {/* Conversation */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {conversationHistory.length === 0 ? (
             <div className="space-y-6">
               <div className="space-y-3">
                 <h3 className="font-semibold text-lg">Get started with an example</h3>
                 <div className="grid gap-3">
-                  {examplePrompts.map((prompt, index) => (
+                  {examplePrompts.map((prompt, i) => (
                     <button
-                      key={index}
+                      key={i}
                       onClick={() => setDescription(prompt)}
                       className="text-left p-4 rounded-lg border border-border hover:border-[#6366f1] hover:bg-muted/50 transition-all group"
                     >
@@ -131,7 +171,6 @@ export default function NewFormPage() {
                   ))}
                 </div>
               </div>
-
               <div className="space-y-3">
                 <h3 className="font-semibold text-lg">Tips for better results</h3>
                 <ul className="space-y-2 text-sm text-muted-foreground">
@@ -156,22 +195,25 @@ export default function NewFormPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {conversationHistory.map((message, index) => (
-                <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                  {message.role === "ai" && (
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center flex-shrink-0">
+              {conversationHistory.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  {msg.role === "ai" && (
+                    <div className="w-8 h-8 rounded-lg bg-linear-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center shrink-0">
                       <Sparkles className="w-4 h-4 text-white" />
                     </div>
                   )}
                   <div
                     className={`max-w-[80%] rounded-lg p-4 ${
-                      message.role === "user" ? "bg-[#6366f1] text-white" : "bg-muted border border-border"
+                      msg.role === "user" ? "bg-[#6366f1] text-white" : "bg-muted border border-border"
                     }`}
                   >
-                    <p className="text-sm leading-relaxed">{message.content}</p>
+                    <p className="text-sm leading-relaxed">{msg.content}</p>
                   </div>
-                  {message.role === "user" && (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center flex-shrink-0 text-white text-sm font-medium">
+                  {msg.role === "user" && (
+                    <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center shrink-0 text-white text-sm font-medium">
                       U
                     </div>
                   )}
@@ -179,13 +221,15 @@ export default function NewFormPage() {
               ))}
               {isGenerating && (
                 <div className="flex gap-3 justify-start">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-linear-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center">
                     <Sparkles className="w-4 h-4 text-white" />
                   </div>
                   <div className="bg-muted border border-border rounded-lg p-4">
                     <div className="flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span className="text-sm text-muted-foreground">Generating your form...</span>
+                      <span className="text-sm text-muted-foreground">
+                        {generatedForm ? "Refining..." : "Generating..."}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -194,7 +238,7 @@ export default function NewFormPage() {
           )}
         </div>
 
-        {/* Input Area */}
+        {/* Input */}
         <div className="p-6 border-t border-border bg-muted/30">
           <div className="space-y-3">
             <Textarea
@@ -203,22 +247,19 @@ export default function NewFormPage() {
               placeholder={
                 generatedForm
                   ? "Refine your form... (e.g., 'Add a phone number field' or 'Make the email optional')"
-                  : "Describe the form you want to create... (e.g., 'Create a customer feedback survey with rating questions')"
+                  : "Describe the form you want to create..."
               }
               className="min-h-[100px] resize-none bg-background"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                  if (generatedForm) {
-                    handleRefine(description)
-                  } else {
-                    handleGenerate()
-                  }
+                  e.preventDefault()
+                  generatedForm ? handleRefine(description) : handleGenerate()
                 }
               }}
             />
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
-                Press {navigator.platform.includes("Mac") ? "⌘" : "Ctrl"} + Enter to send
+                Press {navigator.platform.includes("Mac") ? "Cmd" : "Ctrl"} + Enter to send
               </p>
               <Button
                 onClick={generatedForm ? () => handleRefine(description) : handleGenerate}
@@ -228,7 +269,7 @@ export default function NewFormPage() {
                 {isGenerating ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Generating...
+                    {generatedForm ? "Refining..." : "Generating..."}
                   </>
                 ) : generatedForm ? (
                   <>
@@ -247,20 +288,22 @@ export default function NewFormPage() {
         </div>
       </div>
 
-      {/* Right Panel - Form Preview */}
+      {/* RIGHT: Preview + Settings */}
       <div className="hidden lg:block w-1/2 bg-muted/30">
         {generatedForm ? (
-          <FormPreview form={generatedForm} />
+          <div className="h-full flex flex-col">
+            <FormPreview form={generatedForm} setForm={setGeneratedForm} />
+           
+          </div>
         ) : (
           <div className="h-full flex items-center justify-center p-12">
             <div className="text-center space-y-4 max-w-md">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center mx-auto">
+              <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center mx-auto">
                 <Sparkles className="w-10 h-10 text-white" />
               </div>
               <h3 className="text-2xl font-bold">Your form will appear here</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Describe what you want to create on the left, and watch as AI generates a beautiful, functional form in
-                real-time.
+                Describe what you want on the left, and watch AI generate a beautiful form in real-time.
               </p>
             </div>
           </div>

@@ -1,7 +1,8 @@
 import type React from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Sparkles, LayoutDashboard, FileText, BarChart3, Settings, Plus } from "lucide-react"
+import { LayoutDashboard, FileText, BarChart3, Settings, Plus } from "lucide-react"
+import CandidLogo from "@/components/shared/candid-logo"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,10 +12,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold">ConvoFlow</span>
+              <CandidLogo/>
+              <span className="text-xl font-bold">CANDID</span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-1">
@@ -51,7 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Settings className="w-4 h-4" />
               </Button>
             </Link>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center text-white text-sm font-medium">
+            <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center text-white text-sm font-medium">
               D
             </div>
           </div>

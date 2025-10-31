@@ -100,15 +100,7 @@ export default defineSchema({
     description: v.optional(v.string()),
     placeholder: v.optional(v.string()),
     // Options for choice-based questions
-    options: v.optional(
-      v.array(
-        v.object({
-          id: v.string(),
-          label: v.string(),
-          value: v.string(),
-        }),
-      ),
-    ),
+    options: v.optional(v.array(v.string())),
     // Validation rules
     validation: v.optional(
       v.object({

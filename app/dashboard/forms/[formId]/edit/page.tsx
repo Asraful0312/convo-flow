@@ -1,4 +1,5 @@
-import { notFound } from "next/navigation"
+"use client"
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,17 +8,247 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Save, Eye, Trash2, Plus, GripVertical } from "lucide-react"
+import { ArrowLeft, Save, Eye, Trash2, Plus, GripVertical, Loader2 } from "lucide-react"
 import { mockForms, mockQuestions } from "@/lib/mock-data"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useMutation, useQuery } from "convex/react"
+import { api } from "@/convex/_generated/api"
+import { Id } from "@/convex/_generated/dataModel"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
 
-export default function EditFormPage({ params }: { params: { formId: string } }) {
-  const form = mockForms.find((f) => f.id === params.formId)
-  const questions = mockQuestions[params.formId] || []
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
-  if (!form) {
-    notFound()
-  }
+/* ── Question type map (UI → DB) ───────────────────── */
+const QUESTION_TYPE_MAP: Record<string, string> = {
+  "Short Text": "text",
+  "Long Text": "textarea",
+  Email: "email",
+  Number: "number",
+  "Multiple Choice": "choice",
+  Checkboxes: "checkbox",
+  Rating: "rating",
+  Date: "date",
+  Phone: "phone",
+  File: "file",
+};
+
+/* ── Sortable Question Card ─────────────────────────── */
+function SortableQuestion({
+  question,
+  onUpdate,
+  onDelete,
+}: {
+  question: any;
+  onUpdate: (id: Id<"questions">, updates: any) => void;
+  onDelete: (id: Id<"questions">) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: question._id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Card ref={setNodeRef} style={style} className="border-2">
+      <CardContent className="pt-6">
+        <div className="flex gap-4">
+          <div
+            {...attributes}
+            {...listeners}
+            className="flex items-center cursor-move"
+          >
+            <GripVertical className="w-5 h-5 text-muted-foreground" />
+          </div>
+
+          <div className="flex-1 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 space-y-2">
+                <Label>Question</Label>
+                <Input
+                  defaultValue={question.text}
+                  onBlur={(e) => onUpdate(question._id, { text: e.target.value })}
+                  placeholder="Enter your question"
+                />
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive"
+                onClick={() => onDelete(question._id)}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Question Type</Label>
+                <Select
+                  defaultValue={Object.entries(QUESTION_TYPE_MAP).find(
+                    ([_, v]) => v === question.type
+                  )?.[0] ?? "Short Text"}
+                  onValueChange={(label) =>
+                    onUpdate(question._id, { type: QUESTION_TYPE_MAP[label] })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(QUESTION_TYPE_MAP).map((label) => (
+                      <SelectItem key={label} value={label}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-8">
+                <Label htmlFor={`required-${question._id}`}>Required</Label>
+                <Switch
+                  id={`required-${question._id}`}
+                  defaultChecked={question.required}
+                  onCheckedChange={(checked) =>
+                    onUpdate(question._id, { required: checked })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+
+export default function EditFormPage({ params }: { params: { formId: Id<"forms"> } }) {
+ const form = useQuery(api.forms.getSingleForm, { formId: params.formId });
+  const [isSaving, setIsSaving] = useState(false)
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [primaryColor, setPrimaryColor] = useState("#6366f1");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [emailOnResponse, setEmailOnResponse] = useState(false);
+  const [notificationEmail, setNotificationEmail] = useState("");
+  const [personality, setPersonality] = useState<"professional" | "friendly" | "casual" | "formal">("professional");
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+
+   const questions = useQuery(api.questions.getFormQuestions, { formId: params.formId }) ?? [];
+
+  const updateSettings = useMutation(api.forms.updateSettings);
+   const createQ = useMutation(api.questions.createQuestion);
+  const updateQ = useMutation(api.questions.updateQuestion);
+  const deleteQ = useMutation(api.questions.deleteQuestion);
+  const reorderQ = useMutation(api.questions.reorderQuestions);
+
+  useEffect(() => {
+    if (!form) return;
+    setTitle(form.title ?? "");
+    setDescription(form.description ?? "");
+    setPrimaryColor(form.settings?.branding?.primaryColor ?? "#6366f1");
+    setLogoUrl(form.settings?.branding?.logoUrl ?? "");
+    setEmailOnResponse(form.settings?.notifications?.emailOnResponse ?? false);
+    setNotificationEmail(form.settings?.notifications?.notificationEmail ?? "");
+    setPersonality(form.aiConfig?.personality ?? "professional");
+    setVoiceEnabled(form.aiConfig?.enableVoice ?? false);
+  }, [form]);
+
+
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    try {
+      await updateSettings({
+        formId: params.formId,
+        title,
+        description,
+        primaryColor,
+        logoUrl,
+        emailOnResponse,
+        notificationEmail,
+        personality,
+        voiceEnabled,
+      });
+      toast.success("Settings saved");
+    } catch {
+      toast.error("Failed to save settings");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  /* ── Question CRUD ─────────────────────────────── */
+  const addQuestion = async () => {
+    const order = questions.length;
+    await createQ({
+      formId: params.formId,
+      type: "text",
+      text: "New question",
+      required: false,
+      order,
+    });
+    toast.success("Question added");
+  };
+
+  const updateQuestion = async (id: Id<"questions">, updates: any) => {
+    await updateQ({ questionId: id, ...updates });
+  };
+
+  const deleteQuestion = async (id: Id<"questions">) => {
+    await deleteQ({ questionId: id });
+    toast.success("Question deleted");
+  };
+
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = questions.findIndex((q) => q._id === active.id);
+    const newIndex = questions.findIndex((q) => q._id === over.id);
+    const newQuestions = arrayMove(questions, oldIndex, newIndex);
+
+    // Optimistic UI
+    // (Convex will re-render via subscription)
+    await reorderQ({
+      formId: params.formId,
+      questionIds: newQuestions.map((q) => q._id),
+    });
+  };
+
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
@@ -36,7 +267,7 @@ export default function EditFormPage({ params }: { params: { formId: string } })
           </div>
         </div>
         <div className="flex gap-2">
-          <Link href={`/f/${form.id}`} target="_blank">
+          <Link href={`/f/${form?._id}`} target="_blank">
             <Button variant="outline" className="gap-2 bg-transparent">
               <Eye className="w-4 h-4" />
               Preview
@@ -64,59 +295,34 @@ export default function EditFormPage({ params }: { params: { formId: string } })
                   <CardTitle>Form Questions</CardTitle>
                   <CardDescription>Add, edit, or reorder your form questions</CardDescription>
                 </div>
-                <Button className="gap-2">
+                <Button onClick={addQuestion} className="gap-2">
                   <Plus className="w-4 h-4" />
                   Add Question
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {questions.map((question, index) => (
-                <Card key={question.id} className="border-2">
-                  <CardContent className="pt-6">
-                    <div className="flex gap-4">
-                      <div className="flex items-center">
-                        <GripVertical className="w-5 h-5 text-muted-foreground cursor-move" />
-                      </div>
-                      <div className="flex-1 space-y-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 space-y-2">
-                            <Label>Question {index + 1}</Label>
-                            <Input defaultValue={question.text} placeholder="Enter your question" />
-                          </div>
-                          <Button variant="ghost" size="sm" className="text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Question Type</Label>
-                            <Select defaultValue={question.type}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="text">Short Text</SelectItem>
-                                <SelectItem value="textarea">Long Text</SelectItem>
-                                <SelectItem value="email">Email</SelectItem>
-                                <SelectItem value="number">Number</SelectItem>
-                                <SelectItem value="choice">Multiple Choice</SelectItem>
-                                <SelectItem value="checkbox">Checkboxes</SelectItem>
-                                <SelectItem value="rating">Rating</SelectItem>
-                                <SelectItem value="date">Date</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex items-center justify-between pt-8">
-                            <Label htmlFor={`required-${question.id}`}>Required</Label>
-                            <Switch id={`required-${question.id}`} defaultChecked={question.required} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <CardContent>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={questions.map((q) => q._id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-4">
+                    {questions.map((question) => (
+                      <SortableQuestion
+                        key={question._id}
+                        question={question}
+                        onUpdate={updateQuestion}
+                        onDelete={deleteQuestion}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             </CardContent>
           </Card>
         </TabsContent>
@@ -125,40 +331,55 @@ export default function EditFormPage({ params }: { params: { formId: string } })
           <Card>
             <CardHeader>
               <CardTitle>Form Settings</CardTitle>
-              <CardDescription>Configure form behavior and notifications</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Title & Description */}
               <div className="space-y-2">
                 <Label htmlFor="title">Form Title</Label>
-                <Input id="title" defaultValue={form.title} />
+                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea id="description" defaultValue={form.description} rows={3} />
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                />
               </div>
+
+              {/* ── Notifications ── */}
               <div className="space-y-4">
                 <h3 className="font-medium">Notifications</h3>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Email on new response</Label>
-                    <p className="text-sm text-muted-foreground">Get notified when someone submits</p>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified when someone submits
+                    </p>
                   </div>
-                  <Switch defaultChecked={form.settings?.notifications?.email_on_response} />
+                  <Switch checked={emailOnResponse} onCheckedChange={setEmailOnResponse} />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="notification-email">Notification Email</Label>
                   <Input
                     id="notification-email"
                     type="email"
-                    defaultValue={form.settings?.notifications?.notification_email}
+                    value={notificationEmail}
+                    onChange={(e) => setNotificationEmail(e.target.value)}
                   />
                 </div>
               </div>
+
+              {/* ── AI Config ── */}
               <div className="space-y-4">
                 <h3 className="font-medium">AI Configuration</h3>
+
                 <div className="space-y-2">
                   <Label htmlFor="personality">AI Personality</Label>
-                  <Select defaultValue={form.ai_config?.personality}>
+                  <Select value={personality} onValueChange={(v) => setPersonality(v as any)}>
                     <SelectTrigger id="personality">
                       <SelectValue />
                     </SelectTrigger>
@@ -170,12 +391,15 @@ export default function EditFormPage({ params }: { params: { formId: string } })
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Voice Input</Label>
-                    <p className="text-sm text-muted-foreground">Allow users to speak their answers</p>
+                    <p className="text-sm text-muted-foreground">
+                      Allow users to speak their answers
+                    </p>
                   </div>
-                  <Switch defaultChecked={form.ai_config?.voice_enabled} />
+                  <Switch checked={voiceEnabled} onCheckedChange={setVoiceEnabled} />
                 </div>
               </div>
             </CardContent>
@@ -186,7 +410,6 @@ export default function EditFormPage({ params }: { params: { formId: string } })
           <Card>
             <CardHeader>
               <CardTitle>Form Design</CardTitle>
-              <CardDescription>Customize the look and feel of your form</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
@@ -195,38 +418,45 @@ export default function EditFormPage({ params }: { params: { formId: string } })
                   <Input
                     id="primary-color"
                     type="color"
-                    defaultValue={form.settings?.branding?.primary_color || "#6366f1"}
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
                     className="w-20 h-10"
                   />
-                  <Input defaultValue={form.settings?.branding?.primary_color || "#6366f1"} className="flex-1" />
+                  <Input
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    className="flex-1"
+                  />
                 </div>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="logo">Logo URL</Label>
-                <Input id="logo" placeholder="https://example.com/logo.png" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="welcome-message">Welcome Message</Label>
-                <Textarea
-                  id="welcome-message"
-                  placeholder="Welcome! Let's get started..."
-                  rows={3}
-                  defaultValue="Hi there! Thanks for taking the time to fill out this form. It should only take a few minutes."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="thank-you-message">Thank You Message</Label>
-                <Textarea
-                  id="thank-you-message"
-                  placeholder="Thank you for your submission!"
-                  rows={3}
-                  defaultValue="Thank you for your response! We appreciate your feedback."
+                <Input
+                  id="logo"
+                  placeholder="https://example.com/logo.png"
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
                 />
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      <div className="flex justify-end">
+        <Button onClick={handleSaveSettings} className="bg-[#6366f1] hover:bg-[#4f46e5] gap-2">
+          {isSaving ? <>
+          <Loader2 className="w-4 h-4 animate-spin" />
+            Saving...
+          </> : (
+              <>
+          <Save className="w-4 h-4" />
+          Save Changes
+              </>
+          )}
+        </Button>
+      </div>
     </div>
   )
 }

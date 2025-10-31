@@ -4,22 +4,38 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* CANDID Brand Colors */
+  --candid-coral: #f56a4d;
+  --candid-teal: #2eb7a7;
+  --candid-lime: #a3e635;
+  --amber-glow: #f59e0b;
+  --rose: #fca5a5;
+
+  /* Ink (Text) */
+  --ink-night: #121316;
+  --ink-slate: #2b2f36;
+
+  /* Backgrounds */
+  --bg-cloud: #f7f8fa;
+  --bg-mica: #e9ecf1;
+
+  /* Semantic Design Tokens */
+  --background: oklch(0.98 0 0);
+  --foreground: oklch(0.09 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.09 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.09 0 0);
+  --primary: oklch(0.09 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
+  --secondary-foreground: oklch(0.09 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
   --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --accent-foreground: oklch(0.09 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -28,15 +44,29 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
+  --radius: 0.75rem;
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.09 0 0);
+  --sidebar-primary: oklch(0.09 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-accent-foreground: oklch(0.09 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* CANDID Spacing (8pt grid) */
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+
+  /* CANDID Motion */
+  --speed-fast: 150ms;
+  --speed-base: 200ms;
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
 }
 
 .dark {
@@ -75,78 +105,55 @@
 }
 
 @theme inline {
-  /* optional: --font-sans, --font-serif, --font-mono if they are applied in the layout.tsx */
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: #6366f1;
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: #f97316;
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: #6366f1;
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius: 0.75rem;
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  /* CANDID Typography */
+  --font-sans: "Inter", "SF Pro Text", system-ui, sans-serif;
+  --font-heading: "DM Sans", "Plus Jakarta Sans", "SF Pro Display", system-ui, sans-serif;
+  --font-mono: "Fira Mono", "SFMono-Regular", ui-monospace, monospace;
 
-  /* Typography */
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "Courier New", monospace;
+  /* CANDID Color System */
+  --color-background: var(--bg-cloud);
+  --color-foreground: var(--ink-night);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: var(--ink-night);
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: var(--ink-night);
+  --color-primary: var(--candid-coral);
+  --color-primary-foreground: oklch(1 0 0);
+  --color-secondary: var(--candid-teal);
+  --color-secondary-foreground: oklch(1 0 0);
+  --color-muted: var(--bg-mica);
+  --color-muted-foreground: var(--ink-slate);
+  --color-accent: var(--candid-coral);
+  --color-accent-foreground: oklch(1 0 0);
+  --color-destructive: oklch(0.577 0.245 27.325);
+  --color-destructive-foreground: oklch(0.985 0 0);
+  --color-border: var(--bg-mica);
+  --color-input: var(--bg-mica);
+  --color-ring: var(--candid-coral);
+  --color-chart-1: var(--candid-coral);
+  --color-chart-2: var(--candid-teal);
+  --color-chart-3: var(--candid-lime);
+  --color-chart-4: var(--amber-glow);
+  --color-chart-5: var(--rose);
 
-  /* Color System - Modern, Professional Palette */
-  /* Primary - Vibrant Purple for AI/Tech feel */
-  --color-primary-hover: #4f46e5;
-  --color-primary-light: #818cf8;
+  /* CANDID Radii */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
 
-  /* Accent - Warm Coral for CTAs and highlights */
-  --color-accent-hover: #ea580c;
-  --color-accent-light: #fb923c;
+  /* CANDID Shadows */
+  --shadow-subtle: 0 8px 24px rgba(18, 19, 22, 0.08);
 
-  /* Neutrals - Clean grays */
-
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
-  --color-border: #e2e8f0;
-
-  /* Semantic colors */
-  --color-success: #10b981;
-  --color-error: #ef4444;
-  --color-warning: #f59e0b;
-
-  /* Card and surfaces */
-
-  /* Input */
-  --color-input: #e2e8f0;
-
-  /* Radius */
-
-  --radius-sm: 0.5rem;
-  --radius-lg: 1rem;
+  --color-sidebar: oklch(0.985 0 0);
+  --color-sidebar-foreground: var(--ink-night);
+  --color-sidebar-primary: var(--candid-coral);
+  --color-sidebar-primary-foreground: oklch(1 0 0);
+  --color-sidebar-accent: var(--bg-mica);
+  --color-sidebar-accent-foreground: var(--ink-night);
+  --color-sidebar-border: var(--bg-mica);
+  --color-sidebar-ring: var(--candid-coral);
 }
 
 @layer base {
@@ -159,12 +166,14 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
+  /* Use DM Sans for headings */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
+    font-family: "DM Sans", "Plus Jakarta Sans", "SF Pro Display", system-ui, sans-serif;
     @apply font-semibold tracking-tight;
   }
 
@@ -179,6 +188,103 @@
   h3 {
     @apply text-2xl lg:text-3xl;
   }
+}
+
+/* CANDID Signature Microinteractions */
+
+/* 1. Typing Pulse Animation */
+@keyframes typing-pulse {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}
+
+.typing-pulse {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 8px 12px;
+}
+
+.typing-pulse .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--candid-coral);
+  animation: typing-pulse 1.4s ease-in-out infinite;
+}
+
+.typing-pulse .dot:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.typing-pulse .dot:nth-child(2) {
+  animation-delay: 150ms;
+}
+
+.typing-pulse .dot:nth-child(3) {
+  animation-delay: 300ms;
+}
+
+/* 2. Answer Drop Animation */
+@keyframes answer-drop {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(4px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.answer-drop {
+  animation: answer-drop 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 3. Branch Glow Animation */
+@keyframes branch-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(163, 230, 53, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px rgba(163, 230, 53, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(163, 230, 53, 0);
+  }
+}
+
+.branch-glow {
+  animation: branch-glow 300ms ease-out;
+}
+
+/* 4. Completion Delight Animation */
+@keyframes completion-delight {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.completion-delight {
+  animation: completion-delight 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Custom animations */
@@ -210,7 +316,35 @@
   animation: fade-in 0.2s ease-out;
 }
 
-/* Adding smooth scroll behavior for navigation links */
+/* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;
+}
+
+/* Reduce motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+
+  .typing-pulse .dot {
+    animation: none;
+    opacity: 1;
+  }
+
+  .answer-drop {
+    animation: fade-in 200ms ease-out;
+  }
+
+  .branch-glow {
+    animation: none;
+  }
 }

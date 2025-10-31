@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 import {Linkedin, Twitter} from 'lucide-react';
+import CandidLogo from '../shared/candid-logo';
 
 const tape = <svg xmlns="http://www.w3.org/2000/svg" width="95" height="80" viewBox="0 0 95 80" fill="none">
 <path d="M1 45L70.282 5L88.282 36.1769L19 76.1769L1 45Z" fill="#222222"/>
@@ -25,8 +26,8 @@ export const Footer = () => {
             href="/"
             className="flex flex-row gap-1 items-center justify-start text-2xl font-display font-extrabold text-base-content"
           >
-            
-            ConvoFlow
+            <CandidLogo/>
+            CANDID
           </Link>
           <p className='text-neutral/50 font-medium text-base w-full md:w-4/5'>Forms that feel like conversations.</p>
           </div>
@@ -57,7 +58,7 @@ export const Footer = () => {
           </div>
           </div>
           
-          <div className='hidden md:flex flex-col gap-1 gap-4'>
+          <div className='hidden md:flex flex-col gap-4'>
           <h4 className='uppercase whitespace-nowrap font-display text-md text-neutral/50 font-semibold'>Compare <span className='inline-flex  ml-1 py-0.5 px-3 bg-gray-50 text-xs rounded-xl rotate-3'>soon</span></h4>
           <div className="flex flex-col gap-2 text-sm text-neutral items-start ">
             <Link className='pointer-events-none text-neutral/50 whitespace-nowrap font-medium' href="/legal/privacy-policy">DaaS</Link>

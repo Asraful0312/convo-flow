@@ -1,123 +1,234 @@
 import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
+import { getAuthUserId } from "@convex-dev/auth/server"
 
-// Get all forms for a user
-export const getUserForms = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, args) => {
-    return await ctx.db
+export const getFormsForUser = query({
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx)
+    if (!userId) {
+      throw new Error("User not authenticated")
+    }
+
+    const forms = await ctx.db
       .query("forms")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
       .collect()
+
+    const formsWithResponseCount = await Promise.all(
+      forms.map(async (form) => {
+        const responses = await ctx.db
+          .query("responses")
+          .withIndex("by_form", (q) => q.eq("formId", form._id))
+          .collect()
+        return {
+          ...form,
+          responseCount: responses.length,
+        }
+      })
+    )
+
+    return formsWithResponseCount
   },
 })
 
-// Get a single form by ID
-export const getForm = query({
+export const getSingleForm = query({
   args: { formId: v.id("forms") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.formId)
-  },
-})
+     const userId = await getAuthUserId(ctx)
+    if (!userId) {
+      throw new Error("User not authenticated")
+    }
 
-// Get form with questions
-export const getFormWithQuestions = query({
-  args: { formId: v.id("forms") },
-  handler: async (ctx, args) => {
     const form = await ctx.db.get(args.formId)
-    if (!form) return null
+    
+    if (form?.userId !== userId) {
+      throw new Error("You can't access this")
+    }
 
-    const questions = await ctx.db
-      .query("questions")
-      .withIndex("by_form", (q) => q.eq("formId", args.formId))
-      .order("asc")
-      .collect()
+    return {
+      ...form,
+      questions:await ctx.db
+          .query("questions")
+          .withIndex("by_form", (q) => q.eq("formId", form._id))
+          .collect()
+    }
+  }
+},
+)
 
-    return { ...form, questions }
-  },
-})
-
-// Create a new form
-export const createForm = mutation({
+export const create = mutation({
   args: {
-    userId: v.id("users"),
     title: v.string(),
     description: v.optional(v.string()),
+    questions: v.array(
+      v.object({
+        text: v.string(),
+        type: v.string(),
+        required: v.boolean(),
+        options: v.optional(v.array(v.string())),
+      })
+    ),
+    settings: v.optional(
+      v.object({
+        branding: v.optional(
+          v.object({
+            primaryColor: v.optional(v.string()),
+            logoUrl: v.optional(v.string()),
+          })
+        ),
+        notifications: v.optional(
+          v.object({
+            emailOnResponse: v.optional(v.boolean()),
+            notificationEmail: v.optional(v.string()),
+          })
+        ),
+      })
+    ),
+    aiConfig: v.optional(
+      v.object({
+        personality: v.optional(v.union(v.literal("professional"), v.literal("friendly"), v.literal("casual"), v.literal("formal"))),
+        enableVoice: v.optional(v.boolean()),
+      })
+    ),
   },
   handler: async (ctx, args) => {
-    const now = Date.now()
-    return await ctx.db.insert("forms", {
-      userId: args.userId,
+    const userId = await getAuthUserId(ctx)
+    if (!userId) throw new Error("Unauthenticated")
+
+    const formId = await ctx.db.insert("forms", {
+      userId,
       title: args.title,
       description: args.description,
       status: "draft",
-      settings: {
-        notifications: {
-          emailOnResponse: true,
-        },
-        showProgressBar: true,
-        allowMultipleResponses: false,
-      },
-      aiConfig: {
-        personality: "friendly",
-        language: "en",
-        enableVoice: true,
-        enableFollowUps: true,
-      },
-      createdAt: now,
-      updatedAt: now,
+      settings: args.settings ?? {},
+      aiConfig: args.aiConfig ?? {},
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
     })
+
+    for (let i = 0; i < args.questions.length; i++) {
+      const q = args.questions[i]
+      await ctx.db.insert("questions", {
+        formId,
+        order: i,
+        text: q.text,
+        type: q.type as any,
+        required: q.required,
+        options: q.options,
+      })
+    }
+
+    return formId
   },
 })
 
-// Update form
-export const updateForm = mutation({
+export const updateSettings = mutation({
   args: {
     formId: v.id("forms"),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
-    status: v.optional(v.union(v.literal("draft"), v.literal("published"), v.literal("closed"))),
-    settings: v.optional(v.any()),
-    aiConfig: v.optional(v.any()),
+    primaryColor: v.optional(v.string()),
+    logoUrl: v.optional(v.string()),
+    // notifications
+    emailOnResponse: v.optional(v.boolean()),
+    notificationEmail: v.optional(v.string()),
+    personality: v.optional(
+      v.union(
+        v.literal("professional"),
+        v.literal("friendly"),
+        v.literal("casual"),
+        v.literal("formal")
+      )
+    ),
+    voiceEnabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const { formId, ...updates } = args
-    await ctx.db.patch(formId, {
-      ...updates,
-      updatedAt: Date.now(),
-    })
-  },
-})
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Unauthenticated");
 
-// Publish form
-export const publishForm = mutation({
-  args: { formId: v.id("forms") },
-  handler: async (ctx, args) => {
-    const now = Date.now()
-    await ctx.db.patch(args.formId, {
-      status: "published",
-      publishedAt: now,
-      updatedAt: now,
-    })
-  },
-})
+    const form = await ctx.db.get(args.formId);
+    if (!form) throw new Error("Form not found");
+    if (form.userId !== userId) throw new Error("Not authorized");
 
-// Delete form
+
+    const patch: any = {
+  updatedAt: Date.now(),
+};
+
+// title / description
+if (args.title !== undefined) patch.title = args.title;
+if (args.description !== undefined) patch.description = args.description;
+
+// Nested updates (correct way)
+const updatedSettings = { ...form.settings };
+
+// Update branding
+if (args.primaryColor !== undefined || args.logoUrl !== undefined) {
+  updatedSettings.branding = {
+    ...(form.settings?.branding ?? {}),
+    ...(args.primaryColor && { primaryColor: args.primaryColor }),
+    ...(args.logoUrl && { logoUrl: args.logoUrl }),
+  };
+}
+
+// Update notifications
+if (args.emailOnResponse !== undefined || args.notificationEmail !== undefined) {
+  updatedSettings.notifications = {
+    ...(form.settings?.notifications ?? {}),
+    ...(args.emailOnResponse !== undefined && { emailOnResponse: args.emailOnResponse }),
+    ...(args.notificationEmail && { notificationEmail: args.notificationEmail }),
+  };
+}
+
+if (Object.keys(updatedSettings).length > 0) {
+  patch.settings = updatedSettings;
+}
+
+// AI Config
+if (args.personality !== undefined || args.voiceEnabled !== undefined) {
+  patch.aiConfig = {
+    ...(form.aiConfig ?? {}),
+    ...(args.personality && { personality: args.personality }),
+    ...(args.voiceEnabled !== undefined && { enableVoice: args.voiceEnabled }),
+  };
+}
+
+await ctx.db.patch(args.formId, patch);
+return args.formId;
+
+  },
+});
+
 export const deleteForm = mutation({
   args: { formId: v.id("forms") },
   handler: async (ctx, args) => {
-    // Delete all questions
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Unauthenticated");
+
+    const form = await ctx.db.get(args.formId);
+    if (!form) throw new Error("Form not found");
+    if (form.userId !== userId) throw new Error("Not authorized to delete this form");
+
+    // 1. Delete all responses
+    const responses = await ctx.db
+      .query("responses")
+      .withIndex("by_form", (q) => q.eq("formId", args.formId))
+      .collect();
+
+    await Promise.all(responses.map((r) => ctx.db.delete(r._id)));
+
+    // 2. Delete all questions
     const questions = await ctx.db
       .query("questions")
       .withIndex("by_form", (q) => q.eq("formId", args.formId))
-      .collect()
+      .collect();
 
-    for (const question of questions) {
-      await ctx.db.delete(question._id)
-    }
+    await Promise.all(questions.map((q) => ctx.db.delete(q._id)));
 
-    // Delete the form
-    await ctx.db.delete(args.formId)
+    // 3. Delete the form
+    await ctx.db.delete(args.formId);
+
+    return { deletedFormId: args.formId };
   },
-})
+});

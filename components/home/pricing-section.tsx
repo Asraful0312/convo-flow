@@ -215,7 +215,7 @@ export function Pricing({
            <div className="text-center mt-12">
             <p className="text-muted-foreground mb-4">Need more? Enterprise plans available</p>
             <Link href="/contact">
-              <Button variant="secondary" className="text-[#6366f1]">
+              <Button variant="secondary" className="">
                 Contact Sales →
               </Button>
             </Link>

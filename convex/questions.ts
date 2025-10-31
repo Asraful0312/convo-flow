@@ -52,6 +52,22 @@ export const updateQuestion = mutation({
     validation: v.optional(v.any()),
     required: v.optional(v.boolean()),
     order: v.optional(v.number()),
+       type: v.union(
+      v.literal("text"),
+      v.literal("email"),
+      v.literal("number"),
+      v.literal("phone"),
+      v.literal("url"),
+      v.literal("textarea"),
+      v.literal("choice"),
+      v.literal("multiple_choice"),
+      v.literal("dropdown"),
+      v.literal("rating"),
+      v.literal("scale"),
+      v.literal("date"),
+      v.literal("time"),
+      v.literal("file"),
+    ),
   },
   handler: async (ctx, args) => {
     const { questionId, ...updates } = args

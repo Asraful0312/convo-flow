@@ -16,6 +16,13 @@ export type QuestionType =
   | "file"
   | "rating"
   | "likert"
+  | "textarea"
+  | "phone"
+  | "dropdown"     
+  | "url"         
+  | "scale"      
+
+  
 
 export interface User {
   id: string
@@ -28,18 +35,26 @@ export interface User {
   subscription_status: SubscriptionStatus
 }
 
-export interface FormSettings {
+export type FormSettings = {
   branding?: {
-    primary_color?: string
-    logo_url?: string
-    font?: string
+    primaryColor?: string
+    logoUrl?: string
   }
   notifications?: {
-    email_on_response?: boolean
-    notification_email?: string
+    emailOnResponse?: boolean
+    notificationEmail?: string
   }
-  closing_date?: string
-  custom_domain?: string
+  aiConfig?: {
+    personality?: "professional" | "friendly" | "casual" | "formal"
+    voiceEnabled?: boolean
+  }
+}
+
+export type GeneratedForm = {
+  title: string
+  description: string
+  questions: Question[]
+  settings?: FormSettings
 }
 
 export interface AIConfig {

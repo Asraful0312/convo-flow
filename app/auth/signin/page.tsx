@@ -7,6 +7,7 @@ import { Loader2, Sparkles } from "lucide-react"
 import { useAuthActions } from "@convex-dev/auth/react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import CandidLogo from "@/components/shared/candid-logo"
 
 export default function SignInPage() {
   const { signIn } = useAuthActions();
@@ -36,7 +37,7 @@ export default function SignInPage() {
     setIsLoading(true);
     try {
       await signIn("google");
-      router.push("/overview");
+      router.push("/dashboard");
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -48,7 +49,7 @@ export default function SignInPage() {
     setIsLoading(true);
     try {
       await signIn("github");
-      router.push("/overview");
+       router.push("/dashboard");
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -56,14 +57,12 @@ export default function SignInPage() {
     }
   };
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-background via-muted/30 to-background p-4">
       <form onSubmit={handleSubmit} className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold">ConvoFlow</span>
+          <Link href="/" className="inline-flex items-center gap-2 mb-2">
+           <CandidLogo/>
+            <span className="text-2xl font-bold">CANDID</span>
           </Link>
           <h1 className="text-3xl font-bold mb-2">Welcome back</h1>
           <p className="text-muted-foreground">Sign in to your account to continue</p>

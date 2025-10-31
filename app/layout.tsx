@@ -4,6 +4,7 @@ import "./globals.css";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
 import { Toaster } from "sonner";
+import NameChangeProvider from "@/components/NameChangeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ConvoFlow - AI Conversational Forms",
+  title: "Candid - AI Conversational Forms",
   description:
     "Forms that feel like conversations. Create beautiful, AI-powered forms that people actually want to complete.",
 }
@@ -32,8 +33,11 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <ConvexClientProvider>{children}</ConvexClientProvider>
-          <Toaster richColors/>
+          <ConvexClientProvider>
+            {children}
+          <NameChangeProvider/>
+          </ConvexClientProvider>
+          <Toaster richColors />
         </body>
       </html>
     </ConvexAuthNextjsServerProvider>
