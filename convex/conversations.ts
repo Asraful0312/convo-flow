@@ -16,7 +16,7 @@ export const getConversation = query({
 export const saveConversation = mutation({
   args: {
     responseId: v.id("responses"),
-    messages: v.array(v.any()),
+    messages: v.any(),
     aiContext: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
@@ -24,20 +24,16 @@ export const saveConversation = mutation({
       .query("conversations")
       .withIndex("by_response", (q) => q.eq("responseId", args.responseId))
       .first()
-
+    
     if (existing) {
       await ctx.db.patch(existing._id, {
         messages: args.messages,
         aiContext: args.aiContext,
       })
       return existing._id
-    } else {
-      return await ctx.db.insert("conversations", {
-        responseId: args.responseId,
-        messages: args.messages,
-        aiContext: args.aiContext,
-      })
     }
+    
+    return await ctx.db.insert("conversations", args)
   },
 })
 

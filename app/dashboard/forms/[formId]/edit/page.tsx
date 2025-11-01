@@ -1,5 +1,4 @@
 "use client"
-
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,7 +15,6 @@ import { api } from "@/convex/_generated/api"
 import { Id } from "@/convex/_generated/dataModel"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-
 import {
   DndContext,
   closestCenter,
@@ -35,7 +33,6 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-/* ── Question type map (UI → DB) ───────────────────── */
 const QUESTION_TYPE_MAP: Record<string, string> = {
   "Short Text": "text",
   "Long Text": "textarea",
@@ -49,7 +46,6 @@ const QUESTION_TYPE_MAP: Record<string, string> = {
   File: "file",
 };
 
-/* ── Sortable Question Card ─────────────────────────── */
 function SortableQuestion({
   question,
   onUpdate,
@@ -74,6 +70,21 @@ function SortableQuestion({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // Local state for controlled inputs
+  const [localText, setLocalText] = useState(question.text);
+  const [localTypeLabel, setLocalTypeLabel] = useState(
+    Object.entries(QUESTION_TYPE_MAP).find(([_, v]) => v === question.type)?.[0] ?? "Short Text"
+  );
+
+  useEffect(() => {
+    setLocalText(question.text);
+  }, [question.text]);
+
+  useEffect(() => {
+    const label = Object.entries(QUESTION_TYPE_MAP).find(([_, v]) => v === question.type)?.[0] ?? "Short Text";
+    setLocalTypeLabel(label);
+  }, [question.type]);
+
   return (
     <Card ref={setNodeRef} style={style} className="border-2">
       <CardContent className="pt-6">
@@ -85,14 +96,19 @@ function SortableQuestion({
           >
             <GripVertical className="w-5 h-5 text-muted-foreground" />
           </div>
-
           <div className="flex-1 space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 space-y-2">
                 <Label>Question</Label>
                 <Input
-                  defaultValue={question.text}
-                  onBlur={(e) => onUpdate(question._id, { text: e.target.value })}
+                  value={localText}
+                  onChange={(e) => setLocalText(e.target.value)}
+                  onBlur={(e) => {
+                  const text = e.target.value;
+                            if (text !== question.text) {
+                    onUpdate(question._id, { text, type: question.type });
+                  }
+                  }}
                   placeholder="Enter your question"
                 />
               </div>
@@ -105,17 +121,21 @@ function SortableQuestion({
                 <Trash2 className="w-4 h-4" />
               </Button>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Question Type</Label>
                 <Select
-                  defaultValue={Object.entries(QUESTION_TYPE_MAP).find(
-                    ([_, v]) => v === question.type
-                  )?.[0] ?? "Short Text"}
-                  onValueChange={(label) =>
-                    onUpdate(question._id, { type: QUESTION_TYPE_MAP[label] })
-                  }
+                  value={localTypeLabel}
+                  onValueChange={(label) => {
+  const type = QUESTION_TYPE_MAP[label];
+  if (type !== question.type) {
+    onUpdate(question._id, { 
+      type,
+      text: localText  // preserve current text
+    });
+  }
+  setLocalTypeLabel(label);
+}}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -129,7 +149,6 @@ function SortableQuestion({
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="flex items-center justify-end gap-2 pt-8">
                 <Label htmlFor={`required-${question._id}`}>Required</Label>
                 <Switch
@@ -148,11 +167,10 @@ function SortableQuestion({
   );
 }
 
-
 export default function EditFormPage({ params }: { params: { formId: Id<"forms"> } }) {
- const form = useQuery(api.forms.getSingleForm, { formId: params.formId });
-  const [isSaving, setIsSaving] = useState(false)
-
+  const form = useQuery(api.forms.getSingleForm, { formId: params.formId });
+  const [isSaving, setIsSaving] = useState(false);
+  const [status, setStatus] = useState<"draft" | "published" | "closed">("draft");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#6366f1");
@@ -162,10 +180,17 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
   const [personality, setPersonality] = useState<"professional" | "friendly" | "casual" | "formal">("professional");
   const [voiceEnabled, setVoiceEnabled] = useState(false);
 
-   const questions = useQuery(api.questions.getFormQuestions, { formId: params.formId }) ?? [];
+  // Questions with sorting and optimistic state
+  const rawQuestions = useQuery(api.questions.getFormQuestions, { formId: params.formId }) ?? [];
+  const sortedQuestions = [...rawQuestions].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const [optimisticQuestions, setOptimisticQuestions] = useState<any[]>([]);
+
+  useEffect(() => {
+    setOptimisticQuestions(sortedQuestions);
+  }, [JSON.stringify(sortedQuestions)]); // Deep compare for dependency
 
   const updateSettings = useMutation(api.forms.updateSettings);
-   const createQ = useMutation(api.questions.createQuestion);
+  const createQ = useMutation(api.questions.createQuestion);
   const updateQ = useMutation(api.questions.updateQuestion);
   const deleteQ = useMutation(api.questions.deleteQuestion);
   const reorderQ = useMutation(api.questions.reorderQuestions);
@@ -174,6 +199,7 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
     if (!form) return;
     setTitle(form.title ?? "");
     setDescription(form.description ?? "");
+    setStatus(form.status ?? "draft");
     setPrimaryColor(form.settings?.branding?.primaryColor ?? "#6366f1");
     setLogoUrl(form.settings?.branding?.logoUrl ?? "");
     setEmailOnResponse(form.settings?.notifications?.emailOnResponse ?? false);
@@ -182,7 +208,6 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
     setVoiceEnabled(form.aiConfig?.enableVoice ?? false);
   }, [form]);
 
-
   const handleSaveSettings = async () => {
     setIsSaving(true);
     try {
@@ -190,6 +215,7 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
         formId: params.formId,
         title,
         description,
+        status,
         primaryColor,
         logoUrl,
         emailOnResponse,
@@ -207,14 +233,16 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
 
   /* ── Question CRUD ─────────────────────────────── */
   const addQuestion = async () => {
-    const order = questions.length;
-    await createQ({
+    const order = optimisticQuestions.length;
+    const newQuestion = await createQ({
       formId: params.formId,
       type: "text",
       text: "New question",
       required: false,
       order,
     });
+    // Optimistically add
+    setOptimisticQuestions((prev) => [...prev, newQuestion]);
     toast.success("Question added");
   };
 
@@ -224,9 +252,10 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
 
   const deleteQuestion = async (id: Id<"questions">) => {
     await deleteQ({ questionId: id });
+    // Optimistically remove
+    setOptimisticQuestions((prev) => prev.filter((q) => q._id !== id));
     toast.success("Question deleted");
   };
-
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -237,18 +266,23 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = questions.findIndex((q) => q._id === active.id);
-    const newIndex = questions.findIndex((q) => q._id === over.id);
-    const newQuestions = arrayMove(questions, oldIndex, newIndex);
+    setOptimisticQuestions((prev) => {
+      const oldIndex = prev.findIndex((q) => q._id === active.id);
+      const newIndex = prev.findIndex((q) => q._id === over.id);
+      const newOrder = arrayMove(prev, oldIndex, newIndex);
 
-    // Optimistic UI
-    // (Convex will re-render via subscription)
-    await reorderQ({
-      formId: params.formId,
-      questionIds: newQuestions.map((q) => q._id),
+      // Update DB (fire and forget, but catch errors)
+      reorderQ({
+        formId: params.formId,
+        questionIds: newOrder.map((q) => q._id),
+      }).catch(() => {
+        toast.error("Failed to reorder");
+        // Optionally revert: return prev;
+      });
+
+      return newOrder;
     });
   };
-
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
@@ -279,14 +313,12 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
           </Button>
         </div>
       </div>
-
       <Tabs defaultValue="questions" className="space-y-6">
         <TabsList>
           <TabsTrigger value="questions">Questions</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="design">Design</TabsTrigger>
         </TabsList>
-
         <TabsContent value="questions" className="space-y-4">
           <Card>
             <CardHeader>
@@ -308,11 +340,11 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
                 onDragEnd={handleDragEnd}
               >
                 <SortableContext
-                  items={questions.map((q) => q._id)}
+                  items={optimisticQuestions.map((q) => q._id)}
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="space-y-4">
-                    {questions.map((question) => (
+                    {optimisticQuestions.map((question) => (
                       <SortableQuestion
                         key={question._id}
                         question={question}
@@ -326,19 +358,31 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="settings" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Form Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Status */}
+              <div className="space-y-2">
+                <Label>Form Status</Label>
+                <Select value={status} onValueChange={(v) => setStatus(v as any)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="published">Published</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               {/* Title & Description */}
               <div className="space-y-2">
                 <Label htmlFor="title">Form Title</Label>
                 <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
                 <Textarea
@@ -348,7 +392,6 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
                   rows={3}
                 />
               </div>
-
               {/* ── Notifications ── */}
               <div className="space-y-4">
                 <h3 className="font-medium">Notifications</h3>
@@ -361,7 +404,6 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
                   </div>
                   <Switch checked={emailOnResponse} onCheckedChange={setEmailOnResponse} />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="notification-email">Notification Email</Label>
                   <Input
@@ -372,11 +414,9 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
                   />
                 </div>
               </div>
-
               {/* ── AI Config ── */}
               <div className="space-y-4">
                 <h3 className="font-medium">AI Configuration</h3>
-
                 <div className="space-y-2">
                   <Label htmlFor="personality">AI Personality</Label>
                   <Select value={personality} onValueChange={(v) => setPersonality(v as any)}>
@@ -391,7 +431,6 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Voice Input</Label>
@@ -405,7 +444,6 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="design" className="space-y-4">
           <Card>
             <CardHeader>
@@ -429,7 +467,6 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
                   />
                 </div>
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="logo">Logo URL</Label>
                 <Input
@@ -443,20 +480,19 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
           </Card>
         </TabsContent>
       </Tabs>
-
       <div className="flex justify-end">
         <Button onClick={handleSaveSettings} className="bg-[#6366f1] hover:bg-[#4f46e5] gap-2">
           {isSaving ? <>
-          <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin" />
             Saving...
           </> : (
-              <>
-          <Save className="w-4 h-4" />
-          Save Changes
-              </>
+            <>
+              <Save className="w-4 h-4" />
+              Save Changes
+            </>
           )}
         </Button>
       </div>
     </div>
-  )
+  );
 }

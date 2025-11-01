@@ -128,6 +128,7 @@ export const updateSettings = mutation({
     formId: v.id("forms"),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
+    status: v.optional(v.union(v.literal("draft"), v.literal("published"), v.literal("closed"))),
     primaryColor: v.optional(v.string()),
     logoUrl: v.optional(v.string()),
     // notifications
@@ -159,6 +160,7 @@ export const updateSettings = mutation({
 // title / description
 if (args.title !== undefined) patch.title = args.title;
 if (args.description !== undefined) patch.description = args.description;
+if (args.status !== undefined) patch.status = args.status;
 
 // Nested updates (correct way)
 const updatedSettings = { ...form.settings };

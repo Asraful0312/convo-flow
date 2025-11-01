@@ -8,6 +8,55 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
+export const getConversationalQuestion = action({
+  args: {
+    question: v.string(),
+    history: v.array(
+      v.object({
+        role: v.union(v.literal("user"), v.literal("ai")),
+        content: v.string(),
+      })
+    ),
+  },
+  handler: async (_, { question, history }) => {
+    const systemPrompt = `
+      You are a friendly, conversational assistant.
+      Given a conversation history and a new question to ask, your task is to make the new question flow naturally with the conversation.
+      You can add a brief transitional phrase or rephrase the question itself.
+      For example, if the previous answer was about their favorite color, and the new question is "What is your job?", you could say:
+      "Interesting! Now, shifting gears a bit, what do you do for work?"
+      Keep it concise and friendly.
+      Just return the rephrased question as a single string. Do not add any other text or JSON formatting.
+    `
+
+    const adaptedHistory = history.map((msg) => ({
+      role: msg.role === "ai" ? ("assistant" as const) : ("user" as const),
+      content: msg.content,
+    }))
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...adaptedHistory,
+        {
+          role: "user",
+          content: `Here is the next question to ask: "${question}"`,
+        },
+      ],
+    })
+
+    const responseContent = response.choices[0].message.content
+
+    if (!responseContent) {
+      // Fallback to original question if AI fails
+      return question
+    }
+
+    return responseContent.trim()
+  },
+})
+
 export const generateForm = action({
   args: {
     prompt: v.string(),

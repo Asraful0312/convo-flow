@@ -26,7 +26,7 @@ export default defineSchema({
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
   })
-    .index("by_email", ["email"])
+    .index("email", ["email"])
     .index("by_subscription", ["subscriptionTier", "subscriptionStatus"]),
 
   // Forms table
@@ -206,6 +206,7 @@ export default defineSchema({
         content: v.string(),
         timestamp: v.number(),
         questionId: v.optional(v.string()),
+        isAdaptive: v.optional(v.boolean()),
       }),
     ),
     // AI context for maintaining conversation state

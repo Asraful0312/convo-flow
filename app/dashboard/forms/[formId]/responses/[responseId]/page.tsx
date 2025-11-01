@@ -129,7 +129,7 @@ export default function ResponseDetailPage({
               <div key={index} className="space-y-3">
                 {/* AI Question */}
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#6366f1] flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-[#6366f1] flex items-center justify-center shrink-0">
                     <span className="text-white text-sm font-medium">AI</span>
                   </div>
                   <div className="flex-1">
@@ -146,7 +146,7 @@ export default function ResponseDetailPage({
                       <p className="text-sm">{item.answer}</p>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-[#f97316] flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-[#f97316] flex items-center justify-center shrink-0">
                     <span className="text-white text-sm font-medium">U</span>
                   </div>
                 </div>

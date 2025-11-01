@@ -66,22 +66,24 @@ export default function FormsPage() {
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="sm" className="">
                       <MoreVertical className="w-4 h-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      View Form
+                    <DropdownMenuItem className="group" >
+                      <Link className="flex items-center gap-2 group-hover:text-white" href={`/f/${form._id}`}>
+                      <ExternalLink className="w-4 h-4 mr-2 group-hover:text-whitw" />
+                        View Public Form
+                      </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Copy className="w-4 h-4 mr-2" />
+                    <DropdownMenuItem className="group">
+                      <Copy className="w-4 h-4 mr-2 group-hover:text-white" />
                       Duplicate
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={()=>handleDelete(form._id)} className="text-destructive">
-                      <Trash2 className="w-4 h-4 mr-2 text-destructive" />
+                    <DropdownMenuItem onClick={()=>handleDelete(form._id)} className="text-destructive group">
+                      <Trash2 className="w-4 h-4 mr-2 text-destructive group-hover:text-white" />
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
