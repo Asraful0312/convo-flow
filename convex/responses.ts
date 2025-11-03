@@ -1,5 +1,6 @@
 import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
+import { api, internal } from "./_generated/api";
 
 // Get all responses for a form
 export const getFormResponses = query({
@@ -41,6 +42,41 @@ export const getResponseWithAnswers = query({
   },
 })
 
+export const getResponseDetailPageData = query({
+    args: { responseId: v.id("responses") },
+    handler: async (ctx, args) => {
+        const response = await ctx.db.get(args.responseId);
+        if (!response) return null;
+
+        const form = await ctx.db.get(response.formId);
+        if (!form) return null;
+
+        const questions = await ctx.db
+            .query("questions")
+            .withIndex("by_form", (q) => q.eq("formId", form._id))
+            .order("asc")
+            .collect();
+
+        const answers = await ctx.db
+            .query("answers")
+            .withIndex("by_response", (q) => q.eq("responseId", args.responseId))
+            .collect();
+
+        const conversation = await ctx.db
+            .query("conversations")
+            .withIndex("by_response", (q) => q.eq("responseId", args.responseId))
+            .first();
+
+        return {
+            response,
+            form,
+            questions,
+            answers,
+            conversation,
+        };
+    },
+});
+
 // Create a new response
 export const createResponse = mutation({
   args: {
@@ -65,8 +101,9 @@ export const updateResponse = mutation({
     status: v.optional(v.union(v.literal("in_progress"), v.literal("completed"), v.literal("abandoned"))),
     contactInfo: v.optional(v.any()),
     qualityScore: v.optional(v.number()),
-    sentimentScore: v.optional(v.number()),
-    tags: v.optional(v.array(v.string())),
+    sentiment: v.optional(v.string()),
+    summary: v.optional(v.string()),
+    themes: v.optional(v.array(v.string())),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -76,7 +113,8 @@ export const updateResponse = mutation({
       await ctx.db.patch(responseId, {
         ...updates,
         completedAt: Date.now(),
-      })
+      });
+      await ctx.scheduler.runAfter(0, internal.ai.generateInsights, { responseId });
     } else {
       await ctx.db.patch(responseId, updates)
     }
@@ -111,6 +149,34 @@ export const deleteResponse = mutation({
     await ctx.db.delete(args.responseId)
   },
 })
+
+export const deleteManyResponses = mutation({
+    args: { responseIds: v.array(v.id("responses")) },
+    handler: async (ctx, args) => {
+        for (const responseId of args.responseIds) {
+            await ctx.runMutation(api.responses.deleteResponse, { responseId });
+        }
+    },
+});
+
+export const tagResponses = mutation({
+    args: { responseIds: v.array(v.id("responses")), tags: v.array(v.string()) },
+    handler: async (ctx, args) => {
+        for (const responseId of args.responseIds) {
+            const existing = await ctx.db.get(responseId);
+            const existingTags = existing?.tags || [];
+            const newTags = [...new Set([...existingTags, ...args.tags])];
+            await ctx.db.patch(responseId, { tags: newTags });
+        }
+    },
+});
+
+export const addNoteToResponse = mutation({
+    args: { responseId: v.id("responses"), note: v.string() },
+    handler: async (ctx, args) => {
+        await ctx.db.patch(args.responseId, { notes: args.note });
+    },
+});
 
 // Get response analytics for a form
 export const getFormAnalytics = query({

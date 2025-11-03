@@ -1,34 +1,91 @@
-import { notFound } from "next/navigation"
+"use client"
+
+import { notFound, useRouter } from "next/navigation"
 import Link from "next/link"
+import { useQuery, useMutation, useAction } from "convex/react"
+import { api } from "@/convex/_generated/api"
+import { Id } from "@/convex/_generated/dataModel"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Download, Trash2, Clock, Monitor } from "lucide-react"
-import { mockResponses, mockForms, mockQuestions } from "@/lib/mock-data"
+import { ArrowLeft, Download, Trash2, Clock, Monitor, Loader2 } from "lucide-react"
+import { toast } from "sonner"
+import { use, useState } from "react"
 
 export default function ResponseDetailPage({
   params,
 }: {
   params: { formId: string; responseId: string }
-}) {
-  const form = mockForms.find((f) => f.id === params.formId)
-  const response = mockResponses.find((r) => r.id === params.responseId && r.form_id === params.formId)
-  const questions = mockQuestions[params.formId] || []
+  }) {
+  const { formId } = use<any>(params as any);
+  const router= useRouter()
+  const { responseId } = use<any>(params as any);
+  const [isExporting, setIsExporting] = useState(false)
+  const data = useQuery(api.responses.getResponseDetailPageData, { responseId });
+  const deleteResponse = useMutation(api.responses.deleteResponse);
+  const exportAction = useAction(api.exports.exportResponses);
+  const getFileUrl = useMutation(api.files.getFileUrl);
+  const conversation = data?.conversation;
+  const questions = data?.questions
+  const answers = data?.answers
+  const form = data?.form;
+  const response = data?.response;
+
+  console.log(response)
+
+
+  const handleDelete = async () => {
+    if (!response) return;
+    try {
+      await deleteResponse({ responseId: response._id });
+      toast.success("Response deleted successfully");
+      router.push(`/dashboard/forms/${params.formId}/responses`);
+    } catch (error) {
+      toast.error("Failed to delete response");
+      console.error("Failed to delete response:", error);
+    }
+  };
+
+  const handleExport = async (format: "csv" | "xlsx" | "pdf") => {
+    if (!response) return;
+    setIsExporting(true);
+    try {
+      const url = await exportAction({ formId: response.formId, responseIds: [response._id], format });
+      if (url) {
+        window.open(url, '_blank');
+        toast.success(`Export started. Your ${format.toUpperCase()} file will be available shortly.`);
+      } else {
+        toast.error("Export failed");
+      }
+    } catch (error) {
+      toast.error("Export failed");
+      console.error("Export failed:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleFileDownload = async (storageId: Id<"_storage">) => {
+    try {
+        const url = await getFileUrl({ storageId });
+        if (url) {
+            window.open(url, '_blank');
+        }
+    } catch (error) {
+        toast.error("Failed to get download link");
+    }
+  }
+
+  if (data === undefined) {
+    return <div className="w-full h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
+  }
 
   if (!form || !response) {
     notFound()
   }
 
-  // Mock answers for this response
-  const answers = [
-    { question: "What is your name?", answer: "John Doe" },
-    { question: "What is your email address?", answer: "john.doe@example.com" },
-    { question: "How would you rate our product?", answer: "5 stars" },
-    { question: "What could we improve?", answer: "The onboarding process could be more intuitive." },
-  ]
-
-  const completionTime = response.completed_at
-    ? Math.round((new Date(response.completed_at).getTime() - new Date(response.started_at).getTime()) / 1000 / 60)
+  const completionTime = response.completedAt
+    ? Math.round((response.completedAt - response.startedAt) / 1000 / 60)
     : null
 
   return (
@@ -36,7 +93,7 @@ export default function ResponseDetailPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href={`/dashboard/forms/${params.formId}/responses`}>
+          <Link href={`/dashboard/forms/${formId}/responses`}>
             <Button variant="ghost" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Responses
@@ -48,11 +105,12 @@ export default function ResponseDetailPage({
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="gap-2 bg-transparent">
+          <Button variant="outline" className="gap-2 bg-transparent" onClick={() => handleExport("pdf")}>
             <Download className="w-4 h-4" />
             Export
+            {isExporting && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
           </Button>
-          <Button variant="outline" className="gap-2 text-destructive hover:text-destructive bg-transparent">
+          <Button variant="outline" className="gap-2 text-destructive hover:text-destructive bg-transparent" onClick={handleDelete}>
             <Trash2 className="w-4 h-4" />
             Delete
           </Button>
@@ -74,7 +132,7 @@ export default function ResponseDetailPage({
                 <div>
                   <p className="text-sm text-muted-foreground">Submitted</p>
                   <p className="font-medium">
-                    {response.completed_at ? new Date(response.completed_at).toLocaleString() : "In Progress"}
+                    {response.completedAt ? new Date(response.completedAt).toLocaleString() : "In Progress"}
                   </p>
                 </div>
               </div>
@@ -125,70 +183,74 @@ export default function ResponseDetailPage({
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {answers.map((item, index) => (
-              <div key={index} className="space-y-3">
-                {/* AI Question */}
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#6366f1] flex items-center justify-center shrink-0">
-                    <span className="text-white text-sm font-medium">AI</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="bg-muted rounded-2xl rounded-tl-none px-4 py-3">
-                      <p className="text-sm">{item.question}</p>
-                    </div>
-                  </div>
-                </div>
+            {conversation?.messages.map((message, index) => {
+              const question = questions?.find(q => q._id === message.questionId);
+              const answer = answers?.find(a => a.questionId === message.questionId);
 
-                {/* User Answer */}
-                <div className="flex gap-3 justify-end">
-                  <div className="flex-1 flex justify-end">
-                    <div className="bg-[#6366f1] text-white rounded-2xl rounded-tr-none px-4 py-3 max-w-[80%]">
-                      <p className="text-sm">{item.answer}</p>
+              let messageContent: React.ReactNode = message.content;
+              if (message.role === 'user' && question?.type === 'file' && answer?.fileName) {
+                messageContent = (
+                  <Button variant="link" onClick={() => handleFileDownload(answer.value)} className="p-0 h-auto text-white">
+                    {answer.fileName}
+                  </Button>
+                );
+              }
+
+              return (
+                <div key={index} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
+                  {message.role === 'assistant' && (
+                      <div className="w-8 h-8 rounded-full bg-[#6366f1] flex items-center justify-center shrink-0">
+                          <span className="text-white text-sm font-medium">AI</span>
+                      </div>
+                  )}
+                  <div className={`flex-1 ${message.role === 'user' ? 'flex justify-end' : ''}`}>
+                    <div className={`rounded-2xl px-4 py-3 max-w-[80%] ${message.role === 'user' ? 'bg-[#6366f1] text-white rounded-tr-none' : 'bg-muted rounded-tl-none'}`}>
+                      <p className="text-sm">{messageContent}</p>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-[#f97316] flex items-center justify-center shrink-0">
-                    <span className="text-white text-sm font-medium">U</span>
-                  </div>
+                  {message.role === 'user' && (
+                      <div className="w-8 h-8 rounded-full bg-[#f97316] flex items-center justify-center shrink-0">
+                          <span className="text-white text-sm font-medium">U</span>
+                      </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
 
       {/* AI Insights */}
-      <Card>
-        <CardHeader>
-          <CardTitle>AI Insights</CardTitle>
-          <CardDescription>Automated analysis of this response</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <div>
-              <p className="font-medium text-green-900 dark:text-green-100">Sentiment</p>
-              <p className="text-sm text-green-700 dark:text-green-300">Positive</p>
+      {response?.sentiment && (
+        <Card>
+          <CardHeader>
+            <CardTitle>AI Insights</CardTitle>
+            <CardDescription>Automated analysis of this response</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <div>
+                <p className="font-medium text-green-900 dark:text-green-100">Sentiment</p>
+                <p className="text-sm text-green-700 dark:text-green-300">{response.sentiment}</p>
+              </div>
             </div>
-            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-              85% Confidence
-            </Badge>
-          </div>
-          <div className="p-4 bg-muted rounded-lg">
-            <p className="font-medium mb-2">Key Themes</p>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">Product Quality</Badge>
-              <Badge variant="secondary">User Experience</Badge>
-              <Badge variant="secondary">Onboarding</Badge>
-            </div>
-          </div>
-          <div className="p-4 bg-muted rounded-lg">
-            <p className="font-medium mb-2">Summary</p>
-            <p className="text-sm text-muted-foreground">
-              The respondent is generally satisfied with the product but suggests improvements to the onboarding
-              process. They rated the product highly and provided constructive feedback.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+            {response.themes && (
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="font-medium mb-2">Key Themes</p>
+                <div className="flex flex-wrap gap-2">
+                  {response.themes.map((theme: string) => <Badge key={theme} variant="secondary">{theme}</Badge>)}
+                </div>
+              </div>
+            )}
+            {response.summary && (
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="font-medium mb-2">Summary</p>
+                <p className="text-sm text-muted-foreground">{response.summary}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

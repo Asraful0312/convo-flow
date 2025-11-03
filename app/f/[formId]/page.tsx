@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, use } from "react"
 import { useQuery, useMutation, useAction } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { Id } from "@/convex/_generated/dataModel"
@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Sparkles, Send, Mic, MicOff, Volume2, VolumeX, Check, Loader2 } from "lucide-react"
+import { Sparkles, Send, Mic, MicOff, Volume2, VolumeX, Check, Loader2, Star } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import confetti from "canvas-confetti"
 import { toast } from "sonner"
@@ -24,9 +26,8 @@ interface Message {
 }
 
 export default function FormSubmissionPage({ params }: { params: { formId: string } }) {
-  const formId = params.formId as Id<"forms">
+  const { formId } = use<any>(params as any);
   
-  // Convex queries and mutations
   const form = useQuery(api.forms.getSingleForm, { formId })
   const questions = useQuery(api.questions.getFormQuestions, { formId })
   const createResponse = useMutation(api.responses.createResponse)
@@ -34,8 +35,9 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
   const saveAnswer = useMutation(api.answers.saveAnswer)
   const saveConversation = useMutation(api.conversations.saveConversation)
   const getConversationalQuestion = useAction(api.ai.getConversationalQuestion)
-  
-  // State management
+  const validateAnswer = useAction(api.ai.validateAnswer)
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+
   const [started, setStarted] = useState(false)
   const [responseId, setResponseId] = useState<Id<"responses"> | null>(null)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
@@ -45,14 +47,14 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
   const [isCompleted, setIsCompleted] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isUploading, setIsUploading] = useState(false);
+  const [multipleChoiceAnswers, setMultipleChoiceAnswers] = useState<string[]>([]);
 
-  // Voice states
   const [isRecording, setIsRecording] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [voiceEnabled, setVoiceEnabled] = useState(false)
   const [audioLevel, setAudioLevel] = useState(0)
 
-  // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const recognitionRef = useRef<any>(null)
@@ -64,11 +66,12 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
   const currentQuestion = questions?.[currentQuestionIndex]
   const progress = questions ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0
 
-  // Get brand colors
   const primaryColor = form?.settings.branding?.primaryColor || "#F56A4D"
   const secondaryColor = form?.settings.branding?.secondaryColor || "#2EB7A7"
 
-  // Initialize speech recognition
+
+  console.log("form", form?.settings.branding?.logoUrl)
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
@@ -101,7 +104,6 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
     }
   }, [form])
 
-  // Set initial voice state
   useEffect(() => {
     if (form && form.aiConfig?.enableVoice) {
       setVoiceEnabled(true)
@@ -136,12 +138,10 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
     }, 1500)
   }
 
-  // Auto-scroll messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  // Audio visualization
   const startAudioVisualization = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
@@ -195,14 +195,12 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
     }
   }
 
-  // Text-to-speech with ElevenLabs (fallback to browser TTS)
   const speakText = async (text: string) => {
     if (!voiceEnabled) return
 
     setIsSpeaking(true)
 
     try {
-      // Try ElevenLabs API (you'll need to set up the API key)
       const ELEVENLABS_API_KEY = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY
       
       if (ELEVENLABS_API_KEY) {
@@ -240,7 +238,6 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
         }
       }
 
-      // Fallback to browser TTS
       if (typeof window !== "undefined") {
         const utterance = new SpeechSynthesisUtterance(text)
         utterance.rate = 0.9
@@ -268,18 +265,16 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
     }
   }
 
-  // Get personalized welcome message
   const getWelcomeMessage = (personality: string, formTitle: string) => {
-    const messages = {
+    const messages: Record<string, string> = {
       professional: `Good day. I'll guide you through the ${formTitle} form. Shall we begin?`,
       friendly: `Hi! I'm here to help with the ${formTitle}. Ready to get started?`,
       casual: `Hey! Let's breeze through this ${formTitle} together. You ready?`,
       formal: `Greetings. I will assist you in completing the ${formTitle}. May we proceed?`,
     }
-    return messages[personality as keyof typeof messages] || messages.friendly
+    return messages[personality] || messages.friendly
   }
 
-  // Ask question with AI conversation
   const askQuestion = (index: number) => {
     if (!questions || index >= questions.length) {
       completeForm()
@@ -287,21 +282,28 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
     }
 
     const question = questions[index]
+    setMultipleChoiceAnswers([]); // Reset for next question
     setIsTyping(true)
 
     setTimeout(async () => {
+      let questionText = question.text;
+      let isAdaptive = false;
+
       const historyForAI = messages.map((m) => ({
-        role: m.role === "assistant" ? ("ai" as const) : ("user" as const),
-        content: m.content,
-      }))
+          role: m.role === "assistant" ? ("ai" as const) : ("user" as const),
+          content: m.content,
+      }));
 
       const conversationalText = await getConversationalQuestion({
-        question: question.text,
-        history: historyForAI,
-      })
+          question: question.text,
+          history: historyForAI,
+          personality: form?.aiConfig?.personality || "friendly",
+      });
 
-      const questionText = conversationalText || question.text
-      const isAdaptive = conversationalText ? conversationalText !== question.text : false
+      if (conversationalText) {
+          questionText = conversationalText;
+          isAdaptive = conversationalText !== question.text;
+      }
 
       const questionMessage: Message = {
         id: `q-${question._id}`,
@@ -319,16 +321,71 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
     }, 800)
   }
 
-  // Handle answer submission
-  const handleSubmitAnswer = async (answer: string | string[]) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+
+    try {
+      const uploadUrl = await generateUploadUrl();
+      const result = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+
+      const { storageId } = await result.json();
+
+      await handleSubmitAnswer({ storageId, fileName: file.name, fileSize: file.size });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast.error("File upload failed. Please try again.")
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleMultipleChoiceChange = (checked: boolean, option: string) => {
+    setMultipleChoiceAnswers(prev => {
+        if (checked) {
+            return [...prev, option];
+        } else {
+            return prev.filter(item => item !== option);
+        }
+    });
+  };
+
+  const handleSubmitAnswer = async (answer: string | string[] | { storageId: string, fileName: string, fileSize: number }) => {
     if (!currentQuestion || isProcessing) return
 
     setIsProcessing(true)
 
+    if (typeof answer === 'string' && answer.trim() && !['choice', 'dropdown', 'rating', 'scale', 'likert'].includes(currentQuestion.type)) {
+        const validation = await validateAnswer({
+            question: currentQuestion.text,
+            answer: answer,
+            personality: form?.aiConfig?.personality || "friendly",
+        });
+
+        if (validation && !validation.isValid) {
+            const errorMessage: Message = {
+                id: `err-${Date.now()}`,
+                role: "assistant",
+                content: validation.reason,
+                timestamp: Date.now(),
+            };
+            setMessages(prev => [...prev, errorMessage]);
+            await speakText(validation.reason);
+            setIsProcessing(false);
+            inputRef.current?.focus();
+            return;
+        }
+    }
+
     try {
       let currentResponseId = responseId
 
-      // If this is the first answer, create the response document first
       if (!currentResponseId) {
         const newResponseId = await createResponse({
           formId,
@@ -346,21 +403,35 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
         throw new Error("Failed to create or find response ID")
       }
 
-      // Save answer to database
+      let answerValue: any = answer;
+      let fileDetails: { fileName?: string, fileSize?: number } = {};
+      let displayContent: string;
+
+      if (typeof answer === 'object' && 'storageId' in answer) {
+        answerValue = answer.storageId;
+        fileDetails = { fileName: answer.fileName, fileSize: answer.fileSize };
+        displayContent = answer.fileName;
+      } else if (Array.isArray(answer)) {
+        displayContent = answer.join(", ");
+      } else if (answer === "") {
+        displayContent = "Skip this question";
+      } else {
+        displayContent = answer;
+      }
+
       await saveAnswer({
         responseId: currentResponseId,
         questionId: currentQuestion._id,
-        value: answer,
+        value: answerValue,
+        ...fileDetails
       })
 
-      // Add to local state
       setAnswers((prev) => ({ ...prev, [currentQuestion._id]: answer }))
 
-      // Add user message
       const answerMessage: Message = {
         id: `a-${currentQuestion._id}`,
         role: "user",
-        content: Array.isArray(answer) ? answer.join(", ") : answer,
+        content: displayContent,
         timestamp: Date.now(),
         questionId: currentQuestion._id,
       }
@@ -369,7 +440,6 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
       setMessages(newMessages)
       setInputValue("")
 
-      // Save conversation
       await saveConversation({
         responseId: currentResponseId,
         messages: newMessages,
@@ -380,7 +450,6 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
         },
       })
 
-      // Move to next question
       setTimeout(() => {
         setCurrentQuestionIndex((prev) => prev + 1)
         askQuestion(currentQuestionIndex + 1)
@@ -392,58 +461,74 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
     }
   }
 
-  // Complete form
   const completeForm = async () => {
     if (!responseId) return
 
     setIsTyping(true)
 
     try {
-      // Update response status
       await updateResponse({
         responseId,
         status: "completed",
       })
-
-      const personality = form?.aiConfig?.personality || "friendly"
-      const completionMessages = {
-        professional: "Thank you for completing the form. Your responses have been recorded.",
-        friendly: "All set! Thanks for taking the time to fill this out. We'll be in touch soon!",
-        casual: "Done! Thanks for the chat. Catch you later!",
-        formal: "Your submission has been successfully recorded. Thank you for your participation.",
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 800))
-
-      const completionMessage: Message = {
-        id: "complete",
-        role: "assistant",
-        content: completionMessages[personality as keyof typeof completionMessages] || completionMessages.friendly,
-        timestamp: Date.now(),
-      }
-
-      setMessages((prev) => [...prev, completionMessage])
-      setIsTyping(false)
       setIsCompleted(true)
-      await speakText(completionMessage.content)
-
-      // Celebration!
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: [primaryColor, secondaryColor, "#A3E635"],
-      })
     } catch (error) {
       console.error("Error completing form:", error)
       setIsTyping(false)
     }
   }
 
+  useEffect(() => {
+    if (isCompleted) {
+      const showCompletionUI = async () => {
+        const personality = form?.aiConfig?.personality || "friendly"
+        const completionMessages: Record<string, string> = {
+          professional: "Thank you for completing the form. Your responses have been recorded.",
+          friendly: "All set! Thanks for taking the time to fill this out. We'll be in touch soon!",
+          casual: "Done! Thanks for the chat. Catch you later!",
+          formal: "Your submission has been successfully recorded. Thank you for your participation.",
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 800))
+
+        const completionMessage: Message = {
+          id: "complete",
+          role: "assistant",
+          content: completionMessages[personality] || completionMessages.friendly,
+          timestamp: Date.now(),
+        }
+
+        setMessages((prev) => [...prev, completionMessage])
+        setIsTyping(false)
+        await speakText(completionMessage.content)
+
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: [primaryColor, secondaryColor, "#A3E635"],
+        })
+      }
+      showCompletionUI()
+    }
+  }, [isCompleted, form, primaryColor, secondaryColor])
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey && inputValue.trim() && !isProcessing) {
       e.preventDefault()
       handleSubmitAnswer(inputValue.trim())
+    }
+  }
+
+  const getQuestionInputType = (type: string) => {
+    switch (type) {
+        case "email": return "email";
+        case "number": return "number";
+        case "phone": return "tel";
+        case "url": return "url";
+        case "date": return "date";
+        case "time": return "time";
+        default: return "text";
     }
   }
 
@@ -488,7 +573,6 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -542,7 +626,6 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
         </div>
       </header>
 
-      {/* Chat Area */}
       <div className="flex-1 overflow-y-auto">
         <div className="container mx-auto px-4 py-8 max-w-3xl">
           <div className="space-y-6">
@@ -556,12 +639,19 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
                   className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   {message.role === "assistant" && (
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: primaryColor }}
-                    >
-                      <Sparkles className="w-5 h-5 text-white" />
-                    </div>
+                    <>
+                      {form.settings.branding?.logoUrl ? (
+              <img src={form.settings.branding.logoUrl} alt="Logo" className="w-8 h-8 rounded-lg" />
+            ) : (
+              <div
+                className="w-8 h-8 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+            )}
+                    </>
+                   
                   )}
                   <div
                     className={`max-w-[80%] rounded-xl px-6 py-4 ${
@@ -645,7 +735,6 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
         </div>
       </div>
 
-      {/* Input Area */}
       {!isCompleted && currentQuestion && (
         <div className="border-t bg-white/80 backdrop-blur-sm sticky bottom-0">
           <div className="container mx-auto px-4 py-6 max-w-3xl">
@@ -679,6 +768,92 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
                   ))}
                 </RadioGroup>
               </div>
+            ) : currentQuestion.type === "dropdown" && currentQuestion.options ? (
+                <div className="space-y-3">
+                    <p className="text-sm text-gray-600 mb-3">Select an option:</p>
+                    <Select onValueChange={(value) => handleSubmitAnswer(value)} disabled={isProcessing}>
+                        <SelectTrigger className="h-14 bg-white rounded-xl">
+                            <SelectValue placeholder="Select an option..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {currentQuestion.options.map((option, index) => (
+                                <SelectItem key={index} value={option}>{option}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            ) : currentQuestion.type === "multiple_choice" && currentQuestion.options ? (
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600 mb-3">Select all that apply:</p>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                        {currentQuestion.options.map((option, index) => (
+                            <div key={index} className="flex items-center gap-3 bg-white border-2 border-gray-200 rounded-xl px-6 py-4">
+                                <Checkbox id={`mc-${index}`} onCheckedChange={(checked) => handleMultipleChoiceChange(Boolean(checked), option)} />
+                                <Label htmlFor={`mc-${index}`} className="cursor-pointer">{option}</Label>
+                            </div>
+                        ))}
+                    </div>
+                    <Button 
+                        onClick={() => handleSubmitAnswer(multipleChoiceAnswers)} 
+                        disabled={multipleChoiceAnswers.length === 0 || isProcessing}
+                        className="h-14 w-full text-white rounded-xl"
+                        style={{ backgroundColor: primaryColor }}
+                    >
+                        {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : "Submit"}
+                    </Button>
+                </div>
+            ) : currentQuestion.type === "rating" && currentQuestion.options ? (
+                <div className="space-y-3">
+                    <p className="text-sm text-gray-600 mb-3">{currentQuestion.text}</p>
+                    <div className="flex gap-2">
+                        {currentQuestion.options.map((option: string, index: number) => (
+                            <Button
+                                key={index}
+                                variant="outline"
+                                onClick={() => handleSubmitAnswer(option)}
+                                disabled={isProcessing}
+                                className="h-12 w-12 p-0 flex items-center justify-center"
+                            >
+                                {Array.from({ length: parseInt(option) }).map((_, starIndex) => (
+                                    <Star key={starIndex} className="w-5 h-5 fill-current text-yellow-400" />
+                                ))}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+            ) : ["scale", "likert"].includes(currentQuestion.type) && currentQuestion.options ? (
+                <div className="space-y-3">
+                    <p className="text-sm text-gray-600 mb-3">{currentQuestion.text}</p>
+                    <div className="flex flex-wrap gap-2">
+                        {currentQuestion.options.map((option: string, index: number) => (
+                            <Button 
+                                key={index} 
+                                variant="outline"
+                                onClick={() => handleSubmitAnswer(option)}
+                                disabled={isProcessing}
+                                className="h-12"
+                            >
+                                {option}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+            ) : currentQuestion.type === "file" ? (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 mb-3">Upload a file:</p>
+                <Input
+                  type="file"
+                  onChange={handleFileChange}
+                  disabled={isUploading || isProcessing}
+                  className="h-14 pr-24 bg-white rounded-xl"
+                />
+                {isUploading && (
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Uploading...
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="flex gap-3">
                 <div className="flex-1 relative">
@@ -695,7 +870,7 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
                   ) : (
                     <Input
                       ref={inputRef}
-                      type={currentQuestion.type === "email" ? "email" : currentQuestion.type === "number" ? "number" : "text"}
+                      type={getQuestionInputType(currentQuestion.type)}
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       placeholder={currentQuestion.placeholder || "Type your answer..."}

@@ -173,6 +173,9 @@ export default defineSchema({
     sentimentScore: v.optional(v.number()),
     tags: v.optional(v.array(v.string())),
     notes: v.optional(v.string()),
+     sentiment: v.optional(v.string()),
+    summary: v.optional(v.string()),
+    themes: v.optional(v.array(v.string())),
   })
     .index("by_form", ["formId"])
     .index("by_status", ["status"])

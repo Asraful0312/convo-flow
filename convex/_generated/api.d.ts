@@ -12,6 +12,8 @@ import type * as ai from "../ai.js";
 import type * as answers from "../answers.js";
 import type * as auth from "../auth.js";
 import type * as conversations from "../conversations.js";
+import type * as exports from "../exports.js";
+import type * as files from "../files.js";
 import type * as forms from "../forms.js";
 import type * as http from "../http.js";
 import type * as questions from "../questions.js";
@@ -37,6 +39,8 @@ declare const fullApi: ApiFromModules<{
   answers: typeof answers;
   auth: typeof auth;
   conversations: typeof conversations;
+  exports: typeof exports;
+  files: typeof files;
   forms: typeof forms;
   http: typeof http;
   questions: typeof questions;

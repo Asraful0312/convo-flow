@@ -1,6 +1,7 @@
 import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
 import { getAuthUserId } from "@convex-dev/auth/server"
+import { api } from "./_generated/api";
 
 export const getFormsForUser = query({
   handler: async (ctx) => {
@@ -31,6 +32,53 @@ export const getFormsForUser = query({
     return formsWithResponseCount
   },
 })
+
+export const getResponsesPageData = query({
+  args: { formId: v.id("forms") },
+  handler: async (ctx, args): Promise<any> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
+
+    const form = await ctx.db.get(args.formId);
+
+    if (!form || form.userId !== userId) {
+      return null;
+    }
+
+    const questions = await ctx.db
+      .query("questions")
+      .withIndex("by_form", (q) => q.eq("formId", form._id))
+      .order("asc")
+      .collect();
+
+    const responses = await ctx.db
+      .query("responses")
+      .withIndex("by_form", (q) => q.eq("formId", form._id))
+      .order("desc")
+      .collect();
+
+    const responsesWithAnswers = await Promise.all(
+      responses.map(async (response) => {
+        const firstAnswer = await ctx.db
+          .query("answers")
+          .withIndex("by_response", (q) => q.eq("responseId", response._id))
+          .first();
+        return { ...response, firstAnswer: firstAnswer || null };
+      })
+    );
+
+    const analytics = await ctx.runQuery(api.responses.getFormAnalytics, { formId: args.formId });
+
+    return {
+      form,
+      questions,
+      responses: responsesWithAnswers,
+      analytics,
+    };
+  },
+});
 
 export const getSingleForm = query({
   args: { formId: v.id("forms") },

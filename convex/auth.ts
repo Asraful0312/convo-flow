@@ -3,7 +3,7 @@ import { convexAuth, getAuthUserId } from "@convex-dev/auth/server";
 import Google from "@auth/core/providers/google";
 import GitHub from "@auth/core/providers/github";
 import { mutation, query } from "./_generated/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [Password, Google, GitHub],
@@ -30,7 +30,7 @@ export const updateUserName = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("Not authenticated");
+      throw new ConvexError("Not authenticated");
     }
 
     await ctx.db.patch(userId, { name: args.name });
