@@ -30,6 +30,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import SortableQuestion from "@/components/sortable-questions"
+import { ConvexError } from "convex/values"
 
 
 
@@ -91,8 +92,15 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
         voiceEnabled,
       });
       toast.success("Settings saved");
-    } catch {
-      toast.error("Failed to save settings");
+    } catch (err) {
+      const errorMessage =
+        err instanceof ConvexError
+          ? 
+            err.data 
+          : 
+            "Unexpected error occurred";
+  
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }

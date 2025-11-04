@@ -10,6 +10,7 @@ import { Sparkles, Loader2, Wand2, MessageSquare, Save } from "lucide-react"
 import { FormPreview } from "@/components/form-preview"
 import type { Question } from "@/lib/types"
 import CandidLogo from "@/components/shared/candid-logo"
+import { toast } from "sonner"
 
 type GeneratedForm = {
   title: string
@@ -129,7 +130,8 @@ export default function NewFormPage() {
 })
 
       router.push(`/dashboard/forms/${formId}/edit`)
-    } catch (error) {
+    } catch (error: any) {
+      toast.error(error.message || "Save failed:");
       console.error("Save failed:", error)
     }
   }

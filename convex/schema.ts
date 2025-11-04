@@ -21,12 +21,18 @@ export default defineSchema({
       v.literal("canceled"),
       v.literal("past_due"),
       v.literal("trialing"),
+      v.literal("incomplete"),
+      v.literal("incomplete_expired"),
+      v.literal("unpaid"),
     )),
     stripeCustomerId: v.optional(v.string()),
+    stripeSubscriptionId: v.optional(v.string()),
+    stripePriceId: v.optional(v.string()),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
   })
     .index("email", ["email"])
+    .index("by_stripe_customer_id", ["stripeCustomerId"])
     .index("by_subscription", ["subscriptionTier", "subscriptionStatus"]),
 
   // Forms table
@@ -74,7 +80,8 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_status", ["status"])
     .index("by_user_and_status", ["userId", "status"])
-    .index("by_created", ["createdAt"]),
+    .index("by_created", ["createdAt"])
+    .searchIndex("by_title", { searchField: "title" }),
 
   // Questions table
   questions: defineTable({

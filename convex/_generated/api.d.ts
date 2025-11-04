@@ -9,8 +9,10 @@
  */
 
 import type * as ai from "../ai.js";
+import type * as analytics from "../analytics.js";
 import type * as answers from "../answers.js";
 import type * as auth from "../auth.js";
+import type * as billing from "../billing.js";
 import type * as conversations from "../conversations.js";
 import type * as exports from "../exports.js";
 import type * as files from "../files.js";
@@ -18,6 +20,7 @@ import type * as forms from "../forms.js";
 import type * as http from "../http.js";
 import type * as questions from "../questions.js";
 import type * as responses from "../responses.js";
+import type * as stripe from "../stripe.js";
 import type * as users from "../users.js";
 
 import type {
@@ -36,8 +39,10 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
+  analytics: typeof analytics;
   answers: typeof answers;
   auth: typeof auth;
+  billing: typeof billing;
   conversations: typeof conversations;
   exports: typeof exports;
   files: typeof files;
@@ -45,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   questions: typeof questions;
   responses: typeof responses;
+  stripe: typeof stripe;
   users: typeof users;
 }>;
 declare const fullApiWithMounts: typeof fullApi;

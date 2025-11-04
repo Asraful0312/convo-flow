@@ -37,3 +37,26 @@ export const updateUserName = mutation({
     return { success: true };
   },
 });
+
+export const updateUserProfile = mutation({
+  args: {
+    name: v.optional(v.string()),
+    image: v.optional(v.string()),
+  },
+  handler: async (ctx, { name, image }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new ConvexError("Not authenticated");
+    }
+
+    const patchData: { name?: string; image?: string } = {};
+    if (name) patchData.name = name;
+    if (image) patchData.image = image;
+
+    if (Object.keys(patchData).length > 0) {
+        await ctx.db.patch(userId, patchData);
+    }
+    
+    return { success: true };
+  },
+});

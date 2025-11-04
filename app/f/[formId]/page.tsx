@@ -28,8 +28,10 @@ interface Message {
 export default function FormSubmissionPage({ params }: { params: { formId: string } }) {
   const { formId } = use<any>(params as any);
   
-  const form = useQuery(api.forms.getSingleForm, { formId })
-  const questions = useQuery(api.questions.getFormQuestions, { formId })
+  const formData = useQuery(api.forms.getPublicFormData, { formId: formId as Id<"forms"> })
+  const form = formData
+  const questions = formData?.questions
+
   const createResponse = useMutation(api.responses.createResponse)
   const updateResponse = useMutation(api.responses.updateResponse)
   const saveAnswer = useMutation(api.answers.saveAnswer)
@@ -49,6 +51,7 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
   const [isProcessing, setIsProcessing] = useState(false)
   const [isUploading, setIsUploading] = useState(false);
   const [multipleChoiceAnswers, setMultipleChoiceAnswers] = useState<string[]>([]);
+  const [userName, setUserName] = useState<string | null>(null);
 
   const [isRecording, setIsRecording] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
@@ -294,10 +297,28 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
           content: m.content,
       }));
 
+      const previousQuestionIndex = index - 1;
+      let previousAnswer: string | undefined = undefined;
+      if (previousQuestionIndex >= 0) {
+        const previousQuestion = questions[previousQuestionIndex];
+        const prevAnswerValue = answers[previousQuestion._id];
+        if (prevAnswerValue) {
+            if (Array.isArray(prevAnswerValue)) {
+                previousAnswer = prevAnswerValue.join(', ');
+            } else if (typeof prevAnswerValue === 'object' && prevAnswerValue.fileName) {
+                previousAnswer = prevAnswerValue.fileName;
+            } else {
+                previousAnswer = String(prevAnswerValue);
+            }
+        }
+      }
+
       const conversationalText = await getConversationalQuestion({
           question: question.text,
           history: historyForAI,
           personality: form?.aiConfig?.personality || "friendly",
+          userName: userName || undefined,
+          previousAnswer,
       });
 
       if (conversationalText) {
@@ -388,7 +409,7 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
 
       if (!currentResponseId) {
         const newResponseId = await createResponse({
-          formId,
+          formId: formId as Id<"forms">,
           metadata: {
             device: navigator.userAgent,
             browser: navigator.userAgent,
@@ -417,6 +438,12 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
         displayContent = "Skip this question";
       } else {
         displayContent = answer;
+      }
+
+      if (currentQuestion.text.toLowerCase().includes("name") && 
+          !currentQuestion.text.toLowerCase().includes("company") && 
+          typeof answer === 'string') {
+        setUserName(answer);
       }
 
       await saveAnswer({
@@ -539,6 +566,26 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
           <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400" />
           <p className="text-gray-600">Loading form...</p>
         </div>
+      </div>
+    )
+  }
+
+  if (formData?.isOverResponseLimit) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-center p-4">
+        <div className="flex items-center gap-3 mb-4">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: primaryColor }}
+            >
+              <Sparkles className="w-7 h-7 text-white" />
+            </div>
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">{form.title}</h1>
+        <p className="text-lg text-red-600 max-w-2xl mb-6">
+            This form has reached its monthly response limit.
+        </p>
+        <p className="text-sm text-gray-500">Please contact the form owner ({formData.ownerName}) for more information.</p>
       </div>
     )
   }
@@ -683,12 +730,16 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
 
             {isTyping && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3 justify-start">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
+               {form.settings.branding?.logoUrl ? (
+              <img src={form.settings.branding.logoUrl} alt="Logo" className="w-8 h-8 rounded-lg" />
+            ) : (
+              <div
+                className="w-8 h-8 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+            )}
                 <div className="bg-white border border-gray-200 rounded-xl px-6 py-4 shadow-sm">
                   <div className="flex gap-1.5">
                     {[0, 150, 300].map((delay, i) => (

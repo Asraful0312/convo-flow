@@ -10,6 +10,7 @@ import { FormEvent, useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import CandidLogo from "@/components/shared/candid-logo"
+import { ConvexError } from "convex/values"
 
 export default function SignUpPage() {
   const { signIn } = useAuthActions();
@@ -40,10 +41,16 @@ export default function SignUpPage() {
       if (name) {
         router.push(`/?name=${encodeURIComponent(name)}&newUser=true`);
       } else {
-        router.push("/");
+        router.push("/dashboard");
       }
     } catch (error: any) {
-       setError(error.message || "Signin failed. Please try again.");
+         const errorMessage =
+        error instanceof ConvexError
+          ? 
+            error.data 
+          : 
+            "Signup failed. Please try again.";
+       setError(errorMessage);
     } finally {
       setError("");
       setSubmitting(false);
@@ -56,7 +63,13 @@ export default function SignUpPage() {
       await signIn("google");
       router.push("/dashboard");
     } catch (error: any) {
-      setError(error.message);
+         const errorMessage =
+        error instanceof ConvexError
+          ? 
+            error.data 
+          : 
+            "Signup failed. Please try again.";
+      setError(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -68,7 +81,13 @@ export default function SignUpPage() {
       await signIn("github");
        router.push("/dashboard");
     } catch (error: any) {
-      setError(error.message);
+         const errorMessage =
+        error instanceof ConvexError
+          ? 
+            error.data 
+          : 
+            "Signup failed. Please try again.";
+      setError(errorMessage);
     } finally {
       setSubmitting(false);
     }

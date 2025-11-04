@@ -34,8 +34,10 @@ export const getConversationalQuestion = action({
         question: v.string(),
         history: v.array(v.object({ role: v.union(v.literal("user"), v.literal("ai")), content: v.string() })),
         personality: v.optional(v.string()),
+        userName: v.optional(v.string()),
+        previousAnswer: v.optional(v.string()),
     },
-    handler: async (ctx, { question, history, personality }) => {
+    handler: async (ctx, { question, history, personality, userName, previousAnswer }) => {
         const personalityPrompt = {
             professional: "You are a professional assistant. Your tone is courteous and clear.",
             friendly: "You are a friendly assistant. Your tone is warm and encouraging.",
@@ -44,10 +46,20 @@ export const getConversationalQuestion = action({
         }[personality || 'friendly'] || "You are a helpful assistant.";
 
         const messages: any[] = [
-            { role: "system", content: `${personalityPrompt} You are a conversational form assistant. Your task is to rephrase the given form question to make it more natural and engaging in the context of the conversation history.
-            - If the question is simple like "Name", you can ask "What is your name?" or "May I have your name?".
-            - Adapt your rephrasing based on the personality.
-            - Only return the rephrased question text, nothing else. No greetings, no extra sentences.` },
+            { role: "system", content: `${personalityPrompt} You are a conversational form assistant. Your primary goal is to make filling out this form feel less like a chore and more like a friendly chat.
+Your task is to rephrase the upcoming form question to make it more natural and engaging.
+
+${userName ? `The user's name is ${userName}. Feel free to use it to make the conversation more personal, but don't overdo it.` : ''}
+
+Here's how to do it:
+- Look at the conversation history to understand the flow.
+- ${previousAnswer ? `The user's previous answer was "${previousAnswer}". Acknowledge it briefly and naturally before asking the next question. For example: "Thanks for sharing that, ${userName || ''}!" or "Got it. Next up...".` : ''}
+- Rephrase the question naturally. Instead of "Email", say "What's the best email address to reach you at?".
+- Adapt your rephrasing based on the given personality.
+- Keep it concise.
+- **Crucially, only return the rephrased question text. No extra greetings, no chitchat outside of the question itself.**
+
+The goal is a smooth, engaging conversation that gets the form filled out.` },
             ...history.map(msg => ({ role: msg.role === 'ai' ? 'assistant' : 'user', content: msg.content })),
             { role: "user", content: `Rephrase: "${question}"` },
         ];
@@ -78,23 +90,31 @@ export const validateAnswer = action({
         const messages: any[] = [
             {
                 role: "system",
-                content: `${personalityPrompt} You are validating a user's answer on a form.
+                content: `${personalityPrompt} You are validating a user's answer on a form with a touch of humor and personality.
                 The user has provided an answer to a question.
                 Determine if the answer is valid and makes sense for the question.
+
                 - If the answer is valid, return: {"isValid": true}
-                - If the answer is nonsensical, gibberish, or clearly incorrect for the question, return: {"isValid": false, "reason": "A polite, conversational message explaining why the answer is invalid and asking for a better one."}
+                - If the answer is nonsensical, gibberish, clearly incorrect, or just plain weird for the question, return: {"isValid": false, "reason": "A polite, conversational, and slightly funny/witty message explaining why the answer is invalid and asking for a better one."}
+
+                Be creative! Your goal is to keep the user engaged, not just to validate data.
 
                 Example 1:
                 Question: "What is your full name?"
                 Answer: "blablabla"
-                Response: {"isValid": false, "reason": "That doesn't seem to be a valid name. Could you please provide your name?"}
+                Response: {"isValid": false, "reason": "That's a very... unique name! Are you a secret agent? 😉 Could you please provide your actual name?"}
 
                 Example 2:
                 Question: "What is your email address?"
-                Answer: "test"
-                Response: {"isValid": false, "reason": "This doesn't look like a valid email address. Please enter a valid email."}
+                Answer: "not telling you"
+                Response: {"isValid": false, "reason": "I respect your privacy, but I kinda need your email to proceed. Pretty please? 😊"}
 
                 Example 3:
+                Question: "What's your favorite color?"
+                Answer: "the sound of rain"
+                Response: {"isValid": false, "reason": "While 'the sound of rain' is a beautiful thought, it's not exactly a color I can put in my crayon box. How about a color like blue or green?"}
+
+                Example 4:
                 Question: "What is your name?"
                 Answer: "John Doe"
                 Response: {"isValid": true}

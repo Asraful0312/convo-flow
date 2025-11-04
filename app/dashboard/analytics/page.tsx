@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { TrendingUp, TrendingDown, Users, MessageSquare, Clock, Sparkles, Smartphone, Globe } from "lucide-react"
+import { TrendingUp, Users, MessageSquare, Clock, Sparkles, Smartphone, Globe } from "lucide-react"
 import {
   Line,
   LineChart,
@@ -20,60 +20,43 @@ import {
 } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Loader2 } from "lucide-react";
+
+const iconMap = {
+  positive: TrendingUp,
+  neutral: Smartphone,
+  suggestion: Sparkles,
+};
+
+const deviceColors: { [key: string]: string } = {
+  Desktop: "#6366f1",
+  Mobile: "#f97316",
+  Tablet: "#10b981",
+  Other: "#64748b",
+};
+
 export default function AnalyticsPage() {
-  const [timeRange, setTimeRange] = useState("7d")
+  const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y">("7d")
+  const analytics = useQuery(api.analytics.getAnalytics, { timeRange })
 
-  // Mock data for charts
-  const responsesTrend = [
-    { date: "Mon", responses: 12 },
-    { date: "Tue", responses: 19 },
-    { date: "Wed", responses: 15 },
-    { date: "Thu", responses: 25 },
-    { date: "Fri", responses: 22 },
-    { date: "Sat", responses: 18 },
-    { date: "Sun", responses: 20 },
-  ]
+  const formatMinutes = (ms: number) => {
+    const minutes = ms / 1000 / 60;
+    return `${minutes.toFixed(1)}m`;
+  }
 
-  const completionRates = [
-    { form: "Customer Feedback", rate: 68 },
-    { form: "Event Registration", rate: 82 },
-    { form: "Lead Qualification", rate: 45 },
-  ]
+  if (!analytics) {
+    return (
+      <div className="flex items-center justify-center h-[80vh]">
+        <Loader2 className="w-12 h-12 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
-  const deviceBreakdown = [
-    { name: "Desktop", value: 45, color: "#6366f1" },
-    { name: "Mobile", value: 40, color: "#f97316" },
-    { name: "Tablet", value: 15, color: "#10b981" },
-  ]
+  const { keyMetrics, responseTrend, completionRates, deviceBreakdown, geographicData, aiInsights } = analytics;
 
-  const geographicData = [
-    { country: "United States", responses: 45 },
-    { country: "United Kingdom", responses: 28 },
-    { country: "Canada", responses: 18 },
-    { country: "Australia", responses: 12 },
-    { country: "Germany", responses: 10 },
-  ]
-
-  const aiInsights = [
-    {
-      type: "positive",
-      title: "Completion Rate Improving",
-      description: "Your average completion rate increased by 12% this week compared to last week.",
-      icon: TrendingUp,
-    },
-    {
-      type: "neutral",
-      title: "Mobile Traffic Growing",
-      description: "40% of responses now come from mobile devices. Consider optimizing for mobile.",
-      icon: Smartphone,
-    },
-    {
-      type: "suggestion",
-      title: "Question Optimization",
-      description: "Question 3 in 'Customer Feedback' has a 25% drop-off rate. Consider simplifying it.",
-      icon: Sparkles,
-    },
-  ]
+  const totalGeoResponses = geographicData.reduce((acc, curr) => acc + curr.responses, 0);
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -83,7 +66,7 @@ export default function AnalyticsPage() {
           <h1 className="text-3xl font-bold">Analytics</h1>
           <p className="text-muted-foreground">Track performance and gain insights</p>
         </div>
-        <Select value={timeRange} onValueChange={setTimeRange}>
+        <Select value={timeRange} onValueChange={(v) => setTimeRange(v as any)}>
           <SelectTrigger className="w-[180px] bg-background">
             <SelectValue />
           </SelectTrigger>
@@ -104,11 +87,11 @@ export default function AnalyticsPage() {
             <Users className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">127</div>
-            <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 mt-1">
+            <div className="text-3xl font-bold">{keyMetrics.totalResponses}</div>
+            {/* <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 mt-1">
               <TrendingUp className="w-4 h-4" />
               <span>+23% from last week</span>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
 
@@ -118,11 +101,11 @@ export default function AnalyticsPage() {
             <MessageSquare className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">68%</div>
-            <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 mt-1">
+            <div className="text-3xl font-bold">{keyMetrics.avgCompletionRate.toFixed(0)}%</div>
+            {/* <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 mt-1">
               <TrendingUp className="w-4 h-4" />
               <span>+12% from last week</span>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
 
@@ -132,11 +115,11 @@ export default function AnalyticsPage() {
             <Clock className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">3.2m</div>
-            <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 mt-1">
+            <div className="text-3xl font-bold">{formatMinutes(keyMetrics.avgCompletionTime)}</div>
+            {/* <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 mt-1">
               <TrendingDown className="w-4 h-4" />
               <span>-15% faster</span>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
 
@@ -146,8 +129,8 @@ export default function AnalyticsPage() {
             <MessageSquare className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">3</div>
-            <div className="text-sm text-muted-foreground mt-1">2 published, 1 draft</div>
+            <div className="text-3xl font-bold">{keyMetrics.activeForms}</div>
+            <div className="text-sm text-muted-foreground mt-1">{keyMetrics.activeForms} published, {keyMetrics.draftForms} draft</div>
           </CardContent>
         </Card>
       </div>
@@ -163,33 +146,36 @@ export default function AnalyticsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {aiInsights.map((insight, index) => (
-              <div key={index} className="flex gap-4 p-4 rounded-lg border border-border bg-muted/30">
-                <div
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    insight.type === "positive"
-                      ? "bg-green-100 dark:bg-green-900/30"
-                      : insight.type === "neutral"
-                        ? "bg-blue-100 dark:bg-blue-900/30"
-                        : "bg-purple-100 dark:bg-purple-900/30"
-                  }`}
-                >
-                  <insight.icon
-                    className={`w-5 h-5 ${
+            {aiInsights.map((insight, index) => {
+              const Icon = iconMap[insight.type as keyof typeof iconMap] || Sparkles;
+              return (
+                <div key={index} className="flex gap-4 p-4 rounded-lg border border-border bg-muted/30">
+                  <div
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
                       insight.type === "positive"
-                        ? "text-green-600 dark:text-green-400"
+                        ? "bg-green-100 dark:bg-green-900/30"
                         : insight.type === "neutral"
-                          ? "text-blue-600 dark:text-blue-400"
-                          : "text-purple-600 dark:text-purple-400"
+                          ? "bg-blue-100 dark:bg-blue-900/30"
+                          : "bg-purple-100 dark:bg-purple-900/30"
                     }`}
-                  />
+                  >
+                    <Icon
+                      className={`w-5 h-5 ${
+                        insight.type === "positive"
+                          ? "text-green-600 dark:text-green-400"
+                          : insight.type === "neutral"
+                            ? "text-blue-600 dark:text-blue-400"
+                            : "text-purple-600 dark:text-purple-400"
+                      }`}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold mb-1">{insight.title}</h4>
+                    <p className="text-sm text-muted-foreground">{insight.description}</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold mb-1">{insight.title}</h4>
-                  <p className="text-sm text-muted-foreground">{insight.description}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </CardContent>
       </Card>
@@ -220,7 +206,7 @@ export default function AnalyticsPage() {
                 className="h-[300px]"
               >
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={responsesTrend}>
+                  <LineChart data={responseTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
                     <YAxis />
@@ -283,7 +269,7 @@ export default function AnalyticsPage() {
                     <PieChart>
                       <Pie data={deviceBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
                         {deviceBreakdown.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell key={`cell-${index}`} fill={deviceColors[entry.name] || deviceColors.Other} />
                         ))}
                       </Pie>
                       <ChartTooltip content={<ChartTooltipContent />} />
@@ -296,15 +282,15 @@ export default function AnalyticsPage() {
                     <div key={device.name} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: device.color }} />
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: deviceColors[device.name] || deviceColors.Other }} />
                           <span className="font-medium">{device.name}</span>
                         </div>
-                        <span className="text-muted-foreground">{device.value}%</span>
+                        <span className="text-muted-foreground">{device.value.toFixed(0)}%</span>
                       </div>
                       <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full transition-all"
-                          style={{ width: `${device.value}%`, backgroundColor: device.color }}
+                          style={{ width: `${device.value}%`, backgroundColor: deviceColors[device.name] || deviceColors.Other }}
                         />
                       </div>
                     </div>
@@ -335,8 +321,8 @@ export default function AnalyticsPage() {
                     </div>
                     <div className="w-full h-2 bg-muted rounded-full overflow-hidden ml-9">
                       <div
-                        className="h-full bg-gradient-to-r from-[#6366f1] to-[#f97316] transition-all"
-                        style={{ width: `${(country.responses / 45) * 100}%` }}
+                        className="h-full bg-linear-to-r from-[#6366f1] to-[#f97316] transition-all"
+                        style={{ width: `${(country.responses / totalGeoResponses) * 100}%` }}
                       />
                     </div>
                   </div>

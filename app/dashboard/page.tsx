@@ -12,21 +12,22 @@ import { Id } from "@/convex/_generated/dataModel"
 export default function DashboardPage() {
   const forms = useQuery(api.forms.getFormsForUser)
   const user = useQuery(api.auth.loggedInUser)
+  const dashboardStats = useQuery(api.forms.getDashboardStats)
   const deleteForm = useMutation(api.forms.deleteForm)
   const stats = [
     {
       title: "Total Forms",
-      value: forms?.length ?? "0",
+      value: dashboardStats?.totalForms ?? "0",
       icon: FileText,
     },
     {
       title: "Total Responses",
-      value: "0", // Placeholder
+      value: dashboardStats?.totalResponses ?? "0",
       icon: MessageSquare,
     },
     {
       title: "Avg Completion Rate",
-      value: "0%", // Placeholder
+      value: `${dashboardStats?.avgCompletionRate.toFixed(0) ?? 0}%`,
       icon: BarChart2,
     },
   ]
@@ -40,7 +41,7 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Welcome back, {user?.name ?? "..."}</h1>
+        <h1 className="text-3xl font-bold">Welcome back, {user?.name ??  user?.email}</h1>
         <p className="text-muted-foreground">Here's what's happening with your forms today.</p>
       </div>
 

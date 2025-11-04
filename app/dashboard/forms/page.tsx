@@ -1,30 +1,34 @@
 "use client"
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Search, MoreVertical, Copy, ExternalLink, Trash2 } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { useMutation, useQuery } from "convex/react"
-import { api } from "@/convex/_generated/api"
-import { Id } from "@/convex/_generated/dataModel"
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { useState } from "react";
+import { Copy, ExternalLink, MoreVertical, Plus, Search, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export default function FormsPage() {
-  const forms = useQuery(api.forms.getFormsForUser)
-  const deleteForm = useMutation(api.forms.deleteForm)
-  
-  const handleDelete = async (formId: Id<"forms">) => {
-    if (!confirm("Delete this form and all its data? This cannot be undone.")) return
-    await deleteForm({ formId })
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "published" | "draft" | "closed">("all");
 
-  }
+  const forms = useQuery(
+    api.forms.getFormsForUser,
+    {
+      searchQuery: searchQuery,
+      status: filterStatus === "all" ? undefined : filterStatus,
+    }
+  );
+  const deleteForm = useMutation(api.forms.deleteForm);
+
+  const handleDelete = async (formId: Id<"forms">) => {
+    if (!confirm("Delete this form and all its data? This cannot be undone.")) return;
+    await deleteForm({ formId });
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Header */}
@@ -45,12 +49,17 @@ export default function FormsPage() {
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search forms..." className="pl-10" />
+          <Input
+            placeholder="Search forms..."
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">All Forms</Button>
-          <Button variant="ghost">Published</Button>
-          <Button variant="ghost">Drafts</Button>
+          <Button variant={filterStatus === 'all' ? 'outline' : 'ghost'} onClick={() => setFilterStatus("all")}>All Forms</Button>
+          <Button variant={filterStatus === 'published' ? 'outline' : 'ghost'} onClick={() => setFilterStatus("published")}>Published</Button>
+          <Button variant={filterStatus === 'draft' ? 'outline' : 'ghost'} onClick={() => setFilterStatus("draft")}>Drafts</Button>
         </div>
       </div>
 

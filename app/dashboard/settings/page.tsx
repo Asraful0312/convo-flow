@@ -8,9 +8,13 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { User, Bell, Zap, CreditCard, Shield, Webhook, Check, ExternalLink, Copy, Plus, Trash2 } from "lucide-react"
-import { mockUser } from "@/lib/mock-data"
+import {Bell, Zap, Shield, Webhook, Check, Copy, Plus, Trash2 } from "lucide-react"
 import { useAuthActions } from "@convex-dev/auth/react"
+import ProfileSection from "@/components/settings/profile-section"
+import BillingSection from "@/components/settings/billing-section"
+
+
+
 
 export default function SettingsPage() {
   const [webhooks, setWebhooks] = useState([
@@ -102,30 +106,7 @@ export default function SettingsPage() {
 
         {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <User className="w-5 h-5" />
-                <CardTitle>Profile Information</CardTitle>
-              </div>
-              <CardDescription>Update your personal information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" defaultValue={mockUser.name} className="bg-background" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue={mockUser.email} className="bg-background" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="avatar">Avatar URL</Label>
-                <Input id="avatar" defaultValue={mockUser.avatar_url} className="bg-background" />
-              </div>
-              <Button className="bg-[#6366f1] hover:bg-[#4f46e5]">Save Changes</Button>
-            </CardContent>
-          </Card>
+          <ProfileSection/>
 
           <Card>
             <CardHeader>
@@ -215,7 +196,7 @@ export default function SettingsPage() {
                     key={integration.name}
                     className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-[#6366f1] transition-colors"
                   >
-                    <div className="flex items-center gap-3">
+                     <div className="flex items-center gap-3">
                       <div
                         className={`w-10 h-10 rounded-lg ${integration.color} flex items-center justify-center text-xl`}
                       >
@@ -328,89 +309,8 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        {/* Billing Tab */}
-        <TabsContent value="billing" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5" />
-                <CardTitle>Subscription</CardTitle>
-              </div>
-              <CardDescription>Manage your subscription and billing</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between p-6 rounded-lg border-2 border-[#6366f1] bg-[#6366f1]/5">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-2xl font-bold">Pro Plan</h3>
-                    <Badge className="bg-[#6366f1] text-white">Current</Badge>
-                  </div>
-                  <p className="text-muted-foreground">Unlimited forms, 1,000 responses/month</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold">$19</div>
-                  <div className="text-sm text-muted-foreground">per month</div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <h4 className="font-semibold">Usage This Month</h4>
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm">Responses</span>
-                      <span className="text-sm text-muted-foreground">127 / 1,000</span>
-                    </div>
-                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-[#6366f1] to-[#f97316]" style={{ width: "12.7%" }} />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm">Forms</span>
-                      <span className="text-sm text-muted-foreground">3 / Unlimited</span>
-                    </div>
-                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-[#6366f1] to-[#f97316]" style={{ width: "5%" }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button variant="outline" className="bg-transparent">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  View All Plans
-                </Button>
-                <Button variant="outline" className="bg-transparent text-destructive hover:text-destructive">
-                  Cancel Subscription
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment Method</CardTitle>
-              <CardDescription>Manage your payment information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-lg border border-border">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-8 rounded bg-gradient-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center text-white text-xs font-bold">
-                    VISA
-                  </div>
-                  <div>
-                    <div className="font-medium">•••• •••• •••• 4242</div>
-                    <div className="text-sm text-muted-foreground">Expires 12/25</div>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" className="bg-transparent">
-                  Update
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="billing">
+          <BillingSection />
         </TabsContent>
       </Tabs>
 

@@ -2,7 +2,7 @@
 "use action";
 
 import { action } from "./_generated/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { api } from "./_generated/api";
 import Papa from "papaparse";
 import ExcelJS from 'exceljs';
@@ -17,7 +17,7 @@ export const exportResponses = action({
   handler: async (ctx, { formId, responseIds, format }): Promise<any> => {
     const form = await ctx.runQuery(api.forms.getSingleForm, { formId });
     if (!form) {
-      throw new Error("Form not found");
+      throw new ConvexError("Form not found");
     }
 
     const responses = await Promise.all(
@@ -27,7 +27,7 @@ export const exportResponses = action({
     const questions = form.questions.sort((a, b) => a.order - b.order);
     const headers = ["Response ID", "Status", "Started At", "Completed At", ...questions.map(q => q.text)];
 
-    const data = await Promise.all(responses.map(async (response) => {
+    const data = await Promise.all(responses.map(async (response: any) => {
         if (!response) return [];
         const row: (string | number | null | undefined)[] = [
             response._id,
@@ -36,9 +36,8 @@ export const exportResponses = action({
             response.completedAt ? new Date(response.completedAt).toISOString() : "",
         ];
         for (const q of questions) {
-            const answer = response.answers.find(a => a.questionId === q._id);
+            const answer = response.answers.find((a: any) => a.questionId === q._id);
 
-            console.log("server answer", answer)
             
             if (answer) {
                 if (q.type === "file") {
