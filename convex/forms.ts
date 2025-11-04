@@ -283,9 +283,16 @@ export const updateSettings = mutation({
     const subscriptionTier = user.subscriptionTier || "free"
 
     if (subscriptionTier) {
-        if (args.logoUrl || args.primaryColor) {
-            throw new ConvexError("Custom branding is not available on the free plan.");
-        }
+       if (subscriptionTier === "free") {
+  const hasCustomBranding =
+    (args.logoUrl && args.logoUrl !== form.settings?.branding?.logoUrl) ||
+    (args.primaryColor && args.primaryColor !== form.settings?.branding?.primaryColor);
+
+  if (hasCustomBranding) {
+    throw new ConvexError("Custom branding is not available on the free plan.");
+  }
+}
+
         if (args.voiceEnabled === true) {
             throw new ConvexError("Voice features are not available on the free plan.");
         }

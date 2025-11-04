@@ -77,34 +77,45 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
   }, [form]);
 
   const handleSaveSettings = async () => {
-    setIsSaving(true);
-    try {
-      await updateSettings({
-        formId: formId,
-        title,
-        description,
-        status,
-        primaryColor,
-        logoUrl,
-        emailOnResponse,
-        notificationEmail,
-        personality,
-        voiceEnabled,
-      });
-      toast.success("Settings saved");
-    } catch (err) {
-      const errorMessage =
-        err instanceof ConvexError
-          ? 
-            err.data 
-          : 
-            "Unexpected error occurred";
-  
-      toast.error(errorMessage);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  setIsSaving(true);
+  try {
+    const payload: any = {
+      formId,
+    };
+
+    if (title !== form?.title) payload.title = title;
+    if (description !== form?.description) payload.description = description;
+    if (status !== form?.status) payload.status = status;
+
+    if (emailOnResponse !== form?.settings?.notifications?.emailOnResponse)
+      payload.emailOnResponse = emailOnResponse;
+
+    if (notificationEmail !== form?.settings?.notifications?.notificationEmail)
+      payload.notificationEmail = notificationEmail;
+
+    if (personality !== form?.aiConfig?.personality)
+      payload.personality = personality;
+
+    if (voiceEnabled !== form?.aiConfig?.enableVoice)
+      payload.voiceEnabled = voiceEnabled;
+
+    if (primaryColor !== form?.settings?.branding?.primaryColor)
+      payload.primaryColor = primaryColor;
+
+    if (logoUrl !== form?.settings?.branding?.logoUrl)
+      payload.logoUrl = logoUrl;
+
+    await updateSettings(payload);
+    toast.success("Settings saved");
+  } catch (err) {
+    const errorMessage =
+      err instanceof ConvexError ? err.data : "Unexpected error occurred";
+    toast.error(errorMessage);
+  } finally {
+    setIsSaving(false);
+  }
+};
+
 
 
   const addQuestion = async () => {
