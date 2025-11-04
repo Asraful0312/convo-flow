@@ -284,6 +284,7 @@ export const updateSettings = mutation({
 
     if (subscriptionTier) {
        if (subscriptionTier === "free") {
+  // Branding restriction
   const hasCustomBranding =
     (args.logoUrl && args.logoUrl !== form.settings?.branding?.logoUrl) ||
     (args.primaryColor && args.primaryColor !== form.settings?.branding?.primaryColor);
@@ -291,23 +292,29 @@ export const updateSettings = mutation({
   if (hasCustomBranding) {
     throw new ConvexError("Custom branding is not available on the free plan.");
   }
+
+  // Voice restriction
+  if (args.voiceEnabled === true) {
+    throw new ConvexError("Voice features are not available on the free plan.");
+  }
+
+  // Publish limit restriction
+  if (args.status === "published") {
+    const userForms = await ctx.db
+      .query("forms")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("status"), "published"))
+      .collect();
+
+    const isAlreadyPublished = form.status === "published";
+    if (!isAlreadyPublished && userForms.length >= 3) {
+      throw new ConvexError(
+        "You can only have 3 active (published) forms on the free plan."
+      );
+    }
+  }
 }
 
-        if (args.voiceEnabled === true) {
-            throw new ConvexError("Voice features are not available on the free plan.");
-        }
-        if (args.status === "published") {
-            const userForms = await ctx.db
-                .query("forms")
-                .withIndex("by_user", (q) => q.eq("userId", userId))
-                .filter(q => q.eq(q.field("status"), "published"))
-                .collect();
-            
-            const isAlreadyPublished = form.status === 'published';
-            if (!isAlreadyPublished && userForms.length >= 3) {
-                 throw new ConvexError("You can only have 3 active (published) forms on the free plan.");
-            }
-        }
     }
 
     const patch: any = {
