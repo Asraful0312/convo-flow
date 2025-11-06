@@ -220,6 +220,31 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx)
     if (!userId) throw new ConvexError("Unauthenticated")
+    
+    const user = await ctx.db.get(userId);
+    if (!user) throw new ConvexError("User not found");
+    
+    const subscriptionTier = user.subscriptionTier || "free"
+
+    if (subscriptionTier) {
+       if (subscriptionTier === "free") {
+  // Branding restriction
+  const hasCustomBranding =
+    (args.settings?.branding?.logoUrl) ||
+    (args.settings?.branding?.primaryColor && args.settings?.branding?.primaryColor !== "#6366f1");
+
+  if (hasCustomBranding) {
+    throw new ConvexError("Custom branding is not available on the free plan.");
+  }
+
+  // Voice restriction
+  if (args?.aiConfig?.enableVoice === true) {
+    throw new ConvexError("Voice features are not available on the free plan.");
+   }
+
+      }
+
+    }
 
     const formId = await ctx.db.insert("forms", {
       userId,
@@ -363,6 +388,48 @@ export const updateSettings = mutation({
     await ctx.db.patch(args.formId, patch);
     return args.formId;
 
+  },
+});
+
+export const duplicateForm = mutation({
+  args: { formId: v.id("forms") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Unauthenticated");
+
+    const originalForm = await ctx.db.get(args.formId);
+    if (!originalForm) throw new ConvexError("Form not found");
+    if (originalForm.userId !== userId) throw new ConvexError("Not authorized");
+
+    const originalQuestions = await ctx.db
+      .query("questions")
+      .withIndex("by_form", (q) => q.eq("formId", args.formId))
+      .order("asc")
+      .collect();
+
+    // Create the new form
+    const newFormId = await ctx.db.insert("forms", {
+      userId,
+      title: `${originalForm.title} (Copy)`,
+      description: originalForm.description,
+      status: "draft", // Duplicated forms are always drafts
+      settings: originalForm.settings,
+      aiConfig: originalForm.aiConfig,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    // Copy questions to the new form
+    for (const q of originalQuestions) {
+      // Create a new question object, omitting the original _id and _creationTime
+      const { _id, _creationTime, formId, ...questionData } = q;
+      await ctx.db.insert("questions", {
+        formId: newFormId,
+        ...questionData,
+      });
+    }
+
+    return newFormId;
   },
 });
 

@@ -9,30 +9,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card } from "@/components/ui/card"
-import { Eye, Code, Settings, Save, Loader2, Star, UploadCloud } from "lucide-react"
+import { Eye, Code, Settings, Save, Loader2, Star, UploadCloud, ChevronDownIcon, Plus, Trash2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "./ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import type { Question } from "@/lib/types"
+import { Calendar } from "./ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
+import { toast } from "sonner"
+import { ConvexError } from "convex/values"
 
-// ── All Supported Question Types ───────────────────────────────
-type QuestionType =
-  | "text"
-  | "textarea"
-  | "email"
-  | "number"
-  | "phone"
-  | "date"
-  | "time"
-  | "choice"
-  | "multiple_choice"
-  | "rating"
-  | "likert"
-  | "file"
-  | "dropdown"     // NEW
-  | "url"         // NEW
-  | "scale"       // NEW
 
 interface FormPreviewProps {
   form: {
@@ -57,6 +44,36 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
   const [answers, setAnswers] = useState<{ [key: string]: any }>({})
   const [hoveredRatings, setHoveredRatings] = useState<{ [key: string]: number }>({})
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null)
+  const [date, setDate] = useState<Date | undefined>(new Date())
+  const [open, setOpen] = useState(false)
+  const [newQuestionType, setNewQuestionType] = useState<Question['type'] | ''>('');
+
+  const handleAddQuestion = (type: Question['type']) => {
+    setForm((prev) => {
+      if (!prev) return null;
+      const newQuestion: any & { id: string } = {
+        id: crypto.randomUUID(), // Generate a unique ID
+        text: "New Question",
+        type: type,
+        required: false,
+        options: type === "choice" || type === "multiple_choice" || type === "dropdown" || type === "likert" ? ["Option 1"] : undefined,
+      };
+      return {
+        ...prev,
+        questions: [...prev.questions, newQuestion],
+      };
+    });
+  };
+
+  const handleDeleteQuestion = (questionId: string) => {
+    setForm((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        questions: prev.questions.filter((q) => q.id !== questionId),
+      };
+    });
+  };
 
   const saveForm = useMutation(api.forms.create)
   const router = useRouter()
@@ -78,7 +95,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
     setVoiceEnabled(form.aiConfig?.voiceEnabled ?? false)
   }, [form])
 
-  // ── Handlers ───────────────────────────────────────────────────
+ 
   const handleMultiChoiceChange = (questionId: string, option: string, checked: boolean) => {
     setAnswers((prev) => {
       const existing = (prev[questionId] as string[] | undefined) || []
@@ -138,6 +155,13 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
       router.push(`/dashboard/forms/${formId}/edit`)
     } catch (error) {
       console.error("Save failed:", error)
+       const errorMessage =
+        error instanceof ConvexError
+          ? 
+            error.data 
+          : 
+            "Failed to save form!";
+      toast.error(errorMessage)
     } finally {
       setIsSaving(false)
     }
@@ -259,11 +283,32 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                     )}
 
                     {question.type === "date" && (
-                      <Input
-                        type="date"
-                        value={(answers[question.id] as string) || ""}
-                        onChange={(e) => setAnswers((p) => ({ ...p, [question.id]: e.target.value }))}
-                      />
+                      <div className="flex flex-col gap-3">
+ 
+                    <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+               <Button
+            variant="outline"
+            id="date"
+            className="justify-between font-normal w-full"
+          >
+            {date ? date.toLocaleDateString() : "Select date"}
+            <ChevronDownIcon />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full overflow-hidden p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={date}
+            captionLayout="dropdown"
+            onSelect={(date) => {
+              setDate(date)
+              setOpen(false)
+            }}
+          />
+        </PopoverContent>
+                   </Popover>
+                    </div>
                     )}
 
                     {question.type === "time" && (
@@ -528,13 +573,44 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         </p>
                       )}
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => setEditingQuestionId(question.id)}>
-                      Edit
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => setEditingQuestionId(question.id)}>
+                            Edit
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteQuestion(question.id)} className="text-destructive">
+                            <Trash2 className="w-4 h-4" />
+                        </Button>
+                    </div>
                   </div>
                 )}
               </Card>
             ))}
+            <div className="mt-6 p-4 border rounded-lg flex items-center gap-4 bg-white">
+                <Select value={newQuestionType} onValueChange={(value: Question['type']) => setNewQuestionType(value)}>
+                    <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select Question Type" />
+                    </SelectTrigger>
+                    <SelectContent className="w-full">
+                        <SelectItem value="text">Short Text</SelectItem>
+                        <SelectItem value="textarea">Long Text</SelectItem>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="number">Number</SelectItem>
+                        <SelectItem value="phone">Phone</SelectItem>
+                        <SelectItem value="url">URL</SelectItem>
+                        <SelectItem value="date">Date</SelectItem>
+                        <SelectItem value="time">Time</SelectItem>
+                        <SelectItem value="choice">Single Choice</SelectItem>
+                        <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                        <SelectItem value="dropdown">Dropdown</SelectItem>
+                        <SelectItem value="rating">Rating (1–5)</SelectItem>
+                        <SelectItem value="scale">Scale (1–10)</SelectItem>
+                        <SelectItem value="file">File Upload</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Button onClick={() => handleAddQuestion(newQuestionType as any)} disabled={!newQuestionType}>
+                    <Plus className="w-4 h-4 mr-2" /> Add Question
+                </Button>
+            </div>
           </div>
         )}
 

@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { LayoutDashboard, FileText, BarChart3, Settings, Plus } from "lucide-react"
 import CandidLogo from "@/components/shared/candid-logo"
+import UserMenu from "@/components/shared/user-menu"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -45,14 +46,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 New Form
               </Button>
             </Link>
-            <Link href="/dashboard/settings">
-              <Button variant="ghost" size="sm">
-                <Settings className="w-4 h-4" />
-              </Button>
-            </Link>
-            <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#6366f1] to-[#f97316] flex items-center justify-center text-white text-sm font-medium">
-              D
-            </div>
+            
+            <UserMenu/>
           </div>
         </div>
       </header>

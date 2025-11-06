@@ -183,6 +183,7 @@ export default defineSchema({
      sentiment: v.optional(v.string()),
     summary: v.optional(v.string()),
     themes: v.optional(v.array(v.string())),
+    actionableInsights: v.optional(v.array(v.string())),
   })
     .index("by_form", ["formId"])
     .index("by_status", ["status"])

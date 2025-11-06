@@ -136,7 +136,6 @@ export default function NewFormPage() {
     }
   }
 
-  console.log("generated form", generatedForm)
 
   return (
     <div className="h-[calc(100vh-64px)] flex">

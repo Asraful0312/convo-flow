@@ -4,17 +4,15 @@ import React, { useState, useEffect, useRef, use } from "react"
 import { useQuery, useMutation, useAction } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { Id } from "@/convex/_generated/dataModel"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { Sparkles, Send, Mic, MicOff, Volume2, VolumeX, Check, Loader2, Star } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
 import confetti from "canvas-confetti"
 import { toast } from "sonner"
+import OverLimitScreen from "@/components/form/OverLimitScreen"
+import WelcomeScreen from "@/components/form/WelcomeScreen"
+import FormHeader from "@/components/form/FormHeader"
+import ChatMessages from "@/components/form/ChatMessages"
+import CompletionScreen from "@/components/form/CompletionScreen"
+import QuestionInput from "@/components/form/QuestionInput"
+import { Loader2 } from "lucide-react"
 
 interface Message {
   id: string
@@ -29,8 +27,8 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
   const { formId } = use<any>(params as any);
   
   const formData = useQuery(api.forms.getPublicFormData, { formId: formId as Id<"forms"> })
-  const form = formData
-  const questions = formData?.questions
+  const form: any = formData
+  const questions = form?.questions
 
   const createResponse = useMutation(api.responses.createResponse)
   const updateResponse = useMutation(api.responses.updateResponse)
@@ -73,7 +71,7 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
   const secondaryColor = form?.settings.branding?.secondaryColor || "#2EB7A7"
 
 
-  console.log("form", form?.settings.branding?.logoUrl)
+  console.log("questions", questions)
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -547,449 +545,53 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
     }
   }
 
-  const getQuestionInputType = (type: string) => {
-    switch (type) {
-        case "email": return "email";
-        case "number": return "number";
-        case "phone": return "tel";
-        case "url": return "url";
-        case "date": return "date";
-        case "time": return "time";
-        default: return "text";
-    }
-  }
 
-  if (!form) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400" />
-          <p className="text-gray-600">Loading form...</p>
-        </div>
-      </div>
-    )
-  }
 
-  if (formData?.isOverResponseLimit) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-center p-4">
-        <div className="flex items-center gap-3 mb-4">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: primaryColor }}
-            >
-              <Sparkles className="w-7 h-7 text-white" />
-            </div>
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{form.title}</h1>
-        <p className="text-lg text-red-600 max-w-2xl mb-6">
-            This form has reached its monthly response limit.
-        </p>
-        <p className="text-sm text-gray-500">Please contact the form owner ({formData.ownerName}) for more information.</p>
-      </div>
-    )
-  }
+  if (!form) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
+  if (formData?.isOverResponseLimit) return <OverLimitScreen primaryColor={primaryColor} form={form} />;
 
-  if (!started) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-center p-4">
-        <div className="flex items-center gap-3 mb-4">
-          {form.settings.branding?.logoUrl ? (
-            <img src={form.settings.branding.logoUrl} alt="Logo" className="w-12 h-12 rounded-lg" />
-          ) : (
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: primaryColor }}
-            >
-              <Sparkles className="w-7 h-7 text-white" />
-            </div>
-          )}
-        </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{form.title}</h1>
-        {form.description && <p className="text-lg text-gray-600 max-w-2xl mb-6">{form.description}</p>}
-        <Button
-          onClick={handleStart}
-          className="h-12 px-8 text-lg text-white rounded-xl"
-          style={{ backgroundColor: primaryColor }}
-        >
-          Start Conversation
-        </Button>
-      </div>
-    )
-  }
+  if (!started) return <WelcomeScreen form={form} onStart={handleStart} />;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {form.settings.branding?.logoUrl ? (
-              <img src={form.settings.branding.logoUrl} alt="Logo" className="w-8 h-8 rounded-lg" />
-            ) : (
-              <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-            )}
-            <div>
-              <h1 className="font-semibold text-gray-900 text-xl">{form.title}</h1>
-              {form.description && <p className="text-xs text-gray-500">{form.description}</p>}
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {form.aiConfig?.enableVoice && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleVoice}
-                className="h-9 w-9 p-0"
-                title={voiceEnabled ? "Disable voice" : "Enable voice"}
-              >
-                {voiceEnabled ? (
-                  <Volume2 className="w-4 h-4" style={{ color: secondaryColor }} />
-                ) : (
-                  <VolumeX className="w-4 h-4 text-gray-400" />
-                )}
-              </Button>
-            )}
-            {!isCompleted && questions && (
-              <>
-                <span className="text-sm text-gray-600 hidden sm:block">
-                  {currentQuestionIndex + 1} of {questions.length}
-                </span>
-                {form.settings.showProgressBar !== false && (
-                  <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full transition-all duration-500"
-                      style={{ width: `${progress}%`, backgroundColor: primaryColor }}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <FormHeader
+        form={form}
+        currentQuestionIndex={currentQuestionIndex}
+        totalQuestions={questions?.length || 0}
+        progress={progress}
+        voiceEnabled={voiceEnabled}
+        onToggleVoice={toggleVoice}
+        isCompleted={isCompleted}
+      />
 
       <div className="flex-1 overflow-y-auto">
         <div className="container mx-auto px-4 py-8 max-w-3xl">
-          <div className="space-y-6">
-            <AnimatePresence>
-              {messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ y: -20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  {message.role === "assistant" && (
-                    <>
-                      {form.settings.branding?.logoUrl ? (
-              <img src={form.settings.branding.logoUrl} alt="Logo" className="w-8 h-8 rounded-lg" />
-            ) : (
-              <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-            )}
-                    </>
-                   
-                  )}
-                  <div
-                    className={`max-w-[80%] rounded-xl px-6 py-4 ${
-                      message.role === "user"
-                        ? "text-white"
-                        : "bg-white border border-gray-200 shadow-sm"
-                    }`}
-                    style={
-                      message.role === "user"
-                        ? { backgroundColor: primaryColor }
-                        : message.isAdaptive
-                        ? { borderColor: secondaryColor, borderWidth: 2 }
-                        : {}
-                    }
-                  >
-                    <p className="leading-relaxed">{message.content}</p>
-                  </div>
-                  {message.role === "user" && (
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white font-medium"
-                      style={{ backgroundColor: secondaryColor }}
-                    >
-                      U
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
-
-            {isTyping && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3 justify-start">
-               {form.settings.branding?.logoUrl ? (
-              <img src={form.settings.branding.logoUrl} alt="Logo" className="w-8 h-8 rounded-lg" />
-            ) : (
-              <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-            )}
-                <div className="bg-white border border-gray-200 rounded-xl px-6 py-4 shadow-sm">
-                  <div className="flex gap-1.5">
-                    {[0, 150, 300].map((delay, i) => (
-                      <motion.div
-                        key={i}
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: primaryColor }}
-                        animate={{ y: [0, -8, 0] }}
-                        transition={{
-                          duration: 0.6,
-                          repeat: Infinity,
-                          delay: delay / 1000,
-                          ease: "easeInOut",
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {isCompleted && (
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                className="flex justify-center"
-              >
-                <div className="bg-white border border-gray-200 rounded-xl p-8 text-center space-y-4 max-w-md shadow-sm">
-                  <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
-                    style={{ backgroundColor: `${secondaryColor}20` }}
-                  >
-                    <Check className="w-8 h-8" style={{ color: secondaryColor }} />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900">All done!</h3>
-                  <p className="text-gray-600">Thanks for completing the form. We'll be in touch soon.</p>
-                </div>
-              </motion.div>
-            )}
-
-            <div ref={messagesEndRef} />
-          </div>
+          <ChatMessages messages={messages} form={form} isTyping={isTyping} />
+          {isCompleted && <CompletionScreen secondaryColor={secondaryColor} />}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
       {!isCompleted && currentQuestion && (
         <div className="border-t bg-white/80 backdrop-blur-sm sticky bottom-0">
           <div className="container mx-auto px-4 py-6 max-w-3xl">
-            {currentQuestion.type === "choice" && currentQuestion.options ? (
-              <div className="space-y-3">
-                <p className="text-sm text-gray-600 mb-3">Select an option:</p>
-                <RadioGroup
-                  onValueChange={(value) => handleSubmitAnswer(value)}
-                  disabled={isProcessing}
-                  className="grid sm:grid-cols-2 gap-3"
-                >
-                  {currentQuestion.options.map((option, index) => (
-                    <div key={index}>
-                      <RadioGroupItem value={option} id={`option-${index}`} className="peer sr-only" />
-                      <Label
-                        htmlFor={`option-${index}`}
-                        className="flex items-center justify-center rounded-xl border-2 border-gray-200 bg-white px-6 py-4 hover:bg-gray-50 cursor-pointer peer-data-[state=checked]:bg-opacity-10 transition-all"
-                        style={{
-                          borderColor: `var(--checked-border, #e5e7eb)`,
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.setProperty("--checked-border", primaryColor)
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.setProperty("--checked-border", "#e5e7eb")
-                        }}
-                      >
-                        {option}
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-            ) : currentQuestion.type === "dropdown" && currentQuestion.options ? (
-                <div className="space-y-3">
-                    <p className="text-sm text-gray-600 mb-3">Select an option:</p>
-                    <Select onValueChange={(value) => handleSubmitAnswer(value)} disabled={isProcessing}>
-                        <SelectTrigger className="h-14 bg-white rounded-xl">
-                            <SelectValue placeholder="Select an option..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {currentQuestion.options.map((option, index) => (
-                                <SelectItem key={index} value={option}>{option}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-            ) : currentQuestion.type === "multiple_choice" && currentQuestion.options ? (
-                <div className="space-y-4">
-                    <p className="text-sm text-gray-600 mb-3">Select all that apply:</p>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                        {currentQuestion.options.map((option, index) => (
-                            <div key={index} className="flex items-center gap-3 bg-white border-2 border-gray-200 rounded-xl px-6 py-4">
-                                <Checkbox id={`mc-${index}`} onCheckedChange={(checked) => handleMultipleChoiceChange(Boolean(checked), option)} />
-                                <Label htmlFor={`mc-${index}`} className="cursor-pointer">{option}</Label>
-                            </div>
-                        ))}
-                    </div>
-                    <Button 
-                        onClick={() => handleSubmitAnswer(multipleChoiceAnswers)} 
-                        disabled={multipleChoiceAnswers.length === 0 || isProcessing}
-                        className="h-14 w-full text-white rounded-xl"
-                        style={{ backgroundColor: primaryColor }}
-                    >
-                        {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : "Submit"}
-                    </Button>
-                </div>
-            ) : currentQuestion.type === "rating" && currentQuestion.options ? (
-                <div className="space-y-3">
-                    <p className="text-sm text-gray-600 mb-3">{currentQuestion.text}</p>
-                    <div className="flex gap-2">
-                        {currentQuestion.options.map((option: string, index: number) => (
-                            <Button
-                                key={index}
-                                variant="outline"
-                                onClick={() => handleSubmitAnswer(option)}
-                                disabled={isProcessing}
-                                className="h-12 w-12 p-0 flex items-center justify-center"
-                            >
-                                {Array.from({ length: parseInt(option) }).map((_, starIndex) => (
-                                    <Star key={starIndex} className="w-5 h-5 fill-current text-yellow-400" />
-                                ))}
-                            </Button>
-                        ))}
-                    </div>
-                </div>
-            ) : ["scale", "likert"].includes(currentQuestion.type) && currentQuestion.options ? (
-                <div className="space-y-3">
-                    <p className="text-sm text-gray-600 mb-3">{currentQuestion.text}</p>
-                    <div className="flex flex-wrap gap-2">
-                        {currentQuestion.options.map((option: string, index: number) => (
-                            <Button 
-                                key={index} 
-                                variant="outline"
-                                onClick={() => handleSubmitAnswer(option)}
-                                disabled={isProcessing}
-                                className="h-12"
-                            >
-                                {option}
-                            </Button>
-                        ))}
-                    </div>
-                </div>
-            ) : currentQuestion.type === "file" ? (
-              <div className="space-y-3">
-                <p className="text-sm text-gray-600 mb-3">Upload a file:</p>
-                <Input
-                  type="file"
-                  onChange={handleFileChange}
-                  disabled={isUploading || isProcessing}
-                  className="h-14 pr-24 bg-white rounded-xl"
-                />
-                {isUploading && (
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Uploading...
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex gap-3">
-                <div className="flex-1 relative">
-                  {currentQuestion.type === "textarea" ? (
-                    <Textarea
-                      ref={inputRef as any}
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      placeholder={currentQuestion.placeholder || "Type your answer..."}
-                      className="min-h-[60px] pr-24 resize-none bg-white rounded-xl"
-                      onKeyDown={handleKeyPress}
-                      disabled={isProcessing}
-                    />
-                  ) : (
-                    <Input
-                      ref={inputRef}
-                      type={getQuestionInputType(currentQuestion.type)}
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      placeholder={currentQuestion.placeholder || "Type your answer..."}
-                      className="h-14 pr-24 bg-white rounded-xl"
-                      onKeyDown={handleKeyPress}
-                      disabled={isProcessing}
-                    />
-                  )}
-                  {form.aiConfig?.enableVoice && (
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={toggleRecording}
-                        disabled={isProcessing}
-                        className={`h-10 w-10 p-0 rounded-full transition-all ${
-                          isRecording ? "text-white" : "hover:bg-gray-100"
-                        }`}
-                        style={isRecording ? { backgroundColor: primaryColor } : {}}
-                        title={isRecording ? "Stop recording" : "Voice input"}
-                      >
-                        {isRecording ? (
-                          <div className="relative">
-                            <MicOff className="w-4 h-4" />
-                            <motion.div
-                              className="absolute inset-0 rounded-full border-2 border-white"
-                              animate={{
-                                scale: [1, 1 + audioLevel * 0.5],
-                                opacity: [0.5, 0],
-                              }}
-                              transition={{
-                                duration: 1,
-                                repeat: Infinity,
-                                ease: "easeOut",
-                              }}
-                            />
-                          </div>
-                        ) : (
-                          <Mic className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                <Button
-                  onClick={() => handleSubmitAnswer(inputValue.trim())}
-                  disabled={!inputValue.trim() || isProcessing}
-                  className="h-14 px-6 text-white rounded-xl"
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-                </Button>
-              </div>
-            )}
-
-            {!currentQuestion.required && (
-              <div className="flex justify-center mt-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleSubmitAnswer("")}
-                  disabled={isProcessing}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  Skip this question
-                </Button>
-              </div>
-            )}
+            <QuestionInput
+              question={currentQuestion}
+              inputValue={inputValue}
+              onInputChange={setInputValue}
+              onSubmit={handleSubmitAnswer}
+              isProcessing={isProcessing}
+              isUploading={isUploading}
+              multipleChoiceAnswers={multipleChoiceAnswers}
+              onMultipleChoiceChange={handleMultipleChoiceChange as any}
+              primaryColor={primaryColor}
+              voiceEnabled={voiceEnabled}
+              isRecording={isRecording}
+              audioLevel={audioLevel}
+              onToggleRecording={toggleRecording}
+              onFileChange={handleFileChange}
+              onKeyPress={handleKeyPress}
+            />
           </div>
         </div>
       )}

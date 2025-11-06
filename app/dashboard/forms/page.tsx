@@ -4,16 +4,20 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useState } from "react";
-import { Copy, ExternalLink, MoreVertical, Plus, Search, Trash2 } from "lucide-react";
+import { Copy, ExternalLink, Loader2, MoreVertical, Plus, Search, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import ShareModal from "@/components/share-modal";
+import { ConvexError } from "convex/values";
+import { toast } from "sonner";
 
 export default function FormsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "published" | "draft" | "closed">("all");
+  const [isLoading, setIsLoading] = useState(false)
 
   const forms = useQuery(
     api.forms.getFormsForUser,
@@ -23,11 +27,30 @@ export default function FormsPage() {
     }
   );
   const deleteForm = useMutation(api.forms.deleteForm);
+  const duplicateForm = useMutation(api.forms.duplicateForm)
 
   const handleDelete = async (formId: Id<"forms">) => {
     if (!confirm("Delete this form and all its data? This cannot be undone.")) return;
     await deleteForm({ formId });
   };
+
+  const handleDuplicate = async (id: Id<"forms">) => {
+    setIsLoading(true)
+    try {
+      await duplicateForm({ formId: id })
+      setIsLoading(false)
+    } catch (error) {
+      setIsLoading(false)
+
+       const errorMessage =
+        error instanceof ConvexError
+          ? 
+            error.data 
+          : 
+            "Failed to duplicate form!";
+       toast.error(errorMessage);
+    }
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -70,9 +93,18 @@ export default function FormsPage() {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="space-y-1 flex-1">
-                  <CardTitle className="text-lg">{form.title}</CardTitle>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    {form.title.replace(/ \(Copy\)$/, "")}
+                    {form.title.endsWith(" (Copy)") && (
+                        <span className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full">
+                            COPY
+                        </span>
+                    )}
+                  </CardTitle>
                   <CardDescription className="line-clamp-2">{form.description}</CardDescription>
                 </div>
+                <ShareModal formId={form._id} key={ form._id} title={form.title} />
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="">
@@ -86,9 +118,11 @@ export default function FormsPage() {
                         View Public Form
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="group">
+                    <DropdownMenuItem onClick={() => handleDuplicate(form._id)} className="group">
+                      {isLoading ? <Loader2 className="size-4 shrink-0 text-center animate-spin" /> : <>
                       <Copy className="w-4 h-4 mr-2 group-hover:text-white" />
                       Duplicate
+                      </>}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={()=>handleDelete(form._id)} className="text-destructive group">
@@ -97,6 +131,8 @@ export default function FormsPage() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                
               </div>
             </CardHeader>
             <CardContent className="space-y-4">

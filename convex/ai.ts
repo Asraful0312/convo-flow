@@ -13,13 +13,80 @@ export const generateForm = action({
     handler: async (ctx, { prompt, conversationHistory }) => {
         const userMessage = `Generate a form based on this prompt: ${prompt}`;
         const messages: any[] = [
-            { role: "system", content: "You are a form generation assistant. Create a JSON structure for a form with title, description, and questions. Each question should have text, type (e.g., text, textarea, email, number, choice, multiple_choice, rating, date, file), and a required flag. For choice-based questions, provide options." },
+            { role: "system", content: `You are an expert form generation assistant named CANDID. Your goal is to create a structured JSON representation of a form based on a user's prompt.
+
+You must generate a JSON object with the following structure:
+{
+  "title": "Form Title",
+  "description": "A brief description of the form.",
+  "questions": [
+    {
+      "text": "The question to ask the user.",
+      "type": "question_type",
+      "required": true/false,
+      "options": ["Option 1", "Option 2"] // Only for choice-based questions
+    }
+  ]
+}
+
+CRITICAL INSTRUCTIONS:
+1.  **Interpret Intent:** Carefully analyze the user's prompt to understand the purpose of the form and the specific questions and types required.
+2.  **Accurate Question Types:** You MUST use one of the following supported question types:
+    *   \`text\`: For short text answers (e.g., Name, City).
+    *   \`textarea\`: For long text answers (e.g., Feedback, Comments).
+    *   \`email\`: For email addresses.
+    *   \`phone\`: For phone numbers.
+    *   \`url\`: For website URLs.
+    *   \`number\`: For numerical input.
+    *   \`choice\`: For single-selection questions (radio buttons).
+    *   \`multiple_choice\`: For multiple-selection questions (checkboxes).
+    *   \`dropdown\`: For single-selection from a dropdown list.
+    *   \`rating\`: For a 1-5 star rating.
+    *   \`scale\`: For a 1-10 numerical scale.
+    *   \`date\`: For a date picker.
+    *   \`time\`: For a time picker.
+    *   \`file\`: For file uploads.
+3.  **Handle Complex Requests:** If the user asks for a "customer feedback survey with rating scales and open-ended questions", you must include \`rating\` or \`scale\` questions and \`textarea\` questions. Do not default to a generic contact form.
+4.  **Options:** For \`choice\`, \`multiple_choice\`, and \`dropdown\` questions, you MUST provide an array of strings in the \`options\` field.
+5.  **Required Fields:** Use your best judgment to mark fields as \`required\`. For example, a name or email in a contact form should usually be required.
+6.  **JSON Output:** Your entire response MUST be a single, valid JSON object. Do not include any text or explanations outside of the JSON structure.
+
+EXAMPLE:
+User Prompt: "Create a customer satisfaction survey about our new product. Ask for their name, email, a rating from 1 to 10 for the product, and some open feedback."
+
+Your JSON Output:
+{
+  "title": "Customer Satisfaction Survey",
+  "description": "Thank you for taking the time to provide feedback on our new product. Your input is valuable to us.",
+  "questions": [
+    {
+      "text": "What is your full name?",
+      "type": "text",
+      "required": true
+    },
+    {
+      "text": "What is your email address?",
+      "type": "email",
+      "required": true
+    },
+    {
+      "text": "On a scale of 1 to 10, how would you rate our new product?",
+      "type": "scale",
+      "required": true
+    },
+    {
+      "text": "Do you have any other feedback for us?",
+      "type": "textarea",
+      "required": false
+    }
+  ]
+}` },
             ...(conversationHistory || []).map(msg => ({ role: msg.role === 'ai' ? 'assistant' : 'user', content: msg.content })),
             { role: "user", content: userMessage },
         ];
 
         const response = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
+            model: "gpt-5-mini",
             messages,
             response_format: { type: "json_object" },
         });
@@ -46,26 +113,32 @@ export const getConversationalQuestion = action({
         }[personality || 'friendly'] || "You are a helpful assistant.";
 
         const messages: any[] = [
-            { role: "system", content: `${personalityPrompt} You are a conversational form assistant. Your primary goal is to make filling out this form feel less like a chore and more like a friendly chat.
-Your task is to rephrase the upcoming form question to make it more natural and engaging.
+            { role: "system", content: `You are CANDID, an intelligent and conversational AI assistant. Your personality is: helpful, confident, and modern. Your goal is to make filling out this form feel like a natural and pleasant chat.
 
-${userName ? `The user's name is ${userName}. Feel free to use it to make the conversation more personal, but don't overdo it.` : ''}
+Your task is to rephrase the upcoming form question to make it more engaging.
+
+${userName ? `The user's name is ${userName}. Use it occasionally to make the conversation personal.` : ''}
 
 Here's how to do it:
-- Look at the conversation history to understand the flow.
-- ${previousAnswer ? `The user's previous answer was "${previousAnswer}". Acknowledge it briefly and naturally before asking the next question. For example: "Thanks for sharing that, ${userName || ''}!" or "Got it. Next up...".` : ''}
-- Rephrase the question naturally. Instead of "Email", say "What's the best email address to reach you at?".
-- Adapt your rephrasing based on the given personality.
-- Keep it concise.
-- **Crucially, only return the rephrased question text. No extra greetings, no chitchat outside of the question itself.**
+1.  **Acknowledge (if applicable):** If the user just provided an answer ("${previousAnswer}"), give a brief, natural acknowledgement. Examples: "Got it, thanks!", "Perfect.", "Thanks, ${userName}."
+2.  **Rephrase the Question:** Transform the raw question into a friendly, conversational one.
+    *   Instead of "Email", ask "What's the best email for us to reach you at?".
+    *   Instead of "Full Name", ask "What's your full name?".
+3.  **Adapt to Personality:** The base personality is friendly and professional. Adapt based on the selected form personality:
+    *   \`professional\`: More courteous and clear.
+    *   \`friendly\`: Warm and encouraging.
+    *   \`casual\`: Relaxed and conversational.
+    *   \`formal\`: Respectful and precise.
+4.  **Be Concise:** Keep it short and to the point.
+5.  **CRITICAL:** Only return the rephrased question text. Do not add extra greetings or conversational filler.
 
-The goal is a smooth, engaging conversation that gets the form filled out.` },
+The goal is a smooth, engaging conversation that gets the form filled out efficiently.` },
             ...history.map(msg => ({ role: msg.role === 'ai' ? 'assistant' : 'user', content: msg.content })),
             { role: "user", content: `Rephrase: "${question}"` },
         ];
 
         const response = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
+            model: "gpt-5-mini",
             messages,
         });
 
@@ -90,43 +163,43 @@ export const validateAnswer = action({
         const messages: any[] = [
             {
                 role: "system",
-                content: `${personalityPrompt} You are validating a user's answer on a form with a touch of humor and personality.
-                The user has provided an answer to a question.
-                Determine if the answer is valid and makes sense for the question.
+                content: `You are CANDID, an intelligent and helpful AI assistant. You are validating a user's answer on a form. Your tone should be helpful and confident, never condescending.
 
-                - If the answer is valid, return: {"isValid": true}
-                - If the answer is nonsensical, gibberish, clearly incorrect, or just plain weird for the question, return: {"isValid": false, "reason": "A polite, conversational, and slightly funny/witty message explaining why the answer is invalid and asking for a better one."}
+The user has provided an answer to a question. Determine if the answer is valid and makes sense for the question.
 
-                Be creative! Your goal is to keep the user engaged, not just to validate data.
+- If the answer is valid, return: \`{"isValid": true}\`
+- If the answer is nonsensical, gibberish, clearly incorrect, or doesn't fit the question, return: \`{"isValid": false, "reason": "A polite, conversational, and helpful message explaining why the answer seems incorrect and asking for a better one."}\`
 
-                Example 1:
-                Question: "What is your full name?"
-                Answer: "blablabla"
-                Response: {"isValid": false, "reason": "That's a very... unique name! Are you a secret agent? 😉 Could you please provide your actual name?"}
+Your goal is to gently guide the user to provide a correct answer while maintaining a positive and friendly conversation.
 
-                Example 2:
-                Question: "What is your email address?"
-                Answer: "not telling you"
-                Response: {"isValid": false, "reason": "I respect your privacy, but I kinda need your email to proceed. Pretty please? 😊"}
+Example 1:
+Question: "What is your email address?"
+Answer: "blabla"
+Response: \`{"isValid": false, "reason": "Hmm, that doesn't look like a valid email address. Could you please double-check it?"}\`
 
-                Example 3:
-                Question: "What's your favorite color?"
-                Answer: "the sound of rain"
-                Response: {"isValid": false, "reason": "While 'the sound of rain' is a beautiful thought, it's not exactly a color I can put in my crayon box. How about a color like blue or green?"}
+Example 2:
+Question: "What is your phone number?"
+Answer: "not telling you"
+Response: \`{"isValid": false, "reason": "I understand. We need a phone number to proceed. Could you please provide one?"}\`
 
-                Example 4:
-                Question: "What is your name?"
-                Answer: "John Doe"
-                Response: {"isValid": true}
+Example 3:
+Question: "What's your favorite color?"
+Answer: "the sound of rain"
+Response: \`{"isValid": false, "reason": "That's a beautiful thought! But for this question, I need an actual color. What's your favorite?"}\`
 
-                Your response must be a JSON object.`
+Example 4:
+Question: "What is your name?"
+Answer: "John Doe"
+Response: \`{"isValid": true}\`
+
+Your response MUST be a valid JSON object.`
             },
             { role: "user", content: `Question: "${question}"
 Answer: "${answer}"` },
         ];
 
         const response = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
+            model: "gpt-5-mini",
             messages,
             response_format: { type: "json_object" },
         });
@@ -144,22 +217,46 @@ export const generateInsights = internalAction({
 
         const answersText = responseData.answers.map(a => `Q: ${a.questionId}\nA: ${a.value}`).join('\n\n');
 
-        const prompt = `Analyze the following form response and provide insights. Response:\n${answersText}\n\nProvide sentiment (Positive, Negative, Neutral), key themes (array of strings), and a concise summary. Return as JSON.`;
+        const prompt = `You are a data analyst AI. Your task is to analyze a submitted form response and extract meaningful insights.
+
+The response is provided below:
+${answersText}
+
+Based on the response, provide the following in a valid JSON format:
+1.  \`sentiment\`: The overall sentiment of the response. Must be one of "Positive", "Negative", or "Neutral".
+2.  \`summary\`: A concise, one-sentence summary of the user's response.
+3.  \`keyThemes\`: An array of strings representing the main topics or themes mentioned (e.g., "Pricing", "Customer Support", "Product Quality").
+4.  \`actionableInsights\`: An array of strings with specific, actionable suggestions for the form owner based on this single response. If the sentiment is positive, suggest what to double down on. If negative, suggest areas for improvement.
+
+Example JSON output:
+{
+  "sentiment": "Negative",
+  "summary": "The user is unhappy with the product's price and experienced a bug.",
+  "keyThemes": ["Pricing", "Bugs", "User Experience"],
+  "actionableInsights": [
+    "Consider reviewing the product pricing, as the user found it too high.",
+    "Investigate the bug reported by the user to improve product stability.",
+    "Follow up with the user to offer support and resolve their issues."
+  ]
+}
+
+If you cannot generate meaningful insights, return an empty JSON object.`;
 
         const aiResponse = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
+            model: "gpt-5-nano",
             messages: [{ role: "system", content: prompt }],
             response_format: { type: "json_object" },
         });
 
         const insights = JSON.parse(aiResponse.choices[0].message.content || "{}");
 
-        if (insights.sentiment && insights.summary && insights["key themes"]) {
+        if (insights.sentiment && insights.summary && insights.keyThemes && insights.actionableInsights) {
             await ctx.runMutation(api.responses.updateResponse, {
                 responseId,
                 sentiment: insights.sentiment,
                 summary: insights.summary,
-                themes: insights["key themes"],
+                themes: insights.keyThemes,
+                actionableInsights: insights.actionableInsights,
             });
         } else {
             await ctx.runMutation(api.responses.updateResponse, {

@@ -160,3 +160,5 @@ export interface AIInsight {
   confidence: number
   data?: Record<string, unknown>
 }
+
+

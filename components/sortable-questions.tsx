@@ -17,13 +17,18 @@ const QUESTION_TYPE_MAP: Record<string, string> = {
   "Long Text": "textarea",
   Email: "email",
   Number: "number",
-  "Multiple Choice": "choice",
-  Checkboxes: "checkbox",
-  Rating: "rating",
-  Date: "date",
   Phone: "phone",
-  File: "file",
+  URL: "url",
+  Date: "date",
+  Time: "time",
+  "Single Choice": "choice",
+  "Multiple Choice": "multiple_choice",
+  Dropdown: "dropdown",
+  "Rating (1–5)": "rating",
+  "Scale (1–10)": "scale",
+  "File Upload": "file",
 };
+
 
 export default function SortableQuestion({
   question,
@@ -48,6 +53,8 @@ export default function SortableQuestion({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  console.log("question type ", question)
 
   // Local state for controlled inputs
   const [localText, setLocalText] = useState(question.text);

@@ -8,9 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FileText, MessageSquare, BarChart2, Plus, MoreVertical, ExternalLink, Pencil, Trash2, Loader2 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Id } from "@/convex/_generated/dataModel"
+import ShareModal from "@/components/share-modal"
 
 export default function DashboardPage() {
-  const forms = useQuery(api.forms.getFormsForUser)
+  const forms = useQuery(api.forms.getFormsForUser, {})
   const user = useQuery(api.auth.loggedInUser)
   const dashboardStats = useQuery(api.forms.getDashboardStats)
   const deleteForm = useMutation(api.forms.deleteForm)
@@ -97,8 +98,10 @@ export default function DashboardPage() {
                       </CardTitle>
                       <CardDescription className="line-clamp-2">{form.description}</CardDescription>
                     </div>
+                    <ShareModal formId={form._id} title={form.title} />
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                      <DropdownMenuTrigger className="flex items-center gap-2" asChild>
+                        
                         <Button
                           variant="ghost"
                           size="sm"
@@ -106,6 +109,7 @@ export default function DashboardPage() {
                         >
                           <MoreVertical className="w-4 h-4" />
                         </Button>
+                          
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <Link href={`/f/${form._id}`} passHref>
@@ -120,12 +124,15 @@ export default function DashboardPage() {
                             Edit
                           </DropdownMenuItem>
                         </Link>
+                      
                         <DropdownMenuItem onClick={()=>handleDelete(form._id)} className="text-destructive group">
                           <Trash2 className="w-4 h-4 mr-2 text-destructive group-hover:text-white" />
                           Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+
+                    
                   </div>
                 </CardHeader>
                 <CardContent>
