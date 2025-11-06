@@ -16,7 +16,7 @@ const UserMenu = () => {
   return (
       <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-              <Image className='size-8 shrink-0' width={32} height={32} src={user?.image || "/user.png"} alt={ user?.name || "user" } />
+              <img className='size-8 shrink-0' width={32} height={32} src={user?.image || "/user.png"} alt={ user?.name || "user" } />
                   </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
                         <DropdownMenuItem className="group" >
