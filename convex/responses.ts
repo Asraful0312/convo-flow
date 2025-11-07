@@ -116,6 +116,7 @@ export const updateResponse = mutation({
         completedAt: Date.now(),
       });
       await ctx.scheduler.runAfter(0, internal.ai.generateInsights, { responseId });
+      await ctx.scheduler.runAfter(0, internal.integrationActions.sendToIntegrations, { responseId });
     } else {
       await ctx.db.patch(responseId, updates)
     }

@@ -1,0 +1,768 @@
+CANDID Development Roadmap
+From ConvoFlow Prototype to Production-Ready Platform
+Document Purpose: This guide provides a complete picture of where we started
+(ConvoFlow prototype), where we're going (CANDID vision), and what needs to be built to
+get there.
+Audience: Development team
+Status: Ready for implementation
+Part 1: Where We Started - ConvoFlow Review
+What We Built (Prototype)
+ConvoFlow was a proof-of-concept that validated the core idea of AI-powered
+conversational forms. Here's what was working:
+✅ Strong Foundation:
+• Conversational chat interface for form filling
+• Basic AI form generation from prompts
+• Response management dashboard
+• Analytics with AI insights
+• User authentication (email/password, Google, GitHub)
+• Basic form customization (colors, AI personality)
+⚠ Critical Issues Identified:
+1. AI Generation is Unreliable
+• Tested prompt: "Create a customer feedback survey with rating scales and open-
+ended questions"
+• Generated: Generic contact form with name, email, multiple choice
+• Problem: AI ignored specific requirements (rating scales, feedback questions)
+• Impact: Core value proposition fails if AI can't be trusted
+2. Generic Brand Identity
+• Purple/blue color scheme (typical SaaS)
+• Standard typography
+• No distinctive personality
+• Forgettable, won't generate word-of-mouth
+3. Missing Key Features
+• No multimodal UI components (maps, calendars, rich inputs)
+• Voice input button present but non-functional
+• No integrations (webhooks, Zapier)
+• No team collaboration features
+• Limited question types
+4. Lacks "Taste"
+• Basic, functional animations
+• No signature microinteractions
+• Generic copy and tone
+• Feels like every other SaaS product
+What We Learned
+The Good News:
+• The conversational interface works and users respond well to it
+• AI insights are genuinely useful (specific, actionable recommendations)
+• The basic architecture is sound
+• Core concept is validated
+The Challenge:
+• We need to transform this from a functional prototype into a distinctive, reliable,
+market-leading product
+Part 2: Where We're Going - The CANDID Vision
+Brand Identity
+Name: CANDID
+Essence: Human conversations that collect better data
+Positioning: Intelligent conversations that build themselves
+What Makes CANDID Different:
+• vs. Typeform: Beautiful conversation (adaptive, context-aware) not just one question
+at a time
+• vs. Google Forms: Engaging & insightful, not barebones utility
+• vs. JotForm: Feature-smart (AI reduces complexity) not feature-complete
+(overwhelming)
+Brand Personality
+We are: Intelligent (not intimidating), conversational (not overly casual), modern (not
+trendy), confident (not arrogant), helpful (not condescending)
+We are NOT: Corporate, boring, complicated, or silly
+Voice Examples:
+• Greeter: "Hi! I'll take care of the questions—ready to start?"
+• Acknowledgement: "Thanks, got it." · "That helps—one more detail?"
+• Validation: "Hmm, that email doesn't look right. Mind double-checking?"
+• Completion: "All set—thanks for the chat. You'll hear from us shortly."
+Visual Identity
+Color Palette:
+• Primary: Candid Coral (#F56A4D) - CTAs, highlights, conversational cues
+• Secondary: Kind Teal (#2EB7A7) - Secondary buttons, links, charts
+• Ink: Night (#121316), Soft Slate (#2B2F36) - Text
+• Backgrounds: Cloud (#F7F8FA), Mica (#E9ECF1)
+• Accents: Sunny Lime (#A3E635) - Success, Amber Glow (#F59E0B) - Attention, Rose
+(#FCA5A5) - Errors
+Typography:
+• Headings: DM Sans (700/600)
+• Body: Inter (400/500)
+• Code/Data: Fira Mono (400/500)
+Visual Signature:
+• Minimal dual speech bubble glyph forming a "C" mark
+• Instantly recognizable across all touchpoints
+Product Architecture
+Candid Studio (Builder)
+• AI-native form creation from natural language prompts
+• Command bar interface: "Tell me what you need..."
+• Real-time preview and refinement
+Candid Chat (Runtime)
+• True conversational form filling
+• Multimodal inputs (maps, calendars, voice)
+• Adaptive follow-up questions
+Candid Insights (Analytics)
+• Actionable AI-powered analysis
+• Specific recommendations, not just charts
+• Sentiment and theme extraction
+Candid Voice (Voice I/O)
+• Speech-to-text and text-to-speech
+• Beautiful voice visualization
+• Seamless voice/text switching
+Part 3: The Transformation Plan
+This section outlines everything that needs to be built to transform ConvoFlow into
+CANDID, organized by priority.
+Priority 1: CRITICAL - AI Engine Rebuild
+Why This is #1: Without a reliable AI core, the entire product fails. This must be fixed before
+anything else.
+Current State
+• AI generates forms but often ignores specific requirements
+• No structured validation of output
+• Poor handling of edge cases and ambiguous requests
+Target State
+• 95%+ accuracy on form generation across all use cases
+• Handles complex requests with multiple question types
+• Asks clarifying questions when request is ambiguous
+• Validates output before presenting to user
+What Needs to Be Built
+1. New AI Service Architecture
+Core Components:
+Plain Text
+AIFormGenerator
+├── parseUserIntent() // Extract what user wants
+├── generateFormStructure() // Create JSON form schema
+├── validateOutput() // Ensure all requirements met
+└── refineAmbiguities() // Ask follow-up questions if unclear
+Prompt Engineering:
+• Design comprehensive system prompts with clear instructions
+• Include examples for each question type
+• Add validation rules for structured output
+• Implement fallback logic for edge cases
+Question Type Support: Must reliably generate all of these:
+• Text (short, long)
+• Email, Phone, URL
+• Number, Currency
+• Multiple Choice (single, multiple)
+• Rating Scales (stars, 1-5, 1-10, NPS)
+• Date, Time, Date Range
+• Location (with map picker)
+• File Upload
+• Yes/No, True/False
+• Dropdown, Checkbox, Radio
+2. Comprehensive Test Suite
+Build automated tests with 50+ scenarios:
+Category 1: Basic Forms (10 tests)
+• Contact form
+• Newsletter signup
+• Event RSVP
+• Feedback form
+• Lead generation
+Category 2: Rating & Feedback (10 tests)
+• Customer satisfaction (1-5 stars)
+• NPS survey
+• Product review
+• Service feedback
+• Employee engagement
+Category 3: Conditional Logic (10 tests)
+• "If Yes, ask phone number"
+• "If location is X, show Y"
+• "Skip questions based on previous answers"
+• Multi-step branching
+Category 4: Multi-field Types (10 tests)
+• Job application (text, file upload, date)
+• Event registration (date, location, payment)
+• Research survey (ratings, text, multiple choice)
+• Booking form (calendar, time, location)
+Category 5: Edge Cases (10 tests)
+• Ambiguous requests ("Make a form for my business")
+• Missing information ("Create a survey")
+• Conflicting requirements
+• Very long/complex forms
+3. Success Criteria
+Before moving to next priority:
+95%+ accuracy on all test categories
+Handles all question types correctly
+Asks clarifying questions for ambiguous requests
+Validates output structure
+Performance: <3 seconds to generate typical form
+Priority 2: HIGH - Brand Implementation
+Why This Matters: CANDID needs to look, feel, and sound distinctive to generate word-of-
+mouth and stand out from competitors.
+Design System Foundation
+1. Design Tokens
+Create a centralized token system:
+CSS
+:root {
+/* Colors */
+--candid-coral: #F56A4D;
+--candid-teal: #2EB7A7;
+--candid-lime: #A3E635;
+--ink-night: #121316;
+--ink-slate: #2B2F36;
+--bg-cloud: #F7F8FA;
+--bg-mica: #E9ECF1;
+/* Typography */
+--font-heading: "DM Sans", "Plus Jakarta Sans", "SF Pro Display", system-
+ui, sans-serif;
+--font-body: "Inter", "SF Pro Text", system-ui, sans-serif;
+--font-code: "Fira Mono", "SFMono-Regular", ui-monospace, monospace;
+/* Spacing (8pt grid) */
+--space-xs: 8px;
+--space-sm: 12px;
+--space-md: 16px;
+--space-lg: 24px;
+--space-xl: 32px;
+--space-xxl: 48px;
+/* Radii */
+--radius-sm: 8px;
+--radius-md: 12px;
+--radius-lg: 16px;
+--radius-pill: 999px;
+/* Shadows */
+--shadow-subtle: 0 8px 24px rgba(18,19,22,0.08);
+/* Motion */
+--speed-fast: 150ms;
+--speed-base: 200ms;
+--ease-in: cubic-bezier(0.4, 0, 1, 1);
+--ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+2. Component Library
+Build/Update Core Components:
+Buttons:
+• Primary (Coral background, white text)
+• Secondary (Teal background, white text)
+• Ghost (transparent, Coral text)
+• All with 12px radius, subtle shadow on hover
+Inputs:
+• Text, Email, Number, Textarea
+• Cloud background, Night text
+• 12px radius, subtle border
+• Focus state: Coral outline
+Chat Bubbles:
+• AI bubble: White background, left-aligned, subtle shadow
+• User bubble: Coral background, white text, right-aligned
+• 12px radius (not pill-shaped)
+Cards:
+• Form cards, Insight cards, Analytics cards
+• Cloud or white background
+• 12px radius, subtle shadow
+• Hover state: slight lift
+Pills (Quick Replies):
+• 999px radius (fully rounded)
+• Teal background for options
+• Coral for selected state
+Progress Indicator:
+• "Question X of Y" text
+• Progress bar with Teal fill
+• Positioned at top of chat
+Mic Button:
+• Circular, Coral background
+• Microphone icon (white)
+• Pulse animation when active
+3. Screen-by-Screen Re-skin
+Landing Page:
+• Dark hero section with glowing dual-bubble "C" mark
+• Headline: "Forms that feel like a conversation" (DM Sans Bold)
+• Coral CTA: "Get Started Free"
+• Demo video section
+• Before/after metrics
+• Testimonials
+Dashboard:
+• Cloud background
+• Night text for headings
+• Form cards in grid layout
+• Coral "Create New Form" button
+• Recent activity feed
+Candid Studio (Form Creator):
+• Command bar: "Tell me what you need to collect. I'll draft the conversation."
+• Large text area for prompt
+• Example prompts below (clickable)
+• "Generate Form" button (Coral)
+• Real-time preview panel on right
+• Three tabs: Preview, Questions, Settings
+Candid Chat (Form Filler):
+• Cloud background
+• AI bubbles (white) on left
+• User bubbles (Coral) on right
+• Progress chip at top
+• Input area at bottom with mic button
+• Pill quick-replies when applicable
+Candid Insights (Analytics):
+• Key metrics cards at top
+• AI Insights section with specific recommendations
+• Charts (Teal/Lime for positive, Coral for highlights)
+• Response table with search and filters
+4. Logo & Branding Assets
+Create:
+• Dual speech bubble "C" mark (minimal, recognizable)
+• CANDID wordmark (DM Sans)
+• Horizontal lockup (mark + wordmark)
+• Stacked lockup (mark above wordmark)
+• Monochrome versions (Night, White)
+Export formats:
+• SVG (web)
+• PNG (16px, 24px, 48px, 96px for favicons)
+• PDF (print)
+5. Copy Rewrite
+Rewrite all copy in CANDID voice:
+Location Current CANDID Voice
+Onboarding "Welcome to ConvoFlow" "Hi! I'll take care of the
+questions—ready to start?"
+Form Creation "Describe your form"
+"Tell me what you need to
+collect. I'll draft the
+conversation."
+Refinement "Refine your form" "Prefer email to be optional?
+Just say it—I'll adjust."
+Chat Start "Please answer the questions" "Thanks for being here. This
+will take about 2 minutes."
+Error (Email) "Invalid email"
+"Hmm, that email doesn't
+look right. Mind double-
+checking?"
+Completion "Form submitted" "All set—thanks for the chat.
+You'll hear from us shortly."
+Analytics "Completion rate: 68%" "Completion is up 18% this
+week. Nicely done."
+Insight "Question 3 has high drop-
+off"
+"Q4 is causing 37% drop-off.
+Try splitting it or making it
+optional."
+Principles:
+• Warm and friendly, not corporate
+• Succinct, not wordy
+• Reassuring, not condescending
+• Helpful, not pushy
+Priority 3: HIGH - Signature Microinteractions
+Why This Matters: These are the moments that create "taste" and make CANDID feel alive
+and memorable.
+The Four Signature Moments
+1. Typing Pulse
+What: Three dots gently rising/falling while AI composes a response
+When: AI is generating next question or processing user input
+Technical Specs:
+• Three Coral dots
+• Staggered animation (0ms, 150ms, 300ms delay)
+• Duration: 150-220ms per cycle
+• Easing: cubic-bezier(0.4, 0, 1, 1)
+Implementation:
+JSX
+<div className="typing-pulse">
+<span className="dot" style={{ animationDelay: '0ms' }} />
+<span className="dot" style={{ animationDelay: '150ms' }} />
+<span className="dot" style={{ animationDelay: '300ms' }} />
+</div>
+2. Answer Drop
+What: User's answer bubble drops from above with a spring bounce
+When: User submits an answer
+Technical Specs:
+• Initial position: 20px above final position
+• Spring physics animation
+• Duration: 200ms
+• Bounce effect on landing
+Implementation:
+JSX
+// Using framer-motion
+<motion.div
+initial={{ y: -20, opacity: 0 }}
+animate={{ y: 0, opacity: 1 }}
+transition={{
+type: "spring",
+stiffness: 500,
+damping: 30
+}}
+>
+{userAnswer}
+</motion.div>
+3. Branch Glow
+What: AI's next question glows softly to signal it's adaptive/intelligent
+When: AI asks a follow-up question based on previous answer
+Technical Specs:
+• Sunny Lime (#A3E635) glow
+• Duration: 300ms
+• Subtle, not distracting
+• Signals "the AI is being smart"
+Implementation:
+CSS
+@keyframes branch-glow {
+0% { box-shadow: 0 0 0 0 rgba(163, 230, 53, 0); }
+50% { box-shadow: 0 0 20px 4px rgba(163, 230, 53, 0.4); }
+100% { box-shadow: 0 0 0 0 rgba(163, 230, 53, 0); }
+}
+.ai-bubble.adaptive {
+animation: branch-glow 300ms ease-out;
+}
+4. Completion Delight
+What: Tasteful celebration when form is completed
+When: User answers the final question
+Options:
+• Option A: Subtle confetti burst (Coral, Teal, Lime colors)
+• Option B: Animated checkmark with handshake icon
+Technical Specs:
+• Duration: 1000ms
+• Not overwhelming, just delightful
+• Positive reinforcement
+Implementation:
+JavaScript
+import confetti from 'canvas-confetti';
+confetti({
+particleCount: 50,
+spread: 60,
+origin: { y: 0.6 },
+colors: ['#F56A4D', '#2EB7A7', '#A3E635']
+});
+Additional Polish
+Reduce Motion Support:
+• Detect user's motion preference
+• If prefers-reduced-motion , use fade instead of bounce/spring
+• All animations should have accessible alternatives
+Performance:
+• All animations must run at 60fps
+• No jank or stuttering
+• Test on low-end devices
+Priority 4: MEDIUM - Multimodal UI Components
+Why This Matters: This is a key differentiator from Typeform and other competitors. Makes
+forms truly conversational and context-aware.
+Components to Build
+1. Location Picker (Map)
+When to use: User asks for location, address, or place
+Behavior:
+• AI asks: "Where are you located?"
+• Instead of text input, show interactive map
+• User can:
+• Click on map to select location
+• Search for address
+• Use current location (with permission)
+• Selected location appears as user's answer bubble
+Technical:
+• Use Mapbox or Google Maps API
+• Embed map within chat interface
+• Return lat/long + formatted address
+2. Date/Time Picker (Calendar)
+When to use: User asks for date, time, or date range
+Behavior:
+• AI asks: "When would you like to schedule?"
+• Show inline calendar picker
+• User selects date/time
+• Selection appears as user's answer bubble
+Technical:
+• Use a library like react-day-picker or build custom
+• Support date, time, and datetime
+• Handle timezones properly
+3. File Upload
+When to use: User asks for resume, photo, document, etc.
+Behavior:
+• AI asks: "Please upload your resume"
+• Show drag-and-drop area or file picker button
+• User uploads file
+• File name/thumbnail appears as user's answer bubble
+Technical:
+• Support common file types (PDF, DOC, JPG, PNG)
+• File size limits (configurable)
+• Upload to cloud storage (S3, Cloudinary)
+• Show upload progress
+4. Rating Scales
+When to use: User asks for rating, satisfaction score, NPS, etc.
+Behavior:
+• AI asks: "How would you rate our service?"
+• Show interactive rating component:
+• Stars (1-5)
+• Numbers (1-10)
+• NPS scale (0-10)
+• Emoji reactions
+• User clicks to select
+• Selection appears as user's answer bubble
+Technical:
+• Build custom rating components
+• Support different scale types
+• Animate on selection
+5. Image/Product Selector
+When to use: User needs to choose from visual options
+Behavior:
+• AI asks: "Which product are you interested in?"
+• Show image carousel or grid
+• User clicks to select
+• Selection appears as user's answer bubble with image
+Technical:
+• Support image grids and carousels
+• Lazy load images
+• Handle single and multiple selection
+Integration with AI
+The AI must:
+• Detect when to use multimodal components based on question type
+• Generate appropriate component configuration
+• Handle responses from these components
+Example:
+JSON
+{
+"question": "Where are you located?",
+"type": "location",
+"component": "map_picker",
+"config": {
+"defaultZoom": 10,
+"allowSearch": true,
+"allowCurrentLocation": true
+}
+}
+Priority 5: MEDIUM - Candid Voice (Voice I/O)
+Why This Matters: Accessibility, mobile-first experience, and future-proofing for voice-first
+interactions.
+What Needs to Be Built
+1. Speech-to-Text Integration
+Functionality:
+• User clicks mic button
+• Browser requests microphone permission
+• User speaks their answer
+• Speech is transcribed to text in real-time
+• User can review and edit before submitting
+Technical:
+• Use Web Speech API (free, browser-native)
+• Or integrate with a service (Google Speech-to-Text, Deepgram)
+• Handle multiple languages
+• Show real-time transcription
+2. Text-to-Speech Integration
+Functionality:
+• AI's questions can be read aloud
+• User can toggle voice output on/off
+• Natural-sounding voice (not robotic)
+Technical:
+• Use Web Speech API or service (ElevenLabs, Google TTS)
+• Support multiple voices and languages
+• Sync with text display
+3. Voice Visualization
+Functionality:
+• When mic is active, show beautiful waveform animation
+• Responds to voice amplitude
+• Coral color, smooth animation
+Technical:
+• Use Web Audio API to analyze audio input
+• Render waveform with canvas or SVG
+• Animate based on volume
+4. Voice UX Patterns
+Considerations:
+• How does user correct mistakes?
+• How to handle background noise?
+• What if speech recognition fails?
+• Fallback to text input always available
+Priority 6: MEDIUM - Integrations & Webhooks
+Why This Matters: Business users need to connect CANDID to their existing tools and
+workflows.
+Core Integrations
+1. Webhooks
+Functionality:
+• User configures webhook URL in settings
+• When form receives a response, send POST request to URL
+• Include full response data in JSON format
+• Support authentication (API keys, OAuth)
+Technical:
+JSON
+POST https://user-webhook-url.com/endpoint
+{
+"form_id": "abc123",
+"response_id": "xyz789",
+"submitted_at": "2025-10-31T12:00:00Z",
+"answers": [
+{ "question": "What's your name?", "answer": "John Smith" },
+{ "question": "What's your email?", "answer": "john@example.com" }
+]
+}
+2. Zapier Integration
+Functionality:
+• Build official Zapier app
+• Trigger: "New Form Response"
+• Actions: "Create Form", "Get Responses"
+• Connect to 5000+ apps
+Technical:
+• Use Zapier Platform
+• Provide API endpoints for triggers/actions
+• Handle authentication
+• Test with common workflows (Slack, Google Sheets, Airtable)
+3. Native Integrations
+Priority integrations:
+• Google Sheets: Auto-export responses to spreadsheet
+• Slack: Notify channel when form receives response
+• Email (SMTP): Send response data via email
+• Airtable: Sync responses to Airtable base
+Future integrations:
+• HubSpot, Salesforce (CRM)
+• Mailchimp, SendGrid (Email marketing)
+• Notion, Coda (Docs)
+Priority 7: LOW - Team Collaboration
+Why This Matters: Necessary for Business and Enterprise tiers, but not critical for initial
+launch.
+Features to Build
+1. Team Workspaces
+Functionality:
+• User can create a workspace
+• Invite team members by email
+• All forms and responses shared within workspace
+• Activity feed showing team actions
+2. User Roles
+Role types:
+• Admin: Full access, can manage team, billing
+• Editor: Can create/edit forms, view all responses
+• Viewer: Read-only access to forms and responses
+3. Collaboration Features
+Nice-to-haves:
+• Comments on forms and responses
+• @mentions to notify team members
+• Version history for forms
+• Approval workflows
+Priority 8: LOW - Advanced Analytics
+Why This Matters: Enhances the already-strong Candid Insights, but core functionality is
+already there.
+Features to Add
+1. Sentiment Analysis
+Functionality:
+• Analyze open-text responses for sentiment (positive, neutral, negative)
+• Show sentiment breakdown in analytics
+• Highlight particularly positive or negative responses
+Technical:
+• Use GPT-4 or sentiment analysis API
+• Process responses in batch
+• Cache results
+2. Theme Extraction
+Functionality:
+• Identify common themes across responses
+• "78% of responses mention 'fast' or 'quick'"
+• "Common pain points: pricing, onboarding, support"
+Technical:
+• Use GPT-4 for theme extraction
+• Group similar responses
+• Present in Insights dashboard
+3. Export Options
+Current: CSV export
+Add: Excel, PDF, JSON
+PDF Report:
+• Beautiful, branded PDF with key metrics
+• Include charts and insights
+• Downloadable for sharing with stakeholders
+Part 4: Implementation Checklist
+Use this checklist to track progress. Check off items as they're completed.
+Priority 1: AI Engine ✅ CRITICAL
+Design new AI service architecture
+Implement improved prompt engineering
+Add structured output validation
+Build clarifying question system
+Create 50+ test case suite
+Achieve 95%+ accuracy on all tests
+Document AI capabilities and limitations
+Priority 2: Brand Implementation ✅ HIGH
+Design System:
+Set up design tokens (colors, typography, spacing)
+Install DM Sans and Inter fonts
+Create component library (buttons, inputs, cards, pills)
+Build chat bubble components
+Create logo and branding assets
+UI Re-skin:
+Landing page
+Dashboard
+Candid Studio (form creator)
+Candid Chat (form filler)
+Candid Insights (analytics)
+Settings and account pages
+Copy Rewrite:
+Onboarding flow
+Form creation prompts
+Chat conversation text
+Error messages
+Success messages
+Analytics insights
+Help documentation
+Priority 3: Signature Microinteractions ✅ HIGH
+Typing pulse animation
+Answer drop animation
+Branch glow animation
+Completion delight animation
+Reduce motion support
+Performance optimization (60fps)
+Cross-browser testing
+Priority 4: Multimodal UI ⚠ MEDIUM
+Location picker (map component)
+Date/time picker (calendar component)
+File upload component
+Rating scales (stars, numbers, NPS)
+Image/product selector
+AI integration for component detection
+Priority 5: Candid Voice ⚠ MEDIUM
+Speech-to-text integration
+Text-to-speech integration
+Voice visualization (waveform)
+Mic button functionality
+Voice UX patterns (error handling, corrections)
+Multi-language support
+Priority 6: Integrations ⚠ MEDIUM
+Webhook system
+Zapier integration
+Google Sheets integration
+Slack integration
+Email notifications (SMTP)
+API documentation
+Priority 7: Team Collaboration ℹ LOW
+Team workspaces
+User roles (Admin, Editor, Viewer)
+Invite team members
+Activity feed
+Comments (optional)
+Version history (optional)
+Priority 8: Advanced Analytics ℹ LOW
+Sentiment analysis
+Theme extraction
+Excel export
+PDF report generation
+JSON export
+Advanced filtering
+Quality & Polish
+Accessibility audit (WCAG 2.1 AA)
+Performance optimization
+Mobile responsiveness
+Cross-browser testing
+Bug fixes
+Documentation (technical and user-facing)
+Part 5: Technical Resources
+Design Assets
+Brand Book: See attached PDF for complete brand guidelines
+Design Tokens: Available in JSON and CSS formats
+Logo Files: Will be created during Priority 2 implementation
+Code Examples
+AI Service Structure:
+JavaScript
+// services/ai/formGenerator.js
+class AIFormGenerator {
+async generateForm(userPrompt) {
+const intent = await this.parseUserIntent(userPrompt);
+const structure = await this.generateFormStructure(intent);
+const validated = this.validateOutput(structure);
+if (!validated.isValid) {
+return this.refineAmbiguities(validated.issues);
+}
+return validated.form;
+}
+}
+Component Example:
+JSX
+// components/ChatBubble.jsx
+export const ChatBubble = ({ message, sender }) => {
+const isAI = sender === 'ai';
+return (
+<motion.div
+className={`chat-bubble ${isAI ? 'ai' : 'user'}`}
+initial={{ y: -20, opacity: 0 }}
+animate={{ y: 0, opacity: 1 }}
+transition={{ type: "spring", stiffness: 500, damping: 30 }}
+>
+{message}
+</motion.div>
+);
+};
+APIs & Services
+AI: OpenAI GPT-4 (already integrated)
+Maps: Mapbox or Google Maps
+Speech: Web Speech API or Google Speech-to-Text
+Storage: AWS S3 or Cloudinary (for file uploads)
+Analytics: Custom backend + GPT-4 for insights
+Part 6: Success Criteria
+Before considering CANDID "complete":
+✅ AI Reliability: 95%+ accuracy on form generation
+✅ Brand Alignment: 100% of screens match CANDID brand book
+✅ Core Features: All Priority 1-3 items completed
+✅ Performance: 60fps animations, <3s page loads
+✅ Accessibility: WCAG 2.1 AA compliance
+✅ Quality: Zero critical bugs, comprehensive testing
+✅ Documentation: Complete technical and user docs
+Questions or Clarifications?
+This document should provide everything needed to transform ConvoFlow into CANDID. If
+anything is unclear or you need more detail on any section, please reach out.
+Let's build something with taste! 🚀

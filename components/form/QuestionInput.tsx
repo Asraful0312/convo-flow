@@ -10,14 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Loader2, Send, Star, Upload } from "lucide-react";
 import VoiceControls from "./VoiceControls";
-import { motion } from "framer-motion";
 import { useRef } from "react";
 import { Question } from "@/lib/form-types";
-import DatePickerInput from "./DatePickerInput";
+
 
 interface QuestionInputProps {
   question: Question;
   inputValue: string;
+  isTyping: boolean;
   onInputChange: (value: string) => void;
   onSubmit: (answer: any) => void;
   isProcessing: boolean;
@@ -40,6 +40,7 @@ export default function QuestionInput({
   onSubmit,
   isProcessing,
   isUploading,
+  isTyping,
   multipleChoiceAnswers,
   onMultipleChoiceChange,
   primaryColor,
@@ -79,7 +80,7 @@ export default function QuestionInput({
           <p className="text-sm text-gray-600 mb-3">Select an option:</p>
           <RadioGroup
             onValueChange={(value) => handleSubmit(value)}
-            disabled={isProcessing}
+            disabled={isProcessing || isTyping}
             className="grid sm:grid-cols-2 gap-3"
           >
             {question.options.map((option, index) => (
@@ -107,7 +108,7 @@ export default function QuestionInput({
       ) : question.type === "dropdown" && question.options ? (
         <div className="space-y-3">
           <p className="text-sm text-gray-600 mb-3">Select an option:</p>
-          <Select onValueChange={(value) => handleSubmit(value)} disabled={isProcessing}>
+          <Select onValueChange={(value) => handleSubmit(value)} disabled={isProcessing || isTyping}>
             <SelectTrigger className="h-14 bg-white rounded-xl">
               <SelectValue placeholder="Select an option..." />
             </SelectTrigger>
@@ -144,7 +145,7 @@ export default function QuestionInput({
           </div>
           <Button
             onClick={() => handleSubmit(multipleChoiceAnswers)}
-            disabled={multipleChoiceAnswers.length === 0 || isProcessing}
+            disabled={multipleChoiceAnswers.length === 0 || isProcessing || isTyping}
             className="h-14 w-full text-white rounded-xl"
             style={{ backgroundColor: primaryColor }}
           >
@@ -164,7 +165,7 @@ export default function QuestionInput({
           key={index}
           variant="outline"
           onClick={() => handleSubmit((index + 1).toString())}
-          disabled={isProcessing}
+          disabled={isProcessing || isTyping}
           className="h-12 w-12 p-0 flex items-center justify-center border-2 hover:border-yellow-400"
         >
           <Star
@@ -184,7 +185,7 @@ export default function QuestionInput({
                 key={index}
                 variant="outline"
                 onClick={() => handleSubmit(option)}
-                disabled={isProcessing}
+                disabled={isProcessing || isTyping}
                 className="h-12 px-6 border-2 hover:border-gray-400"
               >
                 {option}
@@ -215,7 +216,7 @@ export default function QuestionInput({
                   type="file"
                   className="sr-only"
                   onChange={onFileChange}
-                  disabled={isUploading || isProcessing}
+                  disabled={isUploading || isProcessing || isTyping}
                 />
               </Label>
             </div>
@@ -240,7 +241,7 @@ export default function QuestionInput({
                 placeholder={question.placeholder || "Type your answer..."}
                 className="min-h-[100px] pr-24 resize-none bg-white rounded-xl"
                 onKeyDown={onKeyPress}
-                disabled={isProcessing}
+                disabled={isProcessing || isTyping}
               />
             ) : (
               <Input
@@ -251,7 +252,7 @@ export default function QuestionInput({
                 placeholder={question.placeholder || "Type your answer..."}
                 className="h-14 pr-24 bg-white rounded-xl"
                 onKeyDown={onKeyPress}
-                disabled={isProcessing}
+                disabled={isProcessing || isTyping}
               />
             )}
 

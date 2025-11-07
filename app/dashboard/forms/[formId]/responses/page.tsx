@@ -35,13 +35,15 @@ import {
   Loader2,
   Tag,
   Plus,
+  Lock,
 } from "lucide-react"
 import { toast } from "sonner"
 
 export default function ResponsesPage({ params }: { params: { formId: string } }) {
   const { formId } = use<any>(params as any);
   const data = useQuery(api.forms.getResponsesPageData, { formId });
-  const deleteResponse = useMutation(api.responses.deleteResponse);
+  const user = useQuery(api.auth.loggedInUser)
+  const subscription = user?.subscriptionTier || "free"
   const deleteManyResponses = useMutation(api.responses.deleteManyResponses);
   const tagResponses = useMutation(api.responses.tagResponses);
   const exportAction = useAction(api.exports.exportResponses);
@@ -97,6 +99,9 @@ export default function ResponsesPage({ params }: { params: { formId: string } }
 
   const handleExport = async (format: "csv" | "xlsx" | "pdf") => {
     setIsExporting(true);
+    if (subscription === "free" && format === "xlsx" || format === "pdf" ) {
+      return
+    }
     try {
       const url = await exportAction({ formId, responseIds: selectedResponses.length > 0 ? selectedResponses : responses.map((r:any) => r._id), format });
       if (url) {
@@ -183,8 +188,8 @@ export default function ResponsesPage({ params }: { params: { formId: string } }
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => handleExport("csv")}>CSV</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport("xlsx")}>Excel</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport("pdf")}>PDF</DropdownMenuItem>
+                <DropdownMenuItem disabled={subscription === "free"} onClick={() => handleExport("xlsx")}>Excel {subscription === "free" && <Badge className="bg-amber-500 text-white"><Lock className="size-4 shrink-0 text-white"/> Pro</Badge>}</DropdownMenuItem>
+                <DropdownMenuItem disabled={subscription === "free"} onClick={() => handleExport("pdf")}>PDF {subscription === "free" && <Badge className="bg-amber-500 text-white"><Lock className="size-4 shrink-0 text-white"/> Pro</Badge>}</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Link href={`/f/${formId}`}>

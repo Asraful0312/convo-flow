@@ -71,7 +71,6 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
   const secondaryColor = form?.settings.branding?.secondaryColor || "#2EB7A7"
 
 
-  console.log("questions", questions)
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -582,6 +581,7 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
               onSubmit={handleSubmitAnswer}
               isProcessing={isProcessing}
               isUploading={isUploading}
+              isTyping={isTyping}
               multipleChoiceAnswers={multipleChoiceAnswers}
               onMultipleChoiceChange={handleMultipleChoiceChange as any}
               primaryColor={primaryColor}

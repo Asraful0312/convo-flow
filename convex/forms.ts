@@ -1,5 +1,5 @@
 import { ConvexError, v } from "convex/values"
-import { mutation, query } from "./_generated/server"
+import { internalQuery, mutation, query } from "./_generated/server"
 import { getAuthUserId } from "@convex-dev/auth/server"
 import { api } from "./_generated/api";
 
@@ -122,6 +122,23 @@ export const getSingleForm = query({
   }
 },
 )
+
+export const getFormForIntegrations = internalQuery({
+    args: { formId: v.id("forms") },
+    handler: async (ctx, args) => {
+        const form = await ctx.db.get(args.formId);
+        if (!form) {
+            return null;
+        }
+        return {
+            ...form,
+            questions: await ctx.db
+                .query("questions")
+                .withIndex("by_form", (q) => q.eq("formId", form._id))
+                .collect(),
+        };
+    },
+});
 
 export const getPublicFormData = query({
     args: { formId: v.id("forms") },
