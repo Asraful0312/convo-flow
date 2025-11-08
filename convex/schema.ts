@@ -73,6 +73,16 @@ export default defineSchema({
       enableVoice: v.optional(v.boolean()),
       enableFollowUps: v.optional(v.boolean()),
     }),
+    integrationMappings: v.optional(v.object({
+      notion: v.optional(v.object({
+        databaseId: v.string(),
+        mapping: v.array(v.object({
+          questionId: v.string(),
+          notionPropertyId: v.string(),
+          notionPropertyName: v.string(),
+        })),
+      })),
+    })),
     createdAt: v.number(),
     updatedAt: v.number(),
     publishedAt: v.optional(v.number()),
@@ -102,6 +112,10 @@ export default defineSchema({
       v.literal("date"),
       v.literal("time"),
       v.literal("file"),
+      v.literal("location"),
+      v.literal("currency"),
+      v.literal("date_range"),
+      v.literal("yes_no"),
     ),
     text: v.string(),
     description: v.optional(v.string()),

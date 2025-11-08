@@ -8,10 +8,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Loader2, Send, Star, Upload } from "lucide-react";
+import { CalendarIcon, Loader2, MapPin, Send, Star, Upload } from "lucide-react";
 import VoiceControls from "./VoiceControls";
 import { useRef } from "react";
 import { Question } from "@/lib/form-types";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 
 interface QuestionInputProps {
@@ -61,7 +65,6 @@ export default function QuestionInput({
       case "number": return "number";
       case "phone": return "tel";
       case "url": return "url";
-      case "date": return "date";
       case "time": return "time";
       default: return "text";
     }
@@ -229,6 +232,122 @@ export default function QuestionInput({
               Uploading...
             </div>
           )}
+        </div>
+      ) : question.type === "yes_no" ? (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600 mb-3">{question.text}</p>
+          <div className="flex gap-3 justify-center">
+            <Button
+              variant="outline"
+              onClick={() => handleSubmit("Yes")}
+              disabled={isProcessing || isTyping}
+              className="h-14 px-8 border-2 hover:border-gray-400"
+            >
+              Yes
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleSubmit("No")}
+              disabled={isProcessing || isTyping}
+              className="h-14 px-8 border-2 hover:border-gray-400"
+            >
+              No
+            </Button>
+          </div>
+        </div>
+      ) : question.type === "location" ? (
+        <div className="flex gap-3">
+          <div className="flex-1 relative">
+            <Input
+              ref={inputRef as any}
+              type="text"
+              value={inputValue}
+              onChange={(e) => onInputChange(e.target.value)}
+              placeholder={question.placeholder || "Type a full address and press Send"}
+              className="h-14 pl-10 pr-24 bg-white rounded-xl"
+              onKeyDown={onKeyPress}
+              disabled={isProcessing || isTyping}
+            />
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            {voiceEnabled && (
+              <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                <VoiceControls
+                  isRecording={isRecording}
+                  audioLevel={audioLevel}
+                  primaryColor={primaryColor}
+                  onToggle={onToggleRecording}
+                  disabled={isProcessing}
+                />
+              </div>
+            )}
+          </div>
+          <Button
+            onClick={() => handleSubmit(inputValue.trim())}
+            disabled={!inputValue.trim() || isProcessing}
+            className="h-14 px-6 text-white rounded-xl shadow-lg"
+            style={{ backgroundColor: primaryColor }}
+          >
+            {isProcessing ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+          </Button>
+        </div>
+       ) : question.type === "date" ? (
+        <div className="flex gap-3">
+          <div className="flex-1 relative">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "h-14 w-full justify-start text-left font-normal bg-white rounded-xl",
+                    !inputValue && "text-muted-foreground"
+                  )}
+                  disabled={isProcessing || isTyping}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {inputValue ? format(new Date(inputValue), "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={inputValue ? new Date(inputValue) : undefined}
+                  onSelect={(date) => {
+                    if (date) {
+                      onInputChange(format(date, "yyyy-MM-dd"));
+                    }
+                  }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            {voiceEnabled && (
+              <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                <VoiceControls
+                  isRecording={isRecording}
+                  audioLevel={audioLevel}
+                  primaryColor={primaryColor}
+                  onToggle={onToggleRecording}
+                  disabled={isProcessing}
+                />
+              </div>
+            )}
+          </div>
+          <Button
+            onClick={() => handleSubmit(inputValue.trim())}
+            disabled={!inputValue.trim() || isProcessing}
+            className="h-14 px-6 text-white rounded-xl shadow-lg"
+            style={{ backgroundColor: primaryColor }}
+          >
+            {isProcessing ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+          </Button>
         </div>
       ) : (
         <div className="flex gap-3">

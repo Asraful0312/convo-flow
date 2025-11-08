@@ -67,6 +67,10 @@ export const updateQuestion = mutation({
       v.literal("date"),
       v.literal("time"),
       v.literal("file"),
+      v.literal("location"),
+      v.literal("currency"),
+      v.literal("date_range"),
+      v.literal("yes_no"),
     ),
   },
   handler: async (ctx, args) => {

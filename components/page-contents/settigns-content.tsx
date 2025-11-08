@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import {Bell, Zap, Shield, Webhook, Check, Copy, Plus, Trash2 } from "lucide-react"
+import {Bell, Zap, Shield, Webhook, Check, Copy, Plus, Trash2, Loader2 } from "lucide-react"
 import { useAuthActions } from "@convex-dev/auth/react"
 import ProfileSection from "@/components/settings/profile-section"
 import BillingSection from "@/components/settings/billing-section"
@@ -19,6 +19,7 @@ import { api } from "@/convex/_generated/api"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { Id } from "@/convex/_generated/dataModel"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 
 const availableIntegrations = [
@@ -47,7 +48,7 @@ const availableIntegrations = [
       icon: "📊",
       color: "bg-green-100 dark:bg-green-900/30",
       fields: [], // Fields are now handled by OAuth
-      instructions: "1. Connect your Google Account. 2. Paste the ID of the Google Sheet you want to sync to.",
+      instructions: "1. Connect your Google Account. 2. Select the Google Sheet you want to sync to from the dropdown.",
     },
     {
       name: "HubSpot",
@@ -73,8 +74,8 @@ const availableIntegrations = [
       description: "Add responses to Notion",
       icon: "📝",
       color: "bg-gray-100 dark:bg-gray-800",
-      fields: [{ name: "apiKey", label: "Internal Integration Token", type: "password" }, { name: "databaseId", label: "Database ID", type: "text" }],
-      instructions: "1. Create a new internal integration in Notion. 2. Share your database with the integration. 3. Copy the token and database ID here.",
+      fields: [], // Fields are now handled by OAuth
+      instructions: "1. Connect your Notion Account. 2. Share a database with the integration. 3. Select the database from the dropdown.",
     },
 ]
 
@@ -96,12 +97,20 @@ export default function SettingsContent() {
     const deleteIntegration = useMutation(api.integrations.deleteIntegration)
     const updateIntegrationConfig = useMutation(api.integrations.updateIntegrationConfig)
     const getGoogleOAuthUrl = useAction(api.google.getOAuthUrl);
+    const getNotionOAuthUrl = useAction(api.notion.getOAuthUrl);
+    const getNotionDatabases = useAction(api.notion.getAccessibleDatabases);
+    const getGoogleSheets = useAction(api.google.getAccessibleSheets);
 
 
     const [isIntegrationModalOpen, setIntegrationModalOpen] = useState(false)
     const [selectedIntegration, setSelectedIntegration] = useState<any>(null)
     const [integrationConfig, setIntegrationConfig] = useState<any>({})
     const [sheetId, setSheetId] = useState("");
+    const [notionDatabaseId, setNotionDatabaseId] = useState("");
+    const [notionDatabases, setNotionDatabases] = useState<{ id: string, title: string }[]>([]);
+    const [isFetchingDatabases, setIsFetchingDatabases] = useState(false);
+    const [googleSheets, setGoogleSheets] = useState<{ id: string, title: string }[]>([]);
+    const [isFetchingSheets, setIsFetchingSheets] = useState(false);
 
     const integrations = availableIntegrations.map(availInt => {
         const connectedInt = userIntegrations?.find(userInt => userInt.type === availInt.type)
@@ -113,17 +122,38 @@ export default function SettingsContent() {
         }
     })
 
+    const notionIntegration = integrations.find(int => int.type === "notion");
+    const googleSheetsIntegration = integrations.find(int => int.type === "google_sheets");
+
     useEffect(() => {
-  const googleSheetsIntegration = integrations.find(int => int.type === "google_sheets");
-  if (
-    googleSheetsIntegration &&
-    googleSheetsIntegration.connected &&
-    !sheetId // only set if it's empty (avoid overwriting user typing)
-  ) {
-    setSheetId(googleSheetsIntegration.config?.sheetId || "");
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [integrations]);
+        if (googleSheetsIntegration?.connected && !sheetId) {
+            setSheetId(googleSheetsIntegration.config?.sheetId || "");
+        }
+        if (notionIntegration?.connected && !notionDatabaseId) {
+            setNotionDatabaseId(notionIntegration.config?.databaseId || "");
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [integrations]);
+
+    useEffect(() => {
+        if (notionIntegration?.connected) {
+            setIsFetchingDatabases(true);
+            getNotionDatabases()
+                .then(setNotionDatabases)
+                .catch(() => toast.error("Failed to fetch Notion databases."))
+                .finally(() => setIsFetchingDatabases(false));
+        }
+    }, [notionIntegration?.connected, getNotionDatabases]);
+
+    useEffect(() => {
+        if (googleSheetsIntegration?.connected) {
+            setIsFetchingSheets(true);
+            getGoogleSheets()
+                .then(setGoogleSheets)
+                .catch(() => toast.error("Failed to fetch Google Sheets."))
+                .finally(() => setIsFetchingSheets(false));
+        }
+    }, [googleSheetsIntegration?.connected, getGoogleSheets]);
 
 
     const handleConnectClick = (integration: any) => {
@@ -151,12 +181,31 @@ export default function SettingsContent() {
         }
     };
 
-    const handleSaveSheetId = async (integrationId: Id<"integrations">) => {
+    const handleConnectNotion = async () => {
+        if (!user) return;
+        try {
+            const url = await getNotionOAuthUrl({ userId: user._id });
+            window.location.href = url;
+        } catch (error) {
+            toast.error("Failed to get Notion OAuth URL.");
+        }
+    };
+
+    const handleSaveSheetId = async (integrationId: Id<"integrations">, sheetId: string) => {
         try {
             await updateIntegrationConfig({ integrationId, config: { sheetId } });
-            toast.success("Google Sheet ID saved!");
+            toast.success("Google Sheet saved!");
         } catch (error) {
             toast.error("Failed to save Sheet ID.");
+        }
+    };
+
+    const handleSaveNotionDatabaseId = async (integrationId: Id<"integrations">, dbId: string) => {
+        try {
+            await updateIntegrationConfig({ integrationId, config: { databaseId: dbId } });
+            toast.success("Notion Database saved!");
+        } catch (error) {
+            toast.error("Failed to save Database ID.");
         }
     };
 
@@ -334,14 +383,84 @@ export default function SettingsContent() {
                                                     )}
                                                 </div>
                                                 {integration.connected && (
-                                                    <div className="flex items-center gap-2 pl-13">
-                                                        <Input
-                                                            placeholder="Enter Google Sheet ID"
+                                                    <div className="space-y-2 pl-13">
+                                                        <Select
                                                             value={sheetId}
-                                                            onChange={(e) => setSheetId(e.target.value)}
-                                                            className="bg-background"
-                                                        />
-                                                        <Button size="sm" onClick={() => handleSaveSheetId(integration.id!)}>Save</Button>
+                                                            onValueChange={(id) => {
+                                                                setSheetId(id);
+                                                                handleSaveSheetId(integration.id!, id);
+                                                            }}
+                                                        >
+                                                            <SelectTrigger className="bg-background">
+                                                                <SelectValue placeholder={isFetchingSheets ? "Loading sheets..." : "Select a sheet..."} />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {isFetchingSheets ? (
+                                                                    <div className="flex items-center justify-center p-2">
+                                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                                    </div>
+                                                                ) : (
+                                                                    googleSheets.map(sheet => (
+                                                                        <SelectItem key={sheet.id} value={sheet.id}>{sheet.title}</SelectItem>
+                                                                    ))
+                                                                )}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    }
+                                    if (integration.type === 'notion') {
+                                        return (
+                                            <div key={integration.name} className="flex flex-col gap-4 p-4 rounded-lg border border-border hover:border-[#6366f1] transition-colors">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-10 h-10 rounded-lg ${integration.color} flex items-center justify-center text-xl`}>{integration.icon}</div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <h4 className="font-semibold">{integration.name}</h4>
+                                                                {integration.connected && (
+                                                                    <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                                                        <Check className="w-3 h-3 mr-1" />
+                                                                        Connected
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-sm text-muted-foreground">{integration.description}</p>
+                                                        </div>
+                                                    </div>
+                                                    {integration.connected ? (
+                                                        <Button variant="outline" size="sm" onClick={() => handleDisconnect(integration.id!, integration.name)}>Disconnect</Button>
+                                                    ) : (
+                                                        <Button variant="default" size="sm" className="bg-[#6366f1] hover:bg-[#4f46e5]" onClick={handleConnectNotion}>Connect Notion Account</Button>
+                                                    )}
+                                                </div>
+                                                {integration.connected && (
+                                                    <div className="space-y-2 pl-13">
+                                                        <Select
+                                                            value={notionDatabaseId}
+                                                            onValueChange={(dbId) => {
+                                                                setNotionDatabaseId(dbId);
+                                                                handleSaveNotionDatabaseId(integration.id!, dbId);
+                                                            }}
+                                                        >
+                                                            <SelectTrigger className="bg-background">
+                                                                <SelectValue placeholder={isFetchingDatabases ? "Loading databases..." : "Select a database..."} />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {isFetchingDatabases ? (
+                                                                    <div className="flex items-center justify-center p-2">
+                                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                                    </div>
+                                                                ) : (
+                                                                    notionDatabases.map(db => (
+                                                                        <SelectItem key={db.id} value={db.id}>{db.title}</SelectItem>
+                                                                    ))
+                                                                )}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <p className="text-xs text-muted-foreground">Pro Tip: Ensure your Notion property names match your form questions for a perfect sync.</p>
                                                     </div>
                                                 )}
                                             </div>

@@ -483,6 +483,38 @@ export const deleteForm = mutation({
   },
 });
 
+export const updateFormIntegrationMapping = mutation({
+  args: {
+    formId: v.id("forms"),
+    integrationType: v.literal("notion"), // Add other types as needed
+    mapping: v.object({
+      databaseId: v.string(),
+      mapping: v.array(v.object({
+        questionId: v.string(),
+        notionPropertyId: v.string(),
+        notionPropertyName: v.string(),
+      })),
+    }),
+  },
+  handler: async (ctx, { formId, integrationType, mapping }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new ConvexError("Unauthenticated");
+
+    const form = await ctx.db.get(formId);
+    if (!form) throw new ConvexError("Form not found");
+    if (form.userId !== userId) throw new ConvexError("Not authorized");
+
+    const currentMappings = form.integrationMappings ?? {};
+    
+    await ctx.db.patch(formId, {
+      integrationMappings: {
+        ...currentMappings,
+        [integrationType]: mapping,
+      },
+    });
+  },
+});
+
 export const getDashboardStats = query({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);

@@ -22,6 +22,8 @@ import type * as googleMutation from "../googleMutation.js";
 import type * as http from "../http.js";
 import type * as integrationActions from "../integrationActions.js";
 import type * as integrations from "../integrations.js";
+import type * as notion from "../notion.js";
+import type * as notionMutation from "../notionMutation.js";
 import type * as questions from "../questions.js";
 import type * as responses from "../responses.js";
 import type * as stripe from "../stripe.js";
@@ -56,6 +58,8 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   integrationActions: typeof integrationActions;
   integrations: typeof integrations;
+  notion: typeof notion;
+  notionMutation: typeof notionMutation;
   questions: typeof questions;
   responses: typeof responses;
   stripe: typeof stripe;

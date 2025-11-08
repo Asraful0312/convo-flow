@@ -38,14 +38,18 @@ CRITICAL INSTRUCTIONS:
     *   \`phone\`: For phone numbers.
     *   \`url\`: For website URLs.
     *   \`number\`: For numerical input.
+    *   \`currency\`: For monetary values.
     *   \`choice\`: For single-selection questions (radio buttons).
     *   \`multiple_choice\`: For multiple-selection questions (checkboxes).
     *   \`dropdown\`: For single-selection from a dropdown list.
     *   \`rating\`: For a 1-5 star rating.
     *   \`scale\`: For a 1-10 numerical scale.
-    *   \`date\`: For a date picker.
+    *   \`date\`: For a single date picker.
+    *   \`date_range\`: For selecting a start and end date.
     *   \`time\`: For a time picker.
     *   \`file\`: For file uploads.
+    *   \`location\`: For picking an address or location on a map.
+    *   \`yes_no\`: For a binary yes/no question.
 3.  **Handle Complex Requests:** If the user asks for a "customer feedback survey with rating scales and open-ended questions", you must include \`rating\` or \`scale\` questions and \`textarea\` questions. Do not default to a generic contact form.
 4.  **Options:** For \`choice\`, \`multiple_choice\`, and \`dropdown\` questions, you MUST provide an array of strings in the \`options\` field.
 5.  **Required Fields:** Use your best judgment to mark fields as \`required\`. For example, a name or email in a contact form should usually be required.

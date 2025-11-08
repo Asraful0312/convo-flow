@@ -112,3 +112,31 @@ export const getIntegrationsForUser = internalQuery({
             .collect();
     },
 });
+
+export const getNotionIntegration = query({
+    handler: async (ctx) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) {
+            return null;
+        }
+        return await ctx.db
+            .query("integrations")
+            .withIndex("by_user", (q) => q.eq("userId", userId))
+            .filter((q) => q.eq(q.field("type"), "notion"))
+            .first();
+    },
+});
+
+export const getGoogleIntegration = query({
+    handler: async (ctx) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) {
+            return null;
+        }
+        return await ctx.db
+            .query("integrations")
+            .withIndex("by_user", (q) => q.eq("userId", userId))
+            .filter((q) => q.eq(q.field("type"), "google_sheets"))
+            .first();
+    },
+});

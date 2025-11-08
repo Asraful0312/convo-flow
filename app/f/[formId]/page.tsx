@@ -12,6 +12,7 @@ import FormHeader from "@/components/form/FormHeader"
 import ChatMessages from "@/components/form/ChatMessages"
 import CompletionScreen from "@/components/form/CompletionScreen"
 import QuestionInput from "@/components/form/QuestionInput"
+import MapConfirmation from "@/components/form/MapConfirmation"
 import { Loader2 } from "lucide-react"
 
 interface Message {
@@ -50,65 +51,16 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
   const [isUploading, setIsUploading] = useState(false);
   const [multipleChoiceAnswers, setMultipleChoiceAnswers] = useState<string[]>([]);
   const [userName, setUserName] = useState<string | null>(null);
-
-  const [isRecording, setIsRecording] = useState(false)
-  const [isSpeaking, setIsSpeaking] = useState(false)
-  const [voiceEnabled, setVoiceEnabled] = useState(false)
-  const [audioLevel, setAudioLevel] = useState(0)
+  const [locationToConfirm, setLocationToConfirm] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const recognitionRef = useRef<any>(null)
-  const audioContextRef = useRef<AudioContext | null>(null)
-  const analyserRef = useRef<AnalyserNode | null>(null)
-  const animationFrameRef = useRef<number | null>(null)
-  const audioElementRef = useRef<HTMLAudioElement | null>(null)
 
   const currentQuestion = questions?.[currentQuestionIndex]
   const progress = questions ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0
 
   const primaryColor = form?.settings.branding?.primaryColor || "#F56A4D"
   const secondaryColor = form?.settings.branding?.secondaryColor || "#2EB7A7"
-
-
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-      if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition()
-        recognitionRef.current.continuous = false
-        recognitionRef.current.interimResults = true
-        recognitionRef.current.lang = form?.aiConfig?.language || "en-US"
-
-        recognitionRef.current.onresult = (event: any) => {
-          const transcript = Array.from(event.results)
-            .map((result: any) => result[0])
-            .map((result) => result.transcript)
-            .join("")
-          setInputValue(transcript)
-        }
-
-        recognitionRef.current.onend = () => {
-          setIsRecording(false)
-          stopAudioVisualization()
-        }
-      }
-    }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop()
-      }
-      stopAudioVisualization()
-    }
-  }, [form])
-
-  useEffect(() => {
-    if (form && form.aiConfig?.enableVoice) {
-      setVoiceEnabled(true)
-    }
-  }, [form])
 
   const handleStart = async () => {
     if (!form || !questions) return
@@ -131,7 +83,6 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
     }
 
     setMessages([welcomeMessage])
-    await speakText(welcomeText)
 
     setTimeout(() => {
       askQuestion(0)
@@ -140,130 +91,7 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
-
-  const startAudioVisualization = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      audioContextRef.current = new AudioContext()
-      analyserRef.current = audioContextRef.current.createAnalyser()
-      const source = audioContextRef.current.createMediaStreamSource(stream)
-      source.connect(analyserRef.current)
-      analyserRef.current.fftSize = 256
-
-      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
-
-      const updateLevel = () => {
-        if (analyserRef.current) {
-          analyserRef.current.getByteFrequencyData(dataArray)
-          const average = dataArray.reduce((a, b) => a + b) / dataArray.length
-          setAudioLevel(average / 255)
-          animationFrameRef.current = requestAnimationFrame(updateLevel)
-        }
-      }
-
-      updateLevel()
-    } catch (error) {
-      console.error("Error accessing microphone:", error)
-    }
-  }
-
-  const stopAudioVisualization = () => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current)
-    }
-    if (audioContextRef.current) {
-      audioContextRef.current.close()
-    }
-    setAudioLevel(0)
-  }
-
-  const toggleRecording = () => {
-    if (!recognitionRef.current) {
-      alert("Speech recognition is not supported in your browser")
-      return
-    }
-
-    if (isRecording) {
-      recognitionRef.current.stop()
-      setIsRecording(false)
-      stopAudioVisualization()
-    } else {
-      recognitionRef.current.start()
-      setIsRecording(true)
-      startAudioVisualization()
-    }
-  }
-
-  const speakText = async (text: string) => {
-    if (!voiceEnabled) return
-
-    setIsSpeaking(true)
-
-    try {
-      const ELEVENLABS_API_KEY = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY
-      
-      if (ELEVENLABS_API_KEY) {
-        const response = await fetch(
-          `https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "xi-api-key": ELEVENLABS_API_KEY,
-            },
-            body: JSON.stringify({
-              text,
-              model_id: "eleven_monolingual_v1",
-              voice_settings: {
-                stability: 0.5,
-                similarity_boost: 0.5,
-              },
-            }),
-          }
-        )
-
-        if (response.ok) {
-          const audioBlob = await response.blob()
-          const audioUrl = URL.createObjectURL(audioBlob)
-          
-          if (audioElementRef.current) {
-            audioElementRef.current.pause()
-          }
-          
-          audioElementRef.current = new Audio(audioUrl)
-          audioElementRef.current.onended = () => setIsSpeaking(false)
-          await audioElementRef.current.play()
-          return
-        }
-      }
-
-      if (typeof window !== "undefined") {
-        const utterance = new SpeechSynthesisUtterance(text)
-        utterance.rate = 0.9
-        utterance.pitch = 1
-        utterance.volume = 1
-        utterance.onend = () => setIsSpeaking(false)
-        window.speechSynthesis.speak(utterance)
-      }
-    } catch (error) {
-      console.error("TTS error:", error)
-      setIsSpeaking(false)
-    }
-  }
-
-  const toggleVoice = () => {
-    setVoiceEnabled(!voiceEnabled)
-    if (voiceEnabled) {
-      if (typeof window !== "undefined") {
-        window.speechSynthesis.cancel()
-      }
-      if (audioElementRef.current) {
-        audioElementRef.current.pause()
-      }
-      setIsSpeaking(false)
-    }
-  }
+  }, [messages]);
 
   const getWelcomeMessage = (personality: string, formTitle: string) => {
     const messages: Record<string, string> = {
@@ -334,7 +162,6 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
 
       setMessages((prev) => [...prev, questionMessage])
       setIsTyping(false)
-      await speakText(questionText)
       inputRef.current?.focus()
     }, 800)
   }
@@ -374,8 +201,43 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
     });
   };
 
-  const handleSubmitAnswer = async (answer: string | string[] | { storageId: string, fileName: string, fileSize: number }) => {
+  const handleLocationConfirmation = (isCorrect: boolean) => {
+    if (isCorrect) {
+      handleSubmitAnswer(locationToConfirm!, true);
+    } else {
+      setLocationToConfirm(null);
+      const tryAgainMessage: Message = {
+        id: `try-again-${Date.now()}`,
+        role: "assistant",
+        content: "No problem. Please enter the address again.",
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, tryAgainMessage]);
+    }
+  };
+
+  const handleSubmitAnswer = async (answer: string | string[] | { storageId: string, fileName: string, fileSize: number }, isConfirmed: boolean = false) => {
     if (!currentQuestion || isProcessing) return
+
+    if (currentQuestion.type === 'location' && typeof answer === 'string' && !isConfirmed) {
+      setLocationToConfirm(answer);
+      const userMessage: Message = {
+        id: `a-${currentQuestion._id}`,
+        role: "user",
+        content: answer,
+        timestamp: Date.now(),
+        questionId: currentQuestion._id,
+      };
+      const assistantMessage: Message = {
+        id: `map-check-${Date.now()}`,
+        role: "assistant",
+        content: "OK, let's check this location. Is this correct?",
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, userMessage, assistantMessage]);
+      setInputValue("");
+      return;
+    }
 
     setIsProcessing(true)
 
@@ -394,7 +256,6 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
                 timestamp: Date.now(),
             };
             setMessages(prev => [...prev, errorMessage]);
-            await speakText(validation.reason);
             setIsProcessing(false);
             inputRef.current?.focus();
             return;
@@ -452,21 +313,23 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
 
       setAnswers((prev) => ({ ...prev, [currentQuestion._id]: answer }))
 
-      const answerMessage: Message = {
-        id: `a-${currentQuestion._id}`,
-        role: "user",
-        content: displayContent,
-        timestamp: Date.now(),
-        questionId: currentQuestion._id,
+      if (currentQuestion.type !== 'location' || isConfirmed) {
+        const answerMessage: Message = {
+          id: `a-${currentQuestion._id}`,
+          role: "user",
+          content: displayContent,
+          timestamp: Date.now(),
+          questionId: currentQuestion._id,
+        }
+        setMessages((prev) => [...prev, answerMessage]);
       }
-
-      const newMessages = [...messages, answerMessage]
-      setMessages(newMessages)
+      
       setInputValue("")
+      if (locationToConfirm) setLocationToConfirm(null);
 
       await saveConversation({
         responseId: currentResponseId,
-        messages: newMessages,
+        messages: messages,
         aiContext: {
           currentQuestionIndex,
           answeredQuestions: Object.keys({ ...answers, [currentQuestion._id]: answer }),
@@ -524,7 +387,6 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
 
         setMessages((prev) => [...prev, completionMessage])
         setIsTyping(false)
-        await speakText(completionMessage.content)
 
         confetti({
           particleCount: 100,
@@ -544,8 +406,6 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
     }
   }
 
-
-
   if (!form) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>;
   if (formData?.isOverResponseLimit) return <OverLimitScreen primaryColor={primaryColor} form={form} />;
 
@@ -554,12 +414,11 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <FormHeader
+      
         form={form}
         currentQuestionIndex={currentQuestionIndex}
         totalQuestions={questions?.length || 0}
         progress={progress}
-        voiceEnabled={voiceEnabled}
-        onToggleVoice={toggleVoice}
         isCompleted={isCompleted}
       />
 
@@ -574,24 +433,24 @@ export default function FormSubmissionPage({ params }: { params: { formId: strin
       {!isCompleted && currentQuestion && (
         <div className="border-t bg-white/80 backdrop-blur-sm sticky bottom-0">
           <div className="container mx-auto px-4 py-6 max-w-3xl">
-            <QuestionInput
-              question={currentQuestion}
-              inputValue={inputValue}
-              onInputChange={setInputValue}
-              onSubmit={handleSubmitAnswer}
-              isProcessing={isProcessing}
-              isUploading={isUploading}
-              isTyping={isTyping}
-              multipleChoiceAnswers={multipleChoiceAnswers}
-              onMultipleChoiceChange={handleMultipleChoiceChange as any}
-              primaryColor={primaryColor}
-              voiceEnabled={voiceEnabled}
-              isRecording={isRecording}
-              audioLevel={audioLevel}
-              onToggleRecording={toggleRecording}
-              onFileChange={handleFileChange}
-              onKeyPress={handleKeyPress}
-            />
+            {locationToConfirm ? (
+              <MapConfirmation address={locationToConfirm} onConfirm={handleLocationConfirmation} />
+            ) : (
+              <QuestionInput 
+                question={currentQuestion}
+                inputValue={inputValue}
+                onInputChange={setInputValue}
+                onSubmit={handleSubmitAnswer}
+                isProcessing={isProcessing}
+                isUploading={isUploading}
+                isTyping={isTyping}
+                multipleChoiceAnswers={multipleChoiceAnswers}
+                onMultipleChoiceChange={handleMultipleChoiceChange as any}
+                primaryColor={primaryColor}
+                onFileChange={handleFileChange}
+                onKeyPress={handleKeyPress}
+              />
+            )}
           </div>
         </div>
       )}

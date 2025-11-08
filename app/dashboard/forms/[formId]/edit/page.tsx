@@ -31,7 +31,7 @@ import {
 } from "@dnd-kit/sortable";
 import SortableQuestion from "@/components/sortable-questions"
 import { ConvexError } from "convex/values"
-
+import NotionMapping from "@/components/form/notion-mapping"
 
 
 export default function EditFormPage({ params }: { params: { formId: Id<"forms"> } }) {
@@ -120,7 +120,7 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
 
   const addQuestion = async () => {
     const order = optimisticQuestions.length;
-    const newQuestion = await createQ({
+    const newQuestion = await createQ({ 
       formId: params.formId,
       type: "text",
       text: "New question",
@@ -211,6 +211,7 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
           <TabsTrigger value="questions">Questions</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="design">Design</TabsTrigger>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
         </TabsList>
         <TabsContent value="questions" className="space-y-4">
           <Card>
@@ -369,6 +370,17 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
                   onChange={(e) => setLogoUrl(e.target.value)}
                 />
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="integrations" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Form Integrations</CardTitle>
+              <CardDescription>Connect your form to other services like Notion.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {form && <NotionMapping form={form as any} />}
             </CardContent>
           </Card>
         </TabsContent>

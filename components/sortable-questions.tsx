@@ -17,10 +17,14 @@ const QUESTION_TYPE_MAP: Record<string, string> = {
   "Long Text": "textarea",
   Email: "email",
   Number: "number",
+  Currency: "currency",
   Phone: "phone",
   URL: "url",
   Date: "date",
+  "Date Range": "date_range",
   Time: "time",
+  "Yes/No": "yes_no",
+  Location: "location",
   "Single Choice": "choice",
   "Multiple Choice": "multiple_choice",
   Dropdown: "dropdown",
@@ -127,7 +131,7 @@ export default function SortableQuestion({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.keys(QUESTION_TYPE_MAP).map((label) => (
+                    {Object.keys(QUESTION_TYPE_MAP).sort().map((label) => (
                       <SelectItem key={label} value={label}>
                         {label}
                       </SelectItem>
