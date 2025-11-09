@@ -49,14 +49,15 @@ export const sendToIntegrations = internalAction({
                     case "notion":
                         await sendToNotion(integration, form, answersWithQuestions);
                         break;
+                    case "airtable":
+                        await sendToAirtable(ctx,integration, form, answersWithQuestions);
+                        break;
                     case "zapier":
                         await sendToZapier(integration, form, response, answersWithQuestions);
                         break;
-                    case "airtable":
-                        // Placeholder for Airtable integration
-                        console.log("Airtable integration triggered but not yet implemented.");
+                    case "hubspot":
+                        await sendToHubSpot(ctx, integration, form, answersWithQuestions);
                         break;
-                    // Other cases will be added here
                 }
             } catch (error) {
                 console.error(`Failed to send to integration ${integration.name}`, {
@@ -69,6 +70,9 @@ export const sendToIntegrations = internalAction({
     },
 });
 
+
+
+
 // Helper function to send data to Slack
 async function sendToSlack(
     integration: Doc<"integrations">,
@@ -76,7 +80,7 @@ async function sendToSlack(
     response: Doc<"responses">,
     answers: (Doc<"answers"> & { questionText: string })[]
 ) {
-    const webhookUrl = integration.config?.webhookUrl;
+    const webhookUrl = integration.config?.incomingWebhook?.url;
     if (!webhookUrl) {
         throw new Error("Slack webhook URL is not configured.");
     }
@@ -133,6 +137,50 @@ async function sendToSlack(
     if (!result.ok) {
         const errorText = await result.text();
         throw new Error(`Slack API Error: ${result.status} ${errorText}`);
+    }
+}
+
+async function sendToAirtable(
+    ctx: any,
+    integration: Doc<"integrations">,
+    form: Doc<"forms"> & { questions: Doc<"questions">[] },
+    answers: (Doc<"answers"> & { questionText: string })[]
+) {
+    let { accessToken, refreshToken, expiresAt, baseId, tableId } = integration.config;
+
+    if (!accessToken || !refreshToken || !expiresAt || !baseId || !tableId) {
+        throw new Error("Airtable configuration is incomplete. Missing tokens, Base ID, or Table ID.");
+    }
+
+    // Refresh token if it's about to expire (e.g., within the next 5 minutes)
+    if (Date.now() > expiresAt - 5 * 60 * 1000) {
+        accessToken = await ctx.runAction(internal.airtable.refreshAirtableToken, {
+            integrationId: integration._id,
+            refreshToken: refreshToken,
+        });
+    }
+
+    const fields: { [key: string]: any } = {};
+    answers.forEach(answer => {
+        fields[answer.questionText] = answer.value;
+    });
+
+    const airtableApiUrl = `https://api.airtable.com/v0/${baseId}/${tableId}`;
+    const result = await fetch(airtableApiUrl, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            records: [{ fields }],
+        }),
+    });
+
+    if (!result.ok) {
+        const errorData = await result.json();
+        console.error("Airtable API Error:", errorData);
+        throw new Error(`Airtable API Error: ${JSON.stringify(errorData.error)}`);
     }
 }
 
@@ -355,6 +403,80 @@ async function sendToZapier(
     if (!result.ok) {
         const errorText = await result.text();
         throw new Error(`Zapier Webhook Error: ${result.status} ${errorText}`);
+    }
+}
+
+async function sendToHubSpot(
+    ctx: any,
+    integration: Doc<"integrations">,
+    form: Doc<"forms"> & { questions: Doc<"questions">[] },
+    answers: (Doc<"answers"> & { questionText: string })[]
+) {
+    let { accessToken, refreshToken, expiresAt } = integration.config;
+
+    if (!accessToken || !refreshToken || !expiresAt) {
+        throw new Error("HubSpot configuration is incomplete.");
+    }
+
+    // Refresh token if it's about to expire
+    if (Date.now() > expiresAt - 5 * 60 * 1000) {
+        accessToken = await ctx.runAction(internal.hubspot.refreshHubSpotToken, {
+            integrationId: integration._id,
+            refreshToken: refreshToken,
+        });
+    }
+
+    const hubspotProperties: { [key: string]: any } = {};
+
+    // Simple mapping from question text to HubSpot properties
+    answers.forEach(answer => {
+        const qText = answer.questionText.toLowerCase();
+        if (qText.includes('email')) {
+            hubspotProperties['email'] = answer.value;
+        } else if (qText.includes('first name')) {
+            hubspotProperties['firstname'] = answer.value;
+        } else if (qText.includes('last name')) {
+            hubspotProperties['lastname'] = answer.value;
+        } else if (qText.includes('phone')) {
+            hubspotProperties['phone'] = answer.value;
+        } else if (qText.includes('company')) {
+            hubspotProperties['company'] = answer.value;
+        } else if (qText.includes('name')) {
+            // Simple name splitting
+            const nameParts = answer.value.toString().split(' ');
+            hubspotProperties['firstname'] = nameParts[0];
+            if (nameParts.length > 1) {
+                hubspotProperties['lastname'] = nameParts.slice(1).join(' ');
+            }
+        }
+    });
+
+    // A contact needs an email to be useful
+    if (!hubspotProperties.email) {
+        console.log("No email found in response, skipping HubSpot contact creation.");
+        return;
+    }
+
+    const apiUrl = `https://api.hubapi.com/crm/v3/objects/contacts`;
+    const result = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ properties: hubspotProperties }),
+    });
+
+    if (!result.ok) {
+        // If contact already exists (409 Conflict), we could update it, but for now we'll just log it.
+        const errorData = await result.json();
+        if (result.status === 409) {
+            console.log("Contact likely already exists in HubSpot.", errorData);
+            // Optionally, could add logic here to update the existing contact.
+        } else {
+            console.error("HubSpot API Error:", errorData);
+            throw new Error(`HubSpot API Error: ${JSON.stringify(errorData)}`);
+        }
     }
 }
 

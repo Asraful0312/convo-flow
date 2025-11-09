@@ -140,3 +140,25 @@ export const getGoogleIntegration = query({
             .first();
     },
 });
+
+export const getHubSpotIntegration = query({
+    handler: async (ctx) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) {
+            return null;
+        }
+        return await ctx.db
+            .query("integrations")
+            .withIndex("by_user", (q) => q.eq("userId", userId))
+            .filter((q) => q.eq(q.field("type"), "hubspot"))
+            .first();
+    },
+});
+
+
+export const get = internalQuery({
+    args: { id: v.id("integrations") },
+    handler: async (ctx, { id }) => {
+        return await ctx.db.get(id);
+    },
+});

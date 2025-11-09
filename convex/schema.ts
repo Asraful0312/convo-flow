@@ -286,6 +286,13 @@ export default defineSchema({
     .index("by_form", ["formId"])
     .index("by_type", ["type"]),
 
+  oauth_temp_storage: defineTable({
+    userId: v.id("users"),
+    service: v.string(), // e.g., "airtable"
+    codeVerifier: v.string(),
+    expiresAt: v.number(),
+  }).index("by_user_and_service", ["userId", "service"]),
+
   // Analytics events table
   analyticsEvents: defineTable({
     formId: v.id("forms"),

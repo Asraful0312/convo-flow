@@ -1,13 +1,11 @@
 "use node";
 
 import { v } from "convex/values";
-import { action, internalMutation } from "./_generated/server";
+import { action } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
-const redirectUri = `https://tremendous-curlew-325.convex.site/google-callback`;
-
-console.log("Redirect URI used:", redirectUri);
+const redirectUri = `${process.env.CONVEX_URL}/google-callback`;
 
 
 export const getOAuthUrl = action({

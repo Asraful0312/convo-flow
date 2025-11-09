@@ -82,4 +82,88 @@ http.route({
     handler: notionCallback,
 });
 
+const slackCallback = httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const code = url.searchParams.get("code");
+    const userId = url.searchParams.get("state");
+
+    if (!code || !userId) {
+        return new Response("Missing code or state from Slack OAuth callback", { status: 400 });
+    }
+
+    try {
+        await ctx.runAction(api.slack.exchangeCode, { code, userId: userId as any });
+        const redirectUrl = `${process.env.SITE_URL}/dashboard/settings?selected=integrations`;
+        return new Response(null, {
+            status: 302, // Found (redirect)
+            headers: { "Location": redirectUrl.toString() },
+        });
+    } catch (err) {
+        console.error("Failed to handle Slack OAuth callback", err);
+        return new Response("Failed to connect Slack Account", { status: 500 });
+    }
+});
+
+http.route({
+    path: "/slack-callback",
+    method: "GET",
+    handler: slackCallback,
+});
+
+const airtableCallback = httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const code = url.searchParams.get("code");
+    const userId = url.searchParams.get("state");
+
+    if (!code || !userId) {
+        return new Response("Missing code or state from Airtable OAuth callback", { status: 400 });
+    }
+
+    try {
+        await ctx.runAction(api.airtable.exchangeCode, { code, userId: userId as any });
+        const redirectUrl = `${process.env.SITE_URL}/dashboard/settings?selected=integrations`;
+        return new Response(null, {
+            status: 302, // Found (redirect)
+            headers: { "Location": redirectUrl.toString() },
+        });
+    } catch (err) {
+        console.error("Failed to handle Airtable OAuth callback", err);
+        return new Response("Failed to connect Airtable Account", { status: 500 });
+    }
+});
+
+http.route({
+    path: "/airtable-callback",
+    method: "GET",
+    handler: airtableCallback,
+});
+
+const hubspotCallback = httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const code = url.searchParams.get("code");
+    const userId = url.searchParams.get("state");
+
+    if (!code || !userId) {
+        return new Response("Missing code or state from HubSpot OAuth callback", { status: 400 });
+    }
+
+    try {
+        await ctx.runAction(api.hubspot.exchangeCode, { code, userId: userId as any });
+        const redirectUrl = `${process.env.SITE_URL}/dashboard/settings?selected=integrations`;
+        return new Response(null, {
+            status: 302, // Found (redirect)
+            headers: { "Location": redirectUrl.toString() },
+        });
+    } catch (err) {
+        console.error("Failed to handle HubSpot OAuth callback", err);
+        return new Response("Failed to connect HubSpot Account", { status: 500 });
+    }
+});
+
+http.route({
+    path: "/hubspot-callback",
+    method: "GET",
+    handler: hubspotCallback,
+});
+
 export default http;

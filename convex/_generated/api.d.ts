@@ -9,6 +9,8 @@
  */
 
 import type * as ai from "../ai.js";
+import type * as airtable from "../airtable.js";
+import type * as airtableMutation from "../airtableMutation.js";
 import type * as analytics from "../analytics.js";
 import type * as answers from "../answers.js";
 import type * as auth from "../auth.js";
@@ -20,12 +22,16 @@ import type * as forms from "../forms.js";
 import type * as google from "../google.js";
 import type * as googleMutation from "../googleMutation.js";
 import type * as http from "../http.js";
+import type * as hubspot from "../hubspot.js";
+import type * as hubspotMutation from "../hubspotMutation.js";
 import type * as integrationActions from "../integrationActions.js";
 import type * as integrations from "../integrations.js";
 import type * as notion from "../notion.js";
 import type * as notionMutation from "../notionMutation.js";
 import type * as questions from "../questions.js";
 import type * as responses from "../responses.js";
+import type * as slack from "../slack.js";
+import type * as slackMutation from "../slackMutation.js";
 import type * as stripe from "../stripe.js";
 import type * as users from "../users.js";
 
@@ -45,6 +51,8 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
+  airtable: typeof airtable;
+  airtableMutation: typeof airtableMutation;
   analytics: typeof analytics;
   answers: typeof answers;
   auth: typeof auth;
@@ -56,12 +64,16 @@ declare const fullApi: ApiFromModules<{
   google: typeof google;
   googleMutation: typeof googleMutation;
   http: typeof http;
+  hubspot: typeof hubspot;
+  hubspotMutation: typeof hubspotMutation;
   integrationActions: typeof integrationActions;
   integrations: typeof integrations;
   notion: typeof notion;
   notionMutation: typeof notionMutation;
   questions: typeof questions;
   responses: typeof responses;
+  slack: typeof slack;
+  slackMutation: typeof slackMutation;
   stripe: typeof stripe;
   users: typeof users;
 }>;

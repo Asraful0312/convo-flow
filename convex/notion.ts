@@ -7,7 +7,7 @@ import { internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { api } from "./_generated/api";
 
-const redirectUri = `https://tremendous-curlew-325.convex.site/notion`;
+const redirectUri = `${process.env.CONVEX_URL}/notion`;
 
 export const getOAuthUrl = action({
     args: { userId: v.id("users") },
