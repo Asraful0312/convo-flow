@@ -1,17 +1,15 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import SettingsLayout from "./SettingsLayout";
+import ProfileTab from "./tabs/ProfileTab";
+import NotificationsTab from "./tabs/NotificationsTab";
+import IntegrationsTab from "./tabs/IntegrationsTab";
 import BillingSection from "@/components/settings/billing-section";
-import { Preloaded, usePreloadedQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import ProfileTab from "../settings/tabs/ProfileTab";
-import NotificationsTab from "../settings/tabs/NotificationsTab";
-import IntegrationsTab from "../settings/tabs/IntegrationsTab";
-import WebhooksTab from "../settings/tabs/WebhooksTab";
-import SettingsLayout from "../settings/SettingsLayout";
+import WebhooksTab from "./tabs/WebhooksTab";
 
 type Props = {
-  preloadedIntegrations: Preloaded<typeof api.integrations.getIntegrations>;
+  preloadedIntegrations: any;
 };
 
 export default function SettingsContent({ preloadedIntegrations }: Props) {

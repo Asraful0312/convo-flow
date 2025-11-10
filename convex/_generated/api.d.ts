@@ -16,6 +16,7 @@ import type * as answers from "../answers.js";
 import type * as auth from "../auth.js";
 import type * as billing from "../billing.js";
 import type * as conversations from "../conversations.js";
+import type * as email from "../email.js";
 import type * as exports from "../exports.js";
 import type * as files from "../files.js";
 import type * as forms from "../forms.js";
@@ -30,10 +31,13 @@ import type * as notion from "../notion.js";
 import type * as notionMutation from "../notionMutation.js";
 import type * as questions from "../questions.js";
 import type * as responses from "../responses.js";
+import type * as salesforce from "../salesforce.js";
+import type * as salesforceMutation from "../salesforceMutation.js";
 import type * as slack from "../slack.js";
 import type * as slackMutation from "../slackMutation.js";
 import type * as stripe from "../stripe.js";
 import type * as users from "../users.js";
+import type * as webhooks from "../webhooks.js";
 
 import type {
   ApiFromModules,
@@ -58,6 +62,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   billing: typeof billing;
   conversations: typeof conversations;
+  email: typeof email;
   exports: typeof exports;
   files: typeof files;
   forms: typeof forms;
@@ -72,10 +77,13 @@ declare const fullApi: ApiFromModules<{
   notionMutation: typeof notionMutation;
   questions: typeof questions;
   responses: typeof responses;
+  salesforce: typeof salesforce;
+  salesforceMutation: typeof salesforceMutation;
   slack: typeof slack;
   slackMutation: typeof slackMutation;
   stripe: typeof stripe;
   users: typeof users;
+  webhooks: typeof webhooks;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 

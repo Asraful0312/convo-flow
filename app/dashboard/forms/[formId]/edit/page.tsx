@@ -1,19 +1,31 @@
-"use client"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Save, Eye, Plus, Loader2 } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useMutation, useQuery } from "convex/react"
-import { api } from "@/convex/_generated/api"
-import { Id } from "@/convex/_generated/dataModel"
-import { use, useEffect, useState } from "react"
-import { toast } from "sonner"
+"use client";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Save, Eye, Plus, Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { use, useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
   DndContext,
   closestCenter,
@@ -29,28 +41,38 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import SortableQuestion from "@/components/sortable-questions"
-import { ConvexError } from "convex/values"
-import NotionMapping from "@/components/form/notion-mapping"
+import SortableQuestion from "@/components/sortable-questions";
+import { ConvexError } from "convex/values";
+import NotionMapping from "@/components/form/notion-mapping";
 
-
-export default function EditFormPage({ params }: { params: { formId: Id<"forms"> } }) {
+export default function EditFormPage({
+  params,
+}: {
+  params: { formId: Id<"forms"> };
+}) {
   const { formId } = use<any>(params as any);
   const form = useQuery(api.forms.getSingleForm, { formId: formId });
   const [isSaving, setIsSaving] = useState(false);
-  const [status, setStatus] = useState<"draft" | "published" | "closed">("draft");
+  const [status, setStatus] = useState<"draft" | "published" | "closed">(
+    "draft",
+  );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#6366f1");
   const [logoUrl, setLogoUrl] = useState("");
   const [emailOnResponse, setEmailOnResponse] = useState(false);
   const [notificationEmail, setNotificationEmail] = useState("");
-  const [personality, setPersonality] = useState<"professional" | "friendly" | "casual" | "formal">("professional");
+  const [personality, setPersonality] = useState<
+    "professional" | "friendly" | "casual" | "formal"
+  >("professional");
   const [voiceEnabled, setVoiceEnabled] = useState(false);
 
   // Questions with sorting and optimistic state
-  const rawQuestions = useQuery(api.questions.getFormQuestions, { formId: formId }) ?? [];
-  const sortedQuestions = [...rawQuestions].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const rawQuestions =
+    useQuery(api.questions.getFormQuestions, { formId: formId }) ?? [];
+  const sortedQuestions = [...rawQuestions].sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0),
+  );
   const [optimisticQuestions, setOptimisticQuestions] = useState<any[]>([]);
 
   useEffect(() => {
@@ -77,50 +99,50 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
   }, [form]);
 
   const handleSaveSettings = async () => {
-  setIsSaving(true);
-  try {
-    const payload: any = {
-      formId,
-    };
+    setIsSaving(true);
+    try {
+      const payload: any = {
+        formId,
+      };
 
-    if (title !== form?.title) payload.title = title;
-    if (description !== form?.description) payload.description = description;
-    if (status !== form?.status) payload.status = status;
+      if (title !== form?.title) payload.title = title;
+      if (description !== form?.description) payload.description = description;
+      if (status !== form?.status) payload.status = status;
 
-    if (emailOnResponse !== form?.settings?.notifications?.emailOnResponse)
-      payload.emailOnResponse = emailOnResponse;
+      if (emailOnResponse !== form?.settings?.notifications?.emailOnResponse)
+        payload.emailOnResponse = emailOnResponse;
 
-    if (notificationEmail !== form?.settings?.notifications?.notificationEmail)
-      payload.notificationEmail = notificationEmail;
+      if (
+        notificationEmail !== form?.settings?.notifications?.notificationEmail
+      )
+        payload.notificationEmail = notificationEmail;
 
-    if (personality !== form?.aiConfig?.personality)
-      payload.personality = personality;
+      if (personality !== form?.aiConfig?.personality)
+        payload.personality = personality;
 
-    if (voiceEnabled !== form?.aiConfig?.enableVoice)
-      payload.voiceEnabled = voiceEnabled;
+      if (voiceEnabled !== form?.aiConfig?.enableVoice)
+        payload.voiceEnabled = voiceEnabled;
 
-    if (primaryColor !== form?.settings?.branding?.primaryColor)
-      payload.primaryColor = primaryColor;
+      if (primaryColor !== form?.settings?.branding?.primaryColor)
+        payload.primaryColor = primaryColor;
 
-    if (logoUrl !== form?.settings?.branding?.logoUrl)
-      payload.logoUrl = logoUrl;
+      if (logoUrl !== form?.settings?.branding?.logoUrl)
+        payload.logoUrl = logoUrl;
 
-    await updateSettings(payload);
-    toast.success("Settings saved");
-  } catch (err) {
-    const errorMessage =
-      err instanceof ConvexError ? err.data : "Unexpected error occurred";
-    toast.error(errorMessage);
-  } finally {
-    setIsSaving(false);
-  }
-};
-
-
+      await updateSettings(payload);
+      toast.success("Settings saved");
+    } catch (err) {
+      const errorMessage =
+        err instanceof ConvexError ? err.data : "Unexpected error occurred";
+      toast.error(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const addQuestion = async () => {
     const order = optimisticQuestions.length;
-    const newQuestion = await createQ({ 
+    const newQuestion = await createQ({
       formId: params.formId,
       type: "text",
       text: "New question",
@@ -145,7 +167,9 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
 
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -183,7 +207,9 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
           </Link>
           <div>
             <h1 className="text-3xl font-bold">Edit Form</h1>
-            <p className="text-muted-foreground">Customize your form questions and settings</p>
+            <p className="text-muted-foreground">
+              Customize your form questions and settings
+            </p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -193,17 +219,22 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
               Preview
             </Button>
           </Link>
-            <Button onClick={handleSaveSettings} className="bg-[#6366f1] hover:bg-[#4f46e5] gap-2">
-          {isSaving ? <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Saving...
-          </> : (
-            <>
-              <Save className="w-4 h-4" />
-              Save Changes
-            </>
-          )}
-        </Button>
+          <Button
+            onClick={handleSaveSettings}
+            className="bg-[#F56A4D] hover:bg-[#F56A4D]/90 gap-2"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Save Changes
+              </>
+            )}
+          </Button>
         </div>
       </div>
       <Tabs defaultValue="questions" className="space-y-6">
@@ -219,7 +250,9 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Form Questions</CardTitle>
-                  <CardDescription>Add, edit, or reorder your form questions</CardDescription>
+                  <CardDescription>
+                    Add, edit, or reorder your form questions
+                  </CardDescription>
                 </div>
                 <Button onClick={addQuestion} className="gap-2">
                   <Plus className="w-4 h-4" />
@@ -261,7 +294,10 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
               {/* Status */}
               <div className="space-y-2">
                 <Label>Form Status</Label>
-                <Select value={status} onValueChange={(v) => setStatus(v as any)}>
+                <Select
+                  value={status}
+                  onValueChange={(v) => setStatus(v as any)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -275,7 +311,11 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
               {/* Title & Description */}
               <div className="space-y-2">
                 <Label htmlFor="title">Form Title</Label>
-                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
@@ -296,7 +336,10 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
                       Get notified when someone submits
                     </p>
                   </div>
-                  <Switch checked={emailOnResponse} onCheckedChange={setEmailOnResponse} />
+                  <Switch
+                    checked={emailOnResponse}
+                    onCheckedChange={setEmailOnResponse}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="notification-email">Notification Email</Label>
@@ -313,7 +356,10 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
                 <h3 className="font-medium">AI Configuration</h3>
                 <div className="space-y-2">
                   <Label htmlFor="personality">AI Personality</Label>
-                  <Select value={personality} onValueChange={(v) => setPersonality(v as any)}>
+                  <Select
+                    value={personality}
+                    onValueChange={(v) => setPersonality(v as any)}
+                  >
                     <SelectTrigger id="personality">
                       <SelectValue />
                     </SelectTrigger>
@@ -332,7 +378,10 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
                       Allow users to speak their answers
                     </p>
                   </div>
-                  <Switch checked={voiceEnabled} onCheckedChange={setVoiceEnabled} />
+                  <Switch
+                    checked={voiceEnabled}
+                    onCheckedChange={setVoiceEnabled}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -377,7 +426,9 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
           <Card>
             <CardHeader>
               <CardTitle>Form Integrations</CardTitle>
-              <CardDescription>Connect your form to other services like Notion.</CardDescription>
+              <CardDescription>
+                Connect your form to other services like Notion.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {form && <NotionMapping form={form as any} />}
@@ -386,11 +437,16 @@ export default function EditFormPage({ params }: { params: { formId: Id<"forms">
         </TabsContent>
       </Tabs>
       <div className="flex justify-end">
-        <Button onClick={handleSaveSettings} className="bg-[#6366f1] hover:bg-[#4f46e5] gap-2">
-          {isSaving ? <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Saving...
-          </> : (
+        <Button
+          onClick={handleSaveSettings}
+          className="bg-[#F56A4D] hover:bg-[#F56A4D]/90 gap-2"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
             <>
               <Save className="w-4 h-4" />
               Save Changes

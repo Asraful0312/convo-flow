@@ -1,10 +1,30 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { TrendingUp, Users, MessageSquare, Clock, Sparkles, Smartphone, Globe } from "lucide-react"
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  TrendingUp,
+  Users,
+  MessageSquare,
+  Clock,
+  Sparkles,
+  Smartphone,
+  Globe,
+} from "lucide-react";
 import {
   Line,
   LineChart,
@@ -17,8 +37,12 @@ import {
   YAxis,
   CartesianGrid,
   ResponsiveContainer,
-} from "recharts"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+} from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -38,25 +62,35 @@ const deviceColors: { [key: string]: string } = {
 };
 
 export default function AnalyticsPage() {
-  const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y">("7d")
-  const analytics = useQuery(api.analytics.getAnalytics, { timeRange })
+  const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y">("7d");
+  const analytics = useQuery(api.analytics.getAnalytics, { timeRange });
 
   const formatMinutes = (ms: number) => {
     const minutes = ms / 1000 / 60;
     return `${minutes.toFixed(1)}m`;
-  }
+  };
 
   if (!analytics) {
     return (
       <div className="flex items-center justify-center h-[80vh]">
         <Loader2 className="w-12 h-12 animate-spin text-muted-foreground" />
       </div>
-    )
+    );
   }
 
-  const { keyMetrics, responseTrend, completionRates, deviceBreakdown, geographicData, aiInsights } = analytics;
+  const {
+    keyMetrics,
+    responseTrend,
+    completionRates,
+    deviceBreakdown,
+    geographicData,
+    aiInsights,
+  } = analytics;
 
-  const totalGeoResponses = geographicData.reduce((acc, curr) => acc + curr.responses, 0);
+  const totalGeoResponses = geographicData.reduce(
+    (acc, curr) => acc + curr.responses,
+    0,
+  );
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -64,7 +98,9 @@ export default function AnalyticsPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Analytics</h1>
-          <p className="text-muted-foreground">Track performance and gain insights</p>
+          <p className="text-muted-foreground">
+            Track performance and gain insights
+          </p>
         </div>
         <Select value={timeRange} onValueChange={(v) => setTimeRange(v as any)}>
           <SelectTrigger className="w-[180px] bg-background">
@@ -83,11 +119,15 @@ export default function AnalyticsPage() {
       <div className="grid md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Responses</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Responses
+            </CardTitle>
             <Users className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{keyMetrics.totalResponses}</div>
+            <div className="text-3xl font-bold">
+              {keyMetrics.totalResponses}
+            </div>
             {/* <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 mt-1">
               <TrendingUp className="w-4 h-4" />
               <span>+23% from last week</span>
@@ -97,11 +137,15 @@ export default function AnalyticsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Avg Completion Rate</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Avg Completion Rate
+            </CardTitle>
             <MessageSquare className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{keyMetrics.avgCompletionRate.toFixed(0)}%</div>
+            <div className="text-3xl font-bold">
+              {keyMetrics.avgCompletionRate.toFixed(0)}%
+            </div>
             {/* <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 mt-1">
               <TrendingUp className="w-4 h-4" />
               <span>+12% from last week</span>
@@ -111,11 +155,15 @@ export default function AnalyticsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Avg Completion Time</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Avg Completion Time
+            </CardTitle>
             <Clock className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{formatMinutes(keyMetrics.avgCompletionTime)}</div>
+            <div className="text-3xl font-bold">
+              {formatMinutes(keyMetrics.avgCompletionTime)}
+            </div>
             {/* <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400 mt-1">
               <TrendingDown className="w-4 h-4" />
               <span>-15% faster</span>
@@ -125,12 +173,16 @@ export default function AnalyticsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active Forms</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Active Forms
+            </CardTitle>
             <MessageSquare className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">{keyMetrics.activeForms}</div>
-            <div className="text-sm text-muted-foreground mt-1">{keyMetrics.activeForms} published, {keyMetrics.draftForms} draft</div>
+            <div className="text-sm text-muted-foreground mt-1">
+              {keyMetrics.activeForms} published, {keyMetrics.draftForms} draft
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -139,17 +191,23 @@ export default function AnalyticsPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-[#6366f1]" />
+            <Sparkles className="w-5 h-5 text-[#F56A4D]" />
             <CardTitle>AI Insights</CardTitle>
           </div>
-          <CardDescription>Personalized recommendations to improve your forms</CardDescription>
+          <CardDescription>
+            Personalized recommendations to improve your forms
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {aiInsights.map((insight, index) => {
-              const Icon = iconMap[insight.type as keyof typeof iconMap] || Sparkles;
+              const Icon =
+                iconMap[insight.type as keyof typeof iconMap] || Sparkles;
               return (
-                <div key={index} className="flex gap-4 p-4 rounded-lg border border-border bg-muted/30">
+                <div
+                  key={index}
+                  className="flex gap-4 p-4 rounded-lg border border-border bg-muted/30"
+                >
                   <div
                     className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
                       insight.type === "positive"
@@ -171,10 +229,12 @@ export default function AnalyticsPage() {
                   </div>
                   <div className="flex-1">
                     <h4 className="font-semibold mb-1">{insight.title}</h4>
-                    <p className="text-sm text-muted-foreground">{insight.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {insight.description}
+                    </p>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         </CardContent>
@@ -193,7 +253,9 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Response Trend</CardTitle>
-              <CardDescription>Daily responses over the selected period</CardDescription>
+              <CardDescription>
+                Daily responses over the selected period
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer
@@ -211,7 +273,12 @@ export default function AnalyticsPage() {
                     <XAxis dataKey="date" />
                     <YAxis />
                     <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line type="monotone" dataKey="responses" stroke="#6366f1" strokeWidth={2} />
+                    <Line
+                      type="monotone"
+                      dataKey="responses"
+                      stroke="#6366f1"
+                      strokeWidth={2}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -223,7 +290,9 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Completion Rates by Form</CardTitle>
-              <CardDescription>Compare completion rates across your forms</CardDescription>
+              <CardDescription>
+                Compare completion rates across your forms
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer
@@ -267,9 +336,21 @@ export default function AnalyticsPage() {
                 >
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={deviceBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
+                      <Pie
+                        data={deviceBreakdown}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                      >
                         {deviceBreakdown.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={deviceColors[entry.name] || deviceColors.Other} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={
+                              deviceColors[entry.name] || deviceColors.Other
+                            }
+                          />
                         ))}
                       </Pie>
                       <ChartTooltip content={<ChartTooltipContent />} />
@@ -282,15 +363,27 @@ export default function AnalyticsPage() {
                     <div key={device.name} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: deviceColors[device.name] || deviceColors.Other }} />
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{
+                              backgroundColor:
+                                deviceColors[device.name] || deviceColors.Other,
+                            }}
+                          />
                           <span className="font-medium">{device.name}</span>
                         </div>
-                        <span className="text-muted-foreground">{device.value.toFixed(0)}%</span>
+                        <span className="text-muted-foreground">
+                          {device.value.toFixed(0)}%
+                        </span>
                       </div>
                       <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full transition-all"
-                          style={{ width: `${device.value}%`, backgroundColor: deviceColors[device.name] || deviceColors.Other }}
+                          style={{
+                            width: `${device.value}%`,
+                            backgroundColor:
+                              deviceColors[device.name] || deviceColors.Other,
+                          }}
                         />
                       </div>
                     </div>
@@ -313,16 +406,22 @@ export default function AnalyticsPage() {
                   <div key={country.country} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-muted-foreground w-6">{index + 1}</span>
+                        <span className="text-sm font-medium text-muted-foreground w-6">
+                          {index + 1}
+                        </span>
                         <Globe className="w-4 h-4 text-muted-foreground" />
                         <span className="font-medium">{country.country}</span>
                       </div>
-                      <span className="text-muted-foreground">{country.responses} responses</span>
+                      <span className="text-muted-foreground">
+                        {country.responses} responses
+                      </span>
                     </div>
                     <div className="w-full h-2 bg-muted rounded-full overflow-hidden ml-9">
                       <div
-                        className="h-full bg-linear-to-r from-[#6366f1] to-[#f97316] transition-all"
-                        style={{ width: `${(country.responses / totalGeoResponses) * 100}%` }}
+                        className="h-full bg-linear-to-r from-[#F56A4D] to-[#f97316] transition-all"
+                        style={{
+                          width: `${(country.responses / totalGeoResponses) * 100}%`,
+                        }}
                       />
                     </div>
                   </div>
@@ -333,5 +432,5 @@ export default function AnalyticsPage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

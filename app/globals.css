@@ -107,7 +107,8 @@
 @theme inline {
   /* CANDID Typography */
   --font-sans: "Inter", "SF Pro Text", system-ui, sans-serif;
-  --font-heading: "DM Sans", "Plus Jakarta Sans", "SF Pro Display", system-ui, sans-serif;
+  --font-heading:
+    "DM Sans", "Plus Jakarta Sans", "SF Pro Display", system-ui, sans-serif;
   --font-mono: "Fira Mono", "SFMono-Regular", ui-monospace, monospace;
 
   /* CANDID Color System */
@@ -163,7 +164,9 @@
 
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
   }
 
   /* Use DM Sans for headings */
@@ -173,7 +176,8 @@
   h4,
   h5,
   h6 {
-    font-family: "DM Sans", "Plus Jakarta Sans", "SF Pro Display", system-ui, sans-serif;
+    font-family:
+      "DM Sans", "Plus Jakarta Sans", "SF Pro Display", system-ui, sans-serif;
     @apply font-semibold tracking-tight;
   }
 

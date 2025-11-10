@@ -12,7 +12,7 @@ export const exportResponses = action({
   args: {
     formId: v.id("forms"),
     responseIds: v.array(v.id("responses")),
-    format: v.union(v.literal("csv"), v.literal("xlsx"), v.literal("pdf")),
+    format: v.union(v.literal("csv"), v.literal("xlsx"), v.literal("pdf"), v.literal("json")),
   },
   handler: async (ctx, { formId, responseIds, format }): Promise<any> => {
     const form = await ctx.runQuery(api.forms.getSingleForm, { formId });
@@ -27,44 +27,67 @@ export const exportResponses = action({
     const questions = form.questions.sort((a, b) => a.order - b.order);
     const headers = ["Response ID", "Status", "Started At", "Completed At", ...questions.map(q => q.text)];
 
-    const data = await Promise.all(responses.map(async (response: any) => {
-        if (!response) return [];
-        const row: (string | number | null | undefined)[] = [
-            response._id,
-            response.status,
-            new Date(response.startedAt).toISOString(),
-            response.completedAt ? new Date(response.completedAt).toISOString() : "",
-        ];
-        for (const q of questions) {
-            const answer = response.answers.find((a: any) => a.questionId === q._id);
-
-            
-            if (answer) {
-                if (q.type === "file") {
-                     if (answer.value && typeof answer.value === 'string' && answer.fileSize) {
-                        const url = await ctx.storage.getUrl(answer.value);
-                        row.push(url ?? `Invalid storage ID: ${answer.value}`);
-                    } else {
-                        row.push(String(answer.value));
-                    }
-                } else {
-                    console.log("eror")
-                    row.push(String(answer.value));
-                }
-            } else {
-                row.push("");
-            }
-        }
-        return row;
-    }));
-
     let fileContent: string | Buffer = "";
     let contentType = "";
 
     if (format === "csv") {
+      const data = await Promise.all(responses.map(async (response: any) => {
+          if (!response) return [];
+          const row: (string | number | null | undefined)[] = [
+              response._id,
+              response.status,
+              new Date(response.startedAt).toISOString(),
+              response.completedAt ? new Date(response.completedAt).toISOString() : "",
+          ];
+          for (const q of questions) {
+              const answer = response.answers.find((a: any) => a.questionId === q._id);
+              if (answer) {
+                  if (q.type === "file") {
+                       if (answer.value && typeof answer.value === 'string' && answer.fileSize) {
+                          const url = await ctx.storage.getUrl(answer.value);
+                          row.push(url ?? `Invalid storage ID: ${answer.value}`);
+                      } else {
+                          row.push(String(answer.value));
+                      }
+                  } else {
+                      row.push(String(answer.value));
+                  }
+              } else {
+                  row.push("");
+              }
+          }
+          return row;
+      }));
       fileContent = Papa.unparse({ fields: headers, data });
       contentType = "text/csv";
     } else if (format === "xlsx") {
+        const data = await Promise.all(responses.map(async (response: any) => {
+            if (!response) return [];
+            const row: (string | number | null | undefined)[] = [
+                response._id,
+                response.status,
+                new Date(response.startedAt).toISOString(),
+                response.completedAt ? new Date(response.completedAt).toISOString() : "",
+            ];
+            for (const q of questions) {
+                const answer = response.answers.find((a: any) => a.questionId === q._id);
+                if (answer) {
+                    if (q.type === "file") {
+                         if (answer.value && typeof answer.value === 'string' && answer.fileSize) {
+                            const url = await ctx.storage.getUrl(answer.value);
+                            row.push(url ?? `Invalid storage ID: ${answer.value}`);
+                        } else {
+                            row.push(String(answer.value));
+                        }
+                    } else {
+                        row.push(String(answer.value));
+                    }
+                } else {
+                    row.push("");
+                }
+            }
+            return row;
+        }));
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Responses');
         worksheet.columns = headers.map(header => ({ header, key: header, width: 30 }));
@@ -132,6 +155,35 @@ export const exportResponses = action({
         const pdfBytes = await pdfDoc.save();
         fileContent = Buffer.from(pdfBytes);
         contentType = "application/pdf";
+    } else if (format === "json") {
+        const jsonResponses = await Promise.all(responses.map(async (response: any) => {
+            if (!response) return {};
+            const answersMap: { [key: string]: any } = {};
+            for (const q of questions) {
+                const answer = response.answers.find((a: any) => a.questionId === q._id);
+                if (answer) {
+                    if (q.type === "file" && answer.value && typeof answer.value === 'string' && answer.fileSize) {
+                        const url = await ctx.storage.getUrl(answer.value);
+                        answersMap[q.text] = url ?? `Invalid storage ID: ${answer.value}`;
+                    } else {
+                        answersMap[q.text] = answer.value;
+                    }
+                } else {
+                    answersMap[q.text] = null;
+                }
+            }
+            return {
+                _id: response._id,
+                status: response.status,
+                startedAt: new Date(response.startedAt).toISOString(),
+                completedAt: response.completedAt ? new Date(response.completedAt).toISOString() : null,
+                metadata: response.metadata,
+                contactInfo: response.contactInfo,
+                answers: answersMap,
+            };
+        }));
+        fileContent = JSON.stringify(jsonResponses, null, 2);
+        contentType = "application/json";
     }
 
     const uploadUrl = await ctx.storage.generateUploadUrl();

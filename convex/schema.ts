@@ -252,7 +252,11 @@ export default defineSchema({
     name: v.string(),
     url: v.string(),
     events: v.array(
-      v.union(v.literal("response.created"), v.literal("response.updated"), v.literal("response.completed")),
+      v.union(
+        v.literal("response.created"),
+        v.literal("response.updated"),
+        v.literal("response.completed")
+      )
     ),
     enabled: v.boolean(),
     secret: v.optional(v.string()),
@@ -275,6 +279,7 @@ export default defineSchema({
       v.literal("notion"),
       v.literal("hubspot"),
       v.literal("salesforce"),
+      v.literal("email"),
     ),
     name: v.string(),
     config: v.any(), // Configuration specific to each integration type

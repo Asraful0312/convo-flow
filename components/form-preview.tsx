@@ -1,54 +1,80 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { useMutation } from "convex/react"
-import { api } from "@/convex/_generated/api"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Card } from "@/components/ui/card"
-import { Eye, Code, Settings, Save, Loader2, Star, UploadCloud, ChevronDownIcon, Plus, Trash2 } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Textarea } from "./ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import type { Question } from "@/lib/types"
-import { Calendar } from "./ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
-import { toast } from "sonner"
-import { ConvexError } from "convex/values"
-
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Card } from "@/components/ui/card";
+import {
+  Eye,
+  Code,
+  Settings,
+  Save,
+  Loader2,
+  Star,
+  UploadCloud,
+  ChevronDownIcon,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "./ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import type { Question } from "@/lib/types";
+import { Calendar } from "./ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { toast } from "sonner";
+import { ConvexError } from "convex/values";
 
 interface FormPreviewProps {
   form: {
-    title: string
-    description: string
-    questions: (Question & { id: string })[]
+    title: string;
+    description: string;
+    questions: (Question & { id: string })[];
     settings?: {
-      branding?: { primaryColor?: string; logoUrl?: string }
-      notifications?: { emailOnResponse?: boolean; notificationEmail?: string }
-    }
+      branding?: { primaryColor?: string; logoUrl?: string };
+      notifications?: { emailOnResponse?: boolean; notificationEmail?: string };
+    };
     aiConfig?: {
-      personality?: "professional" | "friendly" | "casual" | "formal"
-      voiceEnabled?: boolean
-    }
-  }
-  setForm: React.Dispatch<React.SetStateAction<FormPreviewProps["form"] | null>>
+      personality?: "professional" | "friendly" | "casual" | "formal";
+      voiceEnabled?: boolean;
+    };
+  };
+  setForm: React.Dispatch<
+    React.SetStateAction<FormPreviewProps["form"] | null>
+  >;
 }
 
 export function FormPreview({ form, setForm }: FormPreviewProps) {
-  const [activeTab, setActiveTab] = useState<"preview" | "code" | "settings">("preview")
-  const [isSaving, setIsSaving] = useState(false)
-  const [answers, setAnswers] = useState<{ [key: string]: any }>({})
-  const [hoveredRatings, setHoveredRatings] = useState<{ [key: string]: number }>({})
-  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null)
-  const [date, setDate] = useState<Date | undefined>(new Date())
-  const [open, setOpen] = useState(false)
-  const [newQuestionType, setNewQuestionType] = useState<Question['type'] | ''>('');
+  const [activeTab, setActiveTab] = useState<"preview" | "code" | "settings">(
+    "preview",
+  );
+  const [isSaving, setIsSaving] = useState(false);
+  const [answers, setAnswers] = useState<{ [key: string]: any }>({});
+  const [hoveredRatings, setHoveredRatings] = useState<{
+    [key: string]: number;
+  }>({});
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(
+    null,
+  );
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [open, setOpen] = useState(false);
+  const [newQuestionType, setNewQuestionType] = useState<Question["type"] | "">(
+    "",
+  );
 
-  const handleAddQuestion = (type: Question['type']) => {
+  const handleAddQuestion = (type: Question["type"]) => {
     setForm((prev) => {
       if (!prev) return null;
       const newQuestion: any & { id: string } = {
@@ -56,7 +82,13 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
         text: "New Question",
         type: type,
         required: false,
-        options: type === "choice" || type === "multiple_choice" || type === "dropdown" || type === "likert" ? ["Option 1"] : undefined,
+        options:
+          type === "choice" ||
+          type === "multiple_choice" ||
+          type === "dropdown" ||
+          type === "likert"
+            ? ["Option 1"]
+            : undefined,
       };
       return {
         ...prev,
@@ -75,64 +107,82 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
     });
   };
 
-  const saveForm = useMutation(api.forms.create)
-  const router = useRouter()
+  const saveForm = useMutation(api.forms.create);
+  const router = useRouter();
 
-
-  const [primaryColor, setPrimaryColor] = useState(form.settings?.branding?.primaryColor ?? "#6366f1")
-  const [logoUrl, setLogoUrl] = useState(form.settings?.branding?.logoUrl ?? "")
-  const [emailOnResponse, setEmailOnResponse] = useState(form.settings?.notifications?.emailOnResponse ?? false)
-  const [notificationEmail, setNotificationEmail] = useState(form.settings?.notifications?.notificationEmail ?? "")
-  const [personality, setPersonality] = useState(form.aiConfig?.personality ?? "friendly")
-  const [voiceEnabled, setVoiceEnabled] = useState(form.aiConfig?.voiceEnabled ?? false)
+  const [primaryColor, setPrimaryColor] = useState(
+    form.settings?.branding?.primaryColor ?? "#6366f1",
+  );
+  const [logoUrl, setLogoUrl] = useState(
+    form.settings?.branding?.logoUrl ?? "",
+  );
+  const [emailOnResponse, setEmailOnResponse] = useState(
+    form.settings?.notifications?.emailOnResponse ?? false,
+  );
+  const [notificationEmail, setNotificationEmail] = useState(
+    form.settings?.notifications?.notificationEmail ?? "",
+  );
+  const [personality, setPersonality] = useState(
+    form.aiConfig?.personality ?? "friendly",
+  );
+  const [voiceEnabled, setVoiceEnabled] = useState(
+    form.aiConfig?.voiceEnabled ?? false,
+  );
 
   useEffect(() => {
-    setPrimaryColor(form.settings?.branding?.primaryColor ?? "#6366f1")
-    setLogoUrl(form.settings?.branding?.logoUrl ?? "")
-    setEmailOnResponse(form.settings?.notifications?.emailOnResponse ?? false)
-    setNotificationEmail(form.settings?.notifications?.notificationEmail ?? "")
-    setPersonality(form.aiConfig?.personality ?? "friendly")
-    setVoiceEnabled(form.aiConfig?.voiceEnabled ?? false)
-  }, [form])
+    setPrimaryColor(form.settings?.branding?.primaryColor ?? "#6366f1");
+    setLogoUrl(form.settings?.branding?.logoUrl ?? "");
+    setEmailOnResponse(form.settings?.notifications?.emailOnResponse ?? false);
+    setNotificationEmail(form.settings?.notifications?.notificationEmail ?? "");
+    setPersonality(form.aiConfig?.personality ?? "friendly");
+    setVoiceEnabled(form.aiConfig?.voiceEnabled ?? false);
+  }, [form]);
 
- 
-  const handleMultiChoiceChange = (questionId: string, option: string, checked: boolean) => {
+  const handleMultiChoiceChange = (
+    questionId: string,
+    option: string,
+    checked: boolean,
+  ) => {
     setAnswers((prev) => {
-      const existing = (prev[questionId] as string[] | undefined) || []
+      const existing = (prev[questionId] as string[] | undefined) || [];
       return {
         ...prev,
-        [questionId]: checked ? [...existing, option] : existing.filter((o) => o !== option),
-      }
-    })
-  }
+        [questionId]: checked
+          ? [...existing, option]
+          : existing.filter((o) => o !== option),
+      };
+    });
+  };
 
   const handleRatingChange = (questionId: string, value: number) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }))
-  }
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  };
 
   const handleHoverRating = (questionId: string, value: number) => {
-    setHoveredRatings((prev) => ({ ...prev, [questionId]: value }))
-  }
+    setHoveredRatings((prev) => ({ ...prev, [questionId]: value }));
+  };
 
   const handleScaleChange = (questionId: string, value: number) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }))
-  }
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  };
 
-  const handleQuestionChange = (questionId: string, updated: Partial<Question>) => {
+  const handleQuestionChange = (
+    questionId: string,
+    updated: Partial<Question>,
+  ) => {
     setForm((prev) => {
-      if (!prev) return null
+      if (!prev) return null;
       return {
         ...prev,
         questions: prev.questions.map((q) =>
-          q.id === questionId ? { ...q, ...updated } : q
+          q.id === questionId ? { ...q, ...updated } : q,
         ),
-      }
-    })
-  }
+      };
+    });
+  };
 
-  
   const handleSaveForm = async () => {
-    setIsSaving(true)
+    setIsSaving(true);
     try {
       const formId = await saveForm({
         title: form.title,
@@ -151,21 +201,17 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
           },
         },
         aiConfig: { personality, enableVoice: voiceEnabled },
-      })
-      router.push(`/dashboard/forms/${formId}/edit`)
+      });
+      router.push(`/dashboard/forms/${formId}/edit`);
     } catch (error) {
-      console.error("Save failed:", error)
-       const errorMessage =
-        error instanceof ConvexError
-          ? 
-            error.data 
-          : 
-            "Failed to save form!";
-      toast.error(errorMessage)
+      console.error("Save failed:", error);
+      const errorMessage =
+        error instanceof ConvexError ? error.data : "Failed to save form!";
+      toast.error(errorMessage);
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -173,7 +219,11 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
       <div className="p-6 border-b border-border bg-background">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">Form Preview</h2>
-          <Button onClick={handleSaveForm} disabled={isSaving} className="bg-[#6366f1] hover:bg-[#4f46e5] gap-2">
+          <Button
+            onClick={handleSaveForm}
+            disabled={isSaving}
+            className="bg-[#F56A4D] hover:bg-[#F56A4D]/90 gap-2"
+          >
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -194,7 +244,9 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
             variant={activeTab === "preview" ? "default" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("preview")}
-            className={activeTab === "preview" ? "bg-[#6366f1] hover:bg-[#4f46e5]" : ""}
+            className={
+              activeTab === "preview" ? "bg-[#F56A4D] hover:bg-[#F56A4D]" : ""
+            }
           >
             <Eye className="w-4 h-4 mr-2" />
             Preview
@@ -203,7 +255,9 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
             variant={activeTab === "code" ? "default" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("code")}
-            className={activeTab === "code" ? "bg-[#6366f1] hover:bg-[#4f46e5]" : ""}
+            className={
+              activeTab === "code" ? "bg-[#F56A4D] hover:bg-[#F56A4D]" : ""
+            }
           >
             <Code className="w-4 h-4 mr-2" />
             Questions
@@ -212,7 +266,9 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
             variant={activeTab === "settings" ? "default" : "ghost"}
             size="sm"
             onClick={() => setActiveTab("settings")}
-            className={activeTab === "settings" ? "bg-[#6366f1] hover:bg-[#4f46e5]" : ""}
+            className={
+              activeTab === "settings" ? "bg-[#F56A4D] hover:bg-[#F56A4D]" : ""
+            }
           >
             <Settings className="w-4 h-4 mr-2" />
             Settings
@@ -235,7 +291,9 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                   <div key={question.id} className="space-y-3">
                     <Label className="text-base">
                       {index + 1}. {question.text}
-                      {question.required && <span className="text-destructive ml-1">*</span>}
+                      {question.required && (
+                        <span className="text-destructive ml-1">*</span>
+                      )}
                     </Label>
 
                     {/* ALL QUESTION TYPES */}
@@ -243,7 +301,12 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                       <Input
                         placeholder="Short answer..."
                         value={(answers[question.id] as string) || ""}
-                        onChange={(e) => setAnswers((p) => ({ ...p, [question.id]: e.target.value }))}
+                        onChange={(e) =>
+                          setAnswers((p) => ({
+                            ...p,
+                            [question.id]: e.target.value,
+                          }))
+                        }
                       />
                     )}
 
@@ -251,7 +314,12 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                       <Textarea
                         placeholder="Long answer..."
                         value={(answers[question.id] as string) || ""}
-                        onChange={(e) => setAnswers((p) => ({ ...p, [question.id]: e.target.value }))}
+                        onChange={(e) =>
+                          setAnswers((p) => ({
+                            ...p,
+                            [question.id]: e.target.value,
+                          }))
+                        }
                       />
                     )}
 
@@ -260,7 +328,12 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         type="email"
                         placeholder="you@example.com"
                         value={(answers[question.id] as string) || ""}
-                        onChange={(e) => setAnswers((p) => ({ ...p, [question.id]: e.target.value }))}
+                        onChange={(e) =>
+                          setAnswers((p) => ({
+                            ...p,
+                            [question.id]: e.target.value,
+                          }))
+                        }
                       />
                     )}
 
@@ -269,7 +342,12 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         type="number"
                         placeholder="42"
                         value={(answers[question.id] as number) || ""}
-                        onChange={(e) => setAnswers((p) => ({ ...p, [question.id]: e.target.valueAsNumber }))}
+                        onChange={(e) =>
+                          setAnswers((p) => ({
+                            ...p,
+                            [question.id]: e.target.valueAsNumber,
+                          }))
+                        }
                       />
                     )}
 
@@ -278,44 +356,56 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         type="tel"
                         placeholder="+1 (555) 123-4567"
                         value={(answers[question.id] as string) || ""}
-                        onChange={(e) => setAnswers((p) => ({ ...p, [question.id]: e.target.value }))}
+                        onChange={(e) =>
+                          setAnswers((p) => ({
+                            ...p,
+                            [question.id]: e.target.value,
+                          }))
+                        }
                       />
                     )}
 
                     {question.type === "date" && (
                       <div className="flex flex-col gap-3">
- 
-                    <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-               <Button
-            variant="outline"
-            id="date"
-            className="justify-between font-normal w-full"
-          >
-            {date ? date.toLocaleDateString() : "Select date"}
-            <ChevronDownIcon />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full overflow-hidden p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={date}
-            captionLayout="dropdown"
-            onSelect={(date) => {
-              setDate(date)
-              setOpen(false)
-            }}
-          />
-        </PopoverContent>
-                   </Popover>
-                    </div>
+                        <Popover open={open} onOpenChange={setOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              id="date"
+                              className="justify-between font-normal w-full"
+                            >
+                              {date ? date.toLocaleDateString() : "Select date"}
+                              <ChevronDownIcon />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-full overflow-hidden p-0"
+                            align="start"
+                          >
+                            <Calendar
+                              mode="single"
+                              selected={date}
+                              captionLayout="dropdown"
+                              onSelect={(date) => {
+                                setDate(date);
+                                setOpen(false);
+                              }}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     )}
 
                     {question.type === "time" && (
                       <Input
                         type="time"
                         value={(answers[question.id] as string) || ""}
-                        onChange={(e) => setAnswers((p) => ({ ...p, [question.id]: e.target.value }))}
+                        onChange={(e) =>
+                          setAnswers((p) => ({
+                            ...p,
+                            [question.id]: e.target.value,
+                          }))
+                        }
                       />
                     )}
 
@@ -324,19 +414,32 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         type="url"
                         placeholder="https://example.com"
                         value={(answers[question.id] as string) || ""}
-                        onChange={(e) => setAnswers((p) => ({ ...p, [question.id]: e.target.value }))}
+                        onChange={(e) =>
+                          setAnswers((p) => ({
+                            ...p,
+                            [question.id]: e.target.value,
+                          }))
+                        }
                       />
                     )}
 
                     {question.type === "choice" && question.options && (
                       <RadioGroup
                         value={(answers[question.id] as string) || ""}
-                        onValueChange={(v) => setAnswers((p) => ({ ...p, [question.id]: v }))}
+                        onValueChange={(v) =>
+                          setAnswers((p) => ({ ...p, [question.id]: v }))
+                        }
                       >
                         {question.options.map((opt, i) => (
                           <div key={i} className="flex items-center space-x-2">
-                            <RadioGroupItem value={opt} id={`choice-${question.id}-${i}`} />
-                            <Label htmlFor={`choice-${question.id}-${i}`} className="font-normal cursor-pointer">
+                            <RadioGroupItem
+                              value={opt}
+                              id={`choice-${question.id}-${i}`}
+                            />
+                            <Label
+                              htmlFor={`choice-${question.id}-${i}`}
+                              className="font-normal cursor-pointer"
+                            >
                               {opt}
                             </Label>
                           </div>
@@ -344,27 +447,40 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                       </RadioGroup>
                     )}
 
-                    {question.type === "multiple_choice" && question.options && (
-                      <div className="space-y-2">
-                        {question.options.map((opt, i) => (
-                          <div key={i} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`mc-${question.id}-${i}`}
-                              checked={((answers[question.id] as string[]) || []).includes(opt)}
-                              onCheckedChange={(c) => handleMultiChoiceChange(question.id, opt, !!c)}
-                            />
-                            <Label htmlFor={`mc-${question.id}-${i}`} className="font-normal cursor-pointer">
-                              {opt}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {question.type === "multiple_choice" &&
+                      question.options && (
+                        <div className="space-y-2">
+                          {question.options.map((opt, i) => (
+                            <div
+                              key={i}
+                              className="flex items-center space-x-2"
+                            >
+                              <Checkbox
+                                id={`mc-${question.id}-${i}`}
+                                checked={(
+                                  (answers[question.id] as string[]) || []
+                                ).includes(opt)}
+                                onCheckedChange={(c) =>
+                                  handleMultiChoiceChange(question.id, opt, !!c)
+                                }
+                              />
+                              <Label
+                                htmlFor={`mc-${question.id}-${i}`}
+                                className="font-normal cursor-pointer"
+                              >
+                                {opt}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
                     {question.type === "dropdown" && question.options && (
                       <Select
                         value={(answers[question.id] as string) || ""}
-                        onValueChange={(v) => setAnswers((p) => ({ ...p, [question.id]: v }))}
+                        onValueChange={(v) =>
+                          setAnswers((p) => ({ ...p, [question.id]: v }))
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select an option" />
@@ -388,12 +504,15 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                           <button
                             key={v}
                             type="button"
-                            onMouseEnter={() => handleHoverRating(question.id, v)}
+                            onMouseEnter={() =>
+                              handleHoverRating(question.id, v)
+                            }
                             onClick={() => handleRatingChange(question.id, v)}
                           >
                             <Star
                               className={`w-6 h-6 transition-colors ${
-                                hoveredRatings[question.id] >= v || (answers[question.id] as number) >= v
+                                hoveredRatings[question.id] >= v ||
+                                (answers[question.id] as number) >= v
                                   ? "text-yellow-400 fill-yellow-400"
                                   : "text-muted-foreground"
                               }`}
@@ -411,17 +530,23 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         </div>
                         <RadioGroup
                           value={(answers[question.id] as string) || ""}
-                          onValueChange={(v) => handleScaleChange(question.id, parseInt(v))}
+                          onValueChange={(v) =>
+                            handleScaleChange(question.id, parseInt(v))
+                          }
                           className="flex justify-between"
                         >
                           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => (
                             <div key={v} className="flex flex-col items-center">
-                              <RadioGroupItem value={v.toString()} id={`scale-${question.id}-${v}`} className="sr-only" />
+                              <RadioGroupItem
+                                value={v.toString()}
+                                id={`scale-${question.id}-${v}`}
+                                className="sr-only"
+                              />
                               <Label
                                 htmlFor={`scale-${question.id}-${v}`}
                                 className={`w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all ${
                                   (answers[question.id] as number) === v
-                                    ? "bg-[#6366f1] text-white"
+                                    ? "bg-[#F56A4D] text-white"
                                     : "bg-muted hover:bg-muted/80"
                                 }`}
                               >
@@ -436,12 +561,20 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                     {question.type === "likert" && question.options && (
                       <RadioGroup
                         value={(answers[question.id] as string) || ""}
-                        onValueChange={(v) => setAnswers((p) => ({ ...p, [question.id]: v }))}
+                        onValueChange={(v) =>
+                          setAnswers((p) => ({ ...p, [question.id]: v }))
+                        }
                       >
                         <div className="flex justify-between">
                           {question.options.map((opt, i) => (
-                            <div key={i} className="flex flex-col items-center space-y-2">
-                              <RadioGroupItem value={opt} id={`likert-${question.id}-${i}`} />
+                            <div
+                              key={i}
+                              className="flex flex-col items-center space-y-2"
+                            >
+                              <RadioGroupItem
+                                value={opt}
+                                id={`likert-${question.id}-${i}`}
+                              />
                               <Label
                                 htmlFor={`likert-${question.id}-${i}`}
                                 className="text-xs text-center font-normal cursor-pointer"
@@ -460,7 +593,10 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                           <div className="flex flex-col items-center justify-center pt-5 pb-6">
                             <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
                             <p className="mb-2 text-sm text-muted-foreground">
-                              <span className="font-semibold">Click to upload</span> or drag and drop
+                              <span className="font-semibold">
+                                Click to upload
+                              </span>{" "}
+                              or drag and drop
                             </p>
                           </div>
                           <input type="file" className="hidden" />
@@ -470,7 +606,9 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                   </div>
                 ))}
               </div>
-              <Button className="w-full bg-[#6366f1] hover:bg-[#4f46e5]">Submit</Button>
+              <Button className="w-full bg-[#F56A4D] hover:bg-[#F56A4D]">
+                Submit
+              </Button>
             </Card>
           </div>
         )}
@@ -486,7 +624,11 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                       <Label>Question Text</Label>
                       <Input
                         value={question.text}
-                        onChange={(e) => handleQuestionChange(question.id, { text: e.target.value })}
+                        onChange={(e) =>
+                          handleQuestionChange(question.id, {
+                            text: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -494,7 +636,9 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         <Label>Type</Label>
                         <Select
                           value={question.type}
-                          onValueChange={(type) => handleQuestionChange(question.id, { type } as any)}
+                          onValueChange={(type) =>
+                            handleQuestionChange(question.id, { type } as any)
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -508,8 +652,12 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                             <SelectItem value="url">URL</SelectItem>
                             <SelectItem value="date">Date</SelectItem>
                             <SelectItem value="time">Time</SelectItem>
-                            <SelectItem value="choice">Single Choice</SelectItem>
-                            <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                            <SelectItem value="choice">
+                              Single Choice
+                            </SelectItem>
+                            <SelectItem value="multiple_choice">
+                              Multiple Choice
+                            </SelectItem>
                             <SelectItem value="dropdown">Dropdown</SelectItem>
                             <SelectItem value="rating">Rating (1–5)</SelectItem>
                             <SelectItem value="scale">Scale (1–10)</SelectItem>
@@ -523,7 +671,9 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         <div className="flex items-center h-10">
                           <Switch
                             checked={question.required}
-                            onCheckedChange={(r) => handleQuestionChange(question.id, { required: r })}
+                            onCheckedChange={(r) =>
+                              handleQuestionChange(question.id, { required: r })
+                            }
                           />
                         </div>
                       </div>
@@ -538,13 +688,18 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                           value={question.options?.join("\n") || ""}
                           onChange={(e) =>
                             handleQuestionChange(question.id, {
-                              options: e.target.value.split("\n").filter(Boolean),
+                              options: e.target.value
+                                .split("\n")
+                                .filter(Boolean),
                             })
                           }
                         />
                       </div>
                     )}
-                    <Button size="sm" onClick={() => setEditingQuestionId(null)}>
+                    <Button
+                      size="sm"
+                      onClick={() => setEditingQuestionId(null)}
+                    >
                       Done
                     </Button>
                   </div>
@@ -552,7 +707,9 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2 text-sm">
-                        <span className="font-medium text-muted-foreground">Q{index + 1}</span>
+                        <span className="font-medium text-muted-foreground">
+                          Q{index + 1}
+                        </span>
                         <span
                           className={`px-2 py-0.5 rounded-full text-xs ${
                             question.required
@@ -574,42 +731,61 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                       )}
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => setEditingQuestionId(question.id)}>
-                            Edit
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDeleteQuestion(question.id)} className="text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                        </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingQuestionId(question.id)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteQuestion(question.id)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 )}
               </Card>
             ))}
             <div className="mt-6 p-4 border rounded-lg flex items-center gap-4 bg-white">
-                <Select value={newQuestionType} onValueChange={(value: Question['type']) => setNewQuestionType(value)}>
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select Question Type" />
-                    </SelectTrigger>
-                    <SelectContent className="w-full">
-                        <SelectItem value="text">Short Text</SelectItem>
-                        <SelectItem value="textarea">Long Text</SelectItem>
-                        <SelectItem value="email">Email</SelectItem>
-                        <SelectItem value="number">Number</SelectItem>
-                        <SelectItem value="phone">Phone</SelectItem>
-                        <SelectItem value="url">URL</SelectItem>
-                        <SelectItem value="date">Date</SelectItem>
-                        <SelectItem value="time">Time</SelectItem>
-                        <SelectItem value="choice">Single Choice</SelectItem>
-                        <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
-                        <SelectItem value="dropdown">Dropdown</SelectItem>
-                        <SelectItem value="rating">Rating (1–5)</SelectItem>
-                        <SelectItem value="scale">Scale (1–10)</SelectItem>
-                        <SelectItem value="file">File Upload</SelectItem>
-                    </SelectContent>
-                </Select>
-                <Button onClick={() => handleAddQuestion(newQuestionType as any)} disabled={!newQuestionType}>
-                    <Plus className="w-4 h-4 mr-2" /> Add Question
-                </Button>
+              <Select
+                value={newQuestionType}
+                onValueChange={(value: Question["type"]) =>
+                  setNewQuestionType(value)
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select Question Type" />
+                </SelectTrigger>
+                <SelectContent className="w-full">
+                  <SelectItem value="text">Short Text</SelectItem>
+                  <SelectItem value="textarea">Long Text</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="number">Number</SelectItem>
+                  <SelectItem value="phone">Phone</SelectItem>
+                  <SelectItem value="url">URL</SelectItem>
+                  <SelectItem value="date">Date</SelectItem>
+                  <SelectItem value="time">Time</SelectItem>
+                  <SelectItem value="choice">Single Choice</SelectItem>
+                  <SelectItem value="multiple_choice">
+                    Multiple Choice
+                  </SelectItem>
+                  <SelectItem value="dropdown">Dropdown</SelectItem>
+                  <SelectItem value="rating">Rating (1–5)</SelectItem>
+                  <SelectItem value="scale">Scale (1–10)</SelectItem>
+                  <SelectItem value="file">File Upload</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={() => handleAddQuestion(newQuestionType as any)}
+                disabled={!newQuestionType}
+              >
+                <Plus className="w-4 h-4 mr-2" /> Add Question
+              </Button>
             </div>
           </div>
         )}
@@ -624,7 +800,11 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                   <Input
                     id="form-title"
                     value={form.title}
-                    onChange={(e) => setForm((f) => f ? { ...f, title: e.target.value } : null)}
+                    onChange={(e) =>
+                      setForm((f) =>
+                        f ? { ...f, title: e.target.value } : null,
+                      )
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -632,7 +812,11 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                   <Textarea
                     id="form-description"
                     value={form.description}
-                    onChange={(e) => setForm((f) => f ? { ...f, description: e.target.value } : null)}
+                    onChange={(e) =>
+                      setForm((f) =>
+                        f ? { ...f, description: e.target.value } : null,
+                      )
+                    }
                   />
                 </div>
 
@@ -670,7 +854,10 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                   <h3 className="font-medium">Notifications</h3>
                   <div className="flex items-center justify-between">
                     <Label>Email on new response</Label>
-                    <Switch checked={emailOnResponse} onCheckedChange={setEmailOnResponse} />
+                    <Switch
+                      checked={emailOnResponse}
+                      onCheckedChange={setEmailOnResponse}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Notification Email</Label>
@@ -686,13 +873,18 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                   <h3 className="font-medium">AI Configuration</h3>
                   <div className="space-y-2">
                     <Label>Personality</Label>
-                    <Select value={personality} onValueChange={(v) => setPersonality(v as any)}>
+                    <Select
+                      value={personality}
+                      onValueChange={(v) => setPersonality(v as any)}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="friendly">Friendly</SelectItem>
-                        <SelectItem value="professional">Professional</SelectItem>
+                        <SelectItem value="professional">
+                          Professional
+                        </SelectItem>
                         <SelectItem value="casual">Casual</SelectItem>
                         <SelectItem value="formal">Formal</SelectItem>
                       </SelectContent>
@@ -700,7 +892,10 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                   </div>
                   <div className="flex items-center justify-between">
                     <Label>Voice Input</Label>
-                    <Switch checked={voiceEnabled} onCheckedChange={setVoiceEnabled} />
+                    <Switch
+                      checked={voiceEnabled}
+                      onCheckedChange={setVoiceEnabled}
+                    />
                   </div>
                 </div>
               </div>
@@ -709,5 +904,5 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
         )}
       </div>
     </div>
-  )
+  );
 }

@@ -1,11 +1,21 @@
-import type React from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { LayoutDashboard, FileText, BarChart3, Settings, Plus } from "lucide-react"
-import CandidLogo from "@/components/shared/candid-logo"
-import UserMenu from "@/components/shared/user-menu"
+import type React from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  LayoutDashboard,
+  FileText,
+  BarChart3,
+  Settings,
+  Plus,
+} from "lucide-react";
+import CandidLogo from "@/components/shared/candid-logo";
+import UserMenu from "@/components/shared/user-menu";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -13,7 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <CandidLogo/>
+              <CandidLogo />
               <span className="text-xl font-bold">CANDID</span>
             </Link>
 
@@ -41,13 +51,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <div className="flex items-center gap-3">
             <Link href="/dashboard/forms/new">
-              <Button size="sm" className="bg-[#6366f1] hover:bg-[#4f46e5] gap-2">
+              <Button
+                size="sm"
+                className="bg-[#F56A4D] hover:bg-[#F56A4D]/90 gap-2"
+              >
                 <Plus className="w-4 h-4" />
                 New Form
               </Button>
             </Link>
-            
-            <UserMenu/>
+
+            <UserMenu />
           </div>
         </div>
       </header>
@@ -55,5 +68,5 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content */}
       <main>{children}</main>
     </div>
-  )
+  );
 }

@@ -74,7 +74,7 @@ const StatsSection = () => {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="space-y-2"
           >
-            <div className="inline-flex items-center gap-1 text-4xl font-bold text-[#6366f1]">
+            <div className="inline-flex items-center gap-1 text-4xl font-bold text-[#F56A4D]">
               <SlidingNumber value={completionRate} />%
             </div>
             <div className="text-muted-foreground">Higher completion rate</div>
@@ -87,9 +87,7 @@ const StatsSection = () => {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="space-y-2"
           >
-            <div className="text-4xl font-bold text-accent">
-              {formSpeed}%
-            </div>
+            <div className="text-4xl font-bold text-accent">{formSpeed}%</div>
             <div className="text-muted-foreground">Faster form creation</div>
           </motion.div>
 

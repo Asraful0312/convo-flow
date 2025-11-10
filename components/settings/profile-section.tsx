@@ -1,11 +1,17 @@
-"use client"
+"use client";
 
 import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
 import { Shield, User } from "lucide-react";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
@@ -33,12 +39,8 @@ export default function ProfileSection() {
       toast.success("Profile updated successfully!");
     } catch (err) {
       const errorMessage =
-        err instanceof ConvexError
-          ? 
-            err.data
-          : 
-            "Internal Error!";
-      toast.error(errorMessage)
+        err instanceof ConvexError ? err.data : "Internal Error!";
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -57,17 +59,37 @@ export default function ProfileSection() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="bg-background" />
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="bg-background"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={user?.email ?? ''} disabled className="bg-background" />
+            <Input
+              id="email"
+              type="email"
+              value={user?.email ?? ""}
+              disabled
+              className="bg-background"
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="avatar">Avatar URL</Label>
-            <Input id="avatar" value={avatar} onChange={(e) => setAvatar(e.target.value)} className="bg-background" />
+            <Input
+              id="avatar"
+              value={avatar}
+              onChange={(e) => setAvatar(e.target.value)}
+              className="bg-background"
+            />
           </div>
-          <Button onClick={handleSave} disabled={isSaving} className="bg-[#6366f1] hover:bg-[#4f46e5]">
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-[#F56A4D] hover:bg-[#F56A4D]"
+          >
             {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </CardContent>
@@ -79,12 +101,16 @@ export default function ProfileSection() {
             <Shield className="w-5 h-5" />
             <CardTitle>Security</CardTitle>
           </div>
-          <CardDescription>Manage your password and security settings</CardDescription>
+          <CardDescription>
+            Manage your password and security settings
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">Password management is not yet available.</p>
+          <p className="text-sm text-muted-foreground">
+            Password management is not yet available.
+          </p>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

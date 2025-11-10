@@ -166,4 +166,32 @@ http.route({
     handler: hubspotCallback,
 });
 
+const salesforceCallback = httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const code = url.searchParams.get("code");
+    const userId = url.searchParams.get("state");
+
+    if (!code || !userId) {
+        return new Response("Missing code or state from Salesforce OAuth callback", { status: 400 });
+    }
+
+    try {
+        await ctx.runAction(api.salesforce.exchangeCode, { code, userId: userId as any });
+        const redirectUrl = `${process.env.SITE_URL}/dashboard/settings?selected=integrations`;
+        return new Response(null, {
+            status: 302,
+            headers: { "Location": redirectUrl.toString() },
+        });
+    } catch (err) {
+        console.error("Failed to handle Salesforce OAuth callback", err);
+        return new Response("Failed to connect Salesforce Account", { status: 500 });
+    }
+});
+
+http.route({
+    path: "/salesforce-callback",
+    method: "GET",
+    handler: salesforceCallback,
+});
+
 export default http;

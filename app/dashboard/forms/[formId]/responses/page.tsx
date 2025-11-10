@@ -97,9 +97,9 @@ export default function ResponsesPage({ params }: { params: { formId: string } }
     }
   };
 
-  const handleExport = async (format: "csv" | "xlsx" | "pdf") => {
+  const handleExport = async (format: "csv" | "xlsx" | "pdf" | "json") => {
     setIsExporting(true);
-    if (subscription === "free" && format === "xlsx" || format === "pdf" ) {
+    if (subscription === "free" && (format === "xlsx" || format === "pdf")) {
       return
     }
     try {
@@ -190,6 +190,7 @@ export default function ResponsesPage({ params }: { params: { formId: string } }
                 <DropdownMenuItem onClick={() => handleExport("csv")}>CSV</DropdownMenuItem>
                 <DropdownMenuItem disabled={subscription === "free"} onClick={() => handleExport("xlsx")}>Excel {subscription === "free" && <Badge className="bg-amber-500 text-white"><Lock className="size-4 shrink-0 text-white"/> Pro</Badge>}</DropdownMenuItem>
                 <DropdownMenuItem disabled={subscription === "free"} onClick={() => handleExport("pdf")}>PDF {subscription === "free" && <Badge className="bg-amber-500 text-white"><Lock className="size-4 shrink-0 text-white"/> Pro</Badge>}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport("json")}>JSON</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Link href={`/f/${formId}`}>
