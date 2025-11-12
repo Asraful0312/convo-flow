@@ -1,30 +1,70 @@
-import { defineSchema, defineTable } from "convex/server"
-import { v } from "convex/values"
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
   ...authTables,
+  // Workspaces table
+  workspaces: defineTable({
+    name: v.string(),
+    ownerId: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_owner", ["ownerId"]),
+
+  // Workspace members table
+  workspaceMembers: defineTable({
+    workspaceId: v.id("workspaces"),
+    userId: v.id("users"),
+    role: v.union(v.literal("admin"), v.literal("editor"), v.literal("viewer")),
+  })
+    .index("by_workspace_and_user", ["workspaceId", "userId"])
+    .index("by_user", ["userId"])
+    .index("by_workspace", ["workspaceId"]),
+
+  // Invites table
+  invites: defineTable({
+    workspaceId: v.id("workspaces"),
+    email: v.string(),
+    role: v.union(v.literal("admin"), v.literal("editor"), v.literal("viewer")),
+    invitedBy: v.id("users"),
+    status: v.union(v.literal("pending"), v.literal("accepted")),
+  })
+    .index("by_workspace_and_email", ["workspaceId", "email"])
+    .index("by_email", ["email"]),
+
   // Users table
   users: defineTable({
-     name: v.optional(v.string()),
+    name: v.optional(v.string()),
     image: v.optional(v.string()),
     email: v.optional(v.string()),
     emailVerificationTime: v.optional(v.number()),
     phone: v.optional(v.string()),
     phoneVerificationTime: v.optional(v.number()),
     isAnonymous: v.optional(v.boolean()),
-    
+
+    // Workspace info
+    activeWorkspaceId: v.optional(v.id("workspaces")),
+
     //custom fields
-    subscriptionTier: v.optional(v.union(v.literal("free"), v.literal("pro"), v.literal("business"), v.literal("enterprise"))),
-    subscriptionStatus: v.optional(v.union(
-      v.literal("active"),
-      v.literal("canceled"),
-      v.literal("past_due"),
-      v.literal("trialing"),
-      v.literal("incomplete"),
-      v.literal("incomplete_expired"),
-      v.literal("unpaid"),
-    )),
+    subscriptionTier: v.optional(
+      v.union(
+        v.literal("free"),
+        v.literal("pro"),
+        v.literal("business"),
+        v.literal("enterprise"),
+      ),
+    ),
+    subscriptionStatus: v.optional(
+      v.union(
+        v.literal("active"),
+        v.literal("canceled"),
+        v.literal("past_due"),
+        v.literal("trialing"),
+        v.literal("incomplete"),
+        v.literal("incomplete_expired"),
+        v.literal("unpaid"),
+      ),
+    ),
     stripeCustomerId: v.optional(v.string()),
     stripeSubscriptionId: v.optional(v.string()),
     stripePriceId: v.optional(v.string()),
@@ -37,10 +77,16 @@ export default defineSchema({
 
   // Forms table
   forms: defineTable({
-    userId: v.id("users"),
+    workspaceId: v.optional(v.id("workspaces")),
+    creatorId: v.optional(v.id("users")),
+    userId: v.optional(v.id("users")),
     title: v.string(),
     description: v.optional(v.string()),
-    status: v.union(v.literal("draft"), v.literal("published"), v.literal("closed")),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("published"),
+      v.literal("closed"),
+    ),
     // Settings include branding, notifications, etc.
     settings: v.object({
       branding: v.optional(
@@ -67,29 +113,40 @@ export default defineSchema({
     // AI configuration
     aiConfig: v.object({
       personality: v.optional(
-        v.union(v.literal("professional"), v.literal("friendly"), v.literal("casual"), v.literal("formal")),
+        v.union(
+          v.literal("professional"),
+          v.literal("friendly"),
+          v.literal("casual"),
+          v.literal("formal"),
+        ),
       ),
       language: v.optional(v.string()),
       enableVoice: v.optional(v.boolean()),
       enableFollowUps: v.optional(v.boolean()),
     }),
-    integrationMappings: v.optional(v.object({
-      notion: v.optional(v.object({
-        databaseId: v.string(),
-        mapping: v.array(v.object({
-          questionId: v.string(),
-          notionPropertyId: v.string(),
-          notionPropertyName: v.string(),
-        })),
-      })),
-    })),
+    integrationMappings: v.optional(
+      v.object({
+        notion: v.optional(
+          v.object({
+            databaseId: v.string(),
+            mapping: v.array(
+              v.object({
+                questionId: v.string(),
+                notionPropertyId: v.string(),
+                notionPropertyName: v.string(),
+              }),
+            ),
+          }),
+        ),
+      }),
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
     publishedAt: v.optional(v.number()),
   })
-    .index("by_user", ["userId"])
+    .index("by_workspace", ["workspaceId"])
     .index("by_status", ["status"])
-    .index("by_user_and_status", ["userId", "status"])
+    .index("by_workspace_and_status", ["workspaceId", "status"])
     .index("by_created", ["createdAt"])
     .searchIndex("by_title", { searchField: "title" }),
 
@@ -152,7 +209,11 @@ export default defineSchema({
             value: v.any(),
           }),
         ),
-        action: v.union(v.literal("show"), v.literal("hide"), v.literal("skip")),
+        action: v.union(
+          v.literal("show"),
+          v.literal("hide"),
+          v.literal("skip"),
+        ),
       }),
     ),
   })
@@ -162,7 +223,11 @@ export default defineSchema({
   // Responses table
   responses: defineTable({
     formId: v.id("forms"),
-    status: v.union(v.literal("in_progress"), v.literal("completed"), v.literal("abandoned")),
+    status: v.union(
+      v.literal("in_progress"),
+      v.literal("completed"),
+      v.literal("abandoned"),
+    ),
     startedAt: v.number(),
     completedAt: v.optional(v.number()),
     // Metadata includes device, location, referrer, etc.
@@ -194,7 +259,7 @@ export default defineSchema({
     sentimentScore: v.optional(v.number()),
     tags: v.optional(v.array(v.string())),
     notes: v.optional(v.string()),
-     sentiment: v.optional(v.string()),
+    sentiment: v.optional(v.string()),
     summary: v.optional(v.string()),
     themes: v.optional(v.array(v.string())),
     actionableInsights: v.optional(v.array(v.string())),
@@ -255,8 +320,8 @@ export default defineSchema({
       v.union(
         v.literal("response.created"),
         v.literal("response.updated"),
-        v.literal("response.completed")
-      )
+        v.literal("response.completed"),
+      ),
     ),
     enabled: v.boolean(),
     secret: v.optional(v.string()),
@@ -339,4 +404,4 @@ export default defineSchema({
     .index("by_response", ["responseId"])
     .index("by_type", ["insightType"])
     .index("by_created", ["createdAt"]),
-})
+});

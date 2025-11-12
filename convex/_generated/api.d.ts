@@ -15,6 +15,7 @@ import type * as airtableMutation from "../airtableMutation.js";
 import type * as analytics from "../analytics.js";
 import type * as answers from "../answers.js";
 import type * as auth from "../auth.js";
+import type * as auth_helpers from "../auth_helpers.js";
 import type * as billing from "../billing.js";
 import type * as conversations from "../conversations.js";
 import type * as email from "../email.js";
@@ -28,17 +29,22 @@ import type * as hubspot from "../hubspot.js";
 import type * as hubspotMutation from "../hubspotMutation.js";
 import type * as integrationActions from "../integrationActions.js";
 import type * as integrations from "../integrations.js";
+import type * as invites from "../invites.js";
+import type * as members from "../members.js";
 import type * as notion from "../notion.js";
 import type * as notionMutation from "../notionMutation.js";
 import type * as questions from "../questions.js";
 import type * as responses from "../responses.js";
 import type * as salesforce from "../salesforce.js";
 import type * as salesforceMutation from "../salesforceMutation.js";
+import type * as serverMutation from "../serverMutation.js";
+import type * as serverQuery from "../serverQuery.js";
 import type * as slack from "../slack.js";
 import type * as slackMutation from "../slackMutation.js";
 import type * as stripe from "../stripe.js";
 import type * as users from "../users.js";
 import type * as webhooks from "../webhooks.js";
+import type * as workspaces from "../workspaces.js";
 
 import type {
   ApiFromModules,
@@ -62,6 +68,7 @@ declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
   answers: typeof answers;
   auth: typeof auth;
+  auth_helpers: typeof auth_helpers;
   billing: typeof billing;
   conversations: typeof conversations;
   email: typeof email;
@@ -75,17 +82,22 @@ declare const fullApi: ApiFromModules<{
   hubspotMutation: typeof hubspotMutation;
   integrationActions: typeof integrationActions;
   integrations: typeof integrations;
+  invites: typeof invites;
+  members: typeof members;
   notion: typeof notion;
   notionMutation: typeof notionMutation;
   questions: typeof questions;
   responses: typeof responses;
   salesforce: typeof salesforce;
   salesforceMutation: typeof salesforceMutation;
+  serverMutation: typeof serverMutation;
+  serverQuery: typeof serverQuery;
   slack: typeof slack;
   slackMutation: typeof slackMutation;
   stripe: typeof stripe;
   users: typeof users;
   webhooks: typeof webhooks;
+  workspaces: typeof workspaces;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 

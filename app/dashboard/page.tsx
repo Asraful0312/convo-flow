@@ -30,12 +30,36 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Id } from "@/convex/_generated/dataModel";
 import ShareModal from "@/components/share-modal";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function DashboardPage() {
-  const forms = useQuery(api.forms.getFormsForUser, {});
   const user = useQuery(api.auth.loggedInUser);
-  const dashboardStats = useQuery(api.forms.getDashboardStats);
+  const router = useRouter();
+
+  const activeWorkspace = user?.activeWorkspace;
+
+  const forms = useQuery(
+    api.forms.getFormsForWorkspace,
+    activeWorkspace ? { workspaceId: activeWorkspace._id } : "skip",
+  );
+  const dashboardStats = useQuery(
+    api.forms.getDashboardStats,
+    activeWorkspace ? { workspaceId: activeWorkspace._id } : "skip",
+  );
   const deleteForm = useMutation(api.forms.deleteForm);
+
+  useEffect(() => {
+    if (user === undefined) return; // Still loading
+    if (user === null) {
+      router.push("/auth/signin"); // Not logged in
+      return;
+    }
+    if (user?.workspaces?.length === 0 || user?.workspaces === undefined) {
+      router.push("/dashboard/workspaces/new");
+    }
+  }, [user, router]);
+
   const stats = [
     {
       title: "Total Forms",
@@ -60,14 +84,28 @@ export default function DashboardPage() {
     await deleteForm({ formId });
   };
 
+  if (
+    user === undefined ||
+    (user &&
+      user?.workspaces &&
+      user?.workspaces?.length > 0 &&
+      !activeWorkspace)
+  ) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">
-          Welcome back, {user?.name ?? user?.email}
+          {activeWorkspace?.name ?? "Welcome"}
         </h1>
         <p className="text-muted-foreground">
-          Here's what's happening with your forms today.
+          Here's what's happening in your workspace today.
         </p>
       </div>
 
@@ -107,7 +145,7 @@ export default function DashboardPage() {
           <div className="border-2 border-dashed border-border rounded-lg p-12 text-center">
             <h3 className="text-lg font-semibold">No forms yet</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Get started by creating your first form.
+              Get started by creating your first form in this workspace.
             </p>
             <Link href="/dashboard/forms/new">
               <Button className="bg-[#F56A4D] hover:bg-[#F56A4D]">

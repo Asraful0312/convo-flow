@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import CandidLogo from "@/components/shared/candid-logo";
 import UserMenu from "@/components/shared/user-menu";
+import WorkspaceSwitcher from "@/components/shared/workspace-switcher";
 
 export default function DashboardLayout({
   children,
@@ -50,6 +51,7 @@ export default function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-3">
+            <WorkspaceSwitcher />
             <Link href="/dashboard/forms/new">
               <Button
                 size="sm"

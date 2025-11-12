@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAction, useMutation } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,7 @@ import { FormPreview } from "@/components/form-preview";
 import type { Question } from "@/lib/types";
 import CandidLogo from "@/components/shared/candid-logo";
 import { toast } from "sonner";
+import { Id } from "@/convex/_generated/dataModel";
 
 type GeneratedForm = {
   title: string;
@@ -131,32 +132,6 @@ export default function NewFormPage() {
       ]);
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!generatedForm) return;
-    try {
-      const formId = await createFormMutation({
-        title: generatedForm.title,
-        description: generatedForm.description,
-        questions: generatedForm.questions.map((q) => ({
-          text: q.text,
-          type: q.type,
-          required: q.required,
-          options: q.options,
-        })),
-        settings: {
-          branding: generatedForm.settings?.branding,
-          notifications: generatedForm.settings?.notifications,
-        },
-        aiConfig: generatedForm.aiConfig, // 👈 pass separately, not inside settings
-      });
-
-      router.push(`/dashboard/forms/${formId}/edit`);
-    } catch (error: any) {
-      toast.error(error.message || "Save failed:");
-      console.error("Save failed:", error);
     }
   };
 

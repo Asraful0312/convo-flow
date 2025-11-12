@@ -40,10 +40,12 @@ export default function FormsPage() {
     "all" | "published" | "draft" | "closed"
   >("all");
   const [isLoading, setIsLoading] = useState(false);
+  const user = useQuery(api.auth.loggedInUser);
 
-  const forms = useQuery(api.forms.getFormsForUser, {
+  const forms = useQuery(api.forms.getFormsForWorkspace, {
     searchQuery: searchQuery,
     status: filterStatus === "all" ? undefined : filterStatus,
+    workspaceId: user?.activeWorkspaceId as Id<"workspaces">,
   });
   const deleteForm = useMutation(api.forms.deleteForm);
   const duplicateForm = useMutation(api.forms.duplicateForm);

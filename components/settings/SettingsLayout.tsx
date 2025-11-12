@@ -1,5 +1,5 @@
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
-import { UserCog, Bell, Zap, Webhook, CreditCard } from "lucide-react";
+import { UserCog, Bell, Zap, Webhook, CreditCard, Users } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "./logo";
 import { LogoIcon } from "./logo-icon";
@@ -9,6 +9,11 @@ const links = [
     label: "Profile",
     href: "/dashboard/settings?selected=profile",
     icon: <UserCog className="h-5 w-5" />,
+  },
+  {
+    label: "Team",
+    href: "/dashboard/settings?selected=team",
+    icon: <Users className="h-5 w-5" />,
   },
   {
     label: "Notifications",

@@ -22,7 +22,29 @@ export const loggedInUser = query({
     if (!user) {
       return null;
     }
-    return user;
+
+    // Get user's workspaces
+    const memberRecords = await ctx.db
+      .query("workspaceMembers")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    const workspaceIds = memberRecords.map((m) => m.workspaceId);
+    const workspaces = await Promise.all(
+      workspaceIds.map((id) => ctx.db.get(id))
+    );
+    const validWorkspaces = workspaces.filter(Boolean) as (typeof workspaces)[number][];
+
+    let activeWorkspace = null;
+    if (user.activeWorkspaceId) {
+      activeWorkspace = await ctx.db.get(user.activeWorkspaceId);
+    }
+
+    return {
+      ...user,
+      workspaces: validWorkspaces,
+      activeWorkspace: activeWorkspace,
+    };
   },
 });
 

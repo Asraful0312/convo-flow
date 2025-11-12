@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
+import { Id } from "@/convex/_generated/dataModel";
 
 interface FormPreviewProps {
   form: {
@@ -73,6 +74,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
   const [newQuestionType, setNewQuestionType] = useState<Question["type"] | "">(
     "",
   );
+  const user = useQuery(api.auth.loggedInUser);
 
   const handleAddQuestion = (type: Question["type"]) => {
     setForm((prev) => {
@@ -201,6 +203,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
           },
         },
         aiConfig: { personality, enableVoice: voiceEnabled },
+        workspaceId: user?.activeWorkspaceId as Id<"workspaces">,
       });
       router.push(`/dashboard/forms/${formId}/edit`);
     } catch (error) {

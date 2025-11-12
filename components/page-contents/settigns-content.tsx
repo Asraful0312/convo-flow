@@ -8,6 +8,7 @@ import ProfileTab from "../settings/tabs/ProfileTab";
 import NotificationsTab from "../settings/tabs/NotificationsTab";
 import IntegrationsTab from "../settings/tabs/IntegrationsTab";
 import WebhooksTab from "../settings/tabs/WebhooksTab";
+import TeamTab from "../settings/tabs/TeamTab";
 import SettingsLayout from "../settings/SettingsLayout";
 
 type Props = {
@@ -22,6 +23,8 @@ export default function SettingsContent({ preloadedIntegrations }: Props) {
     switch (activeTab) {
       case "profile":
         return <ProfileTab />;
+      case "team":
+        return <TeamTab />;
       case "notifications":
         return <NotificationsTab />;
       case "integrations":

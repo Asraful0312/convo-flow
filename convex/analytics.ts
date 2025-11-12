@@ -1,17 +1,15 @@
 
 import { query } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { assertViewer } from "./auth_helpers";
 
 export const getAnalytics = query({
     args: {
+        workspaceId: v.id("workspaces"),
         timeRange: v.union(v.literal("7d"), v.literal("30d"), v.literal("90d"), v.literal("1y")),
     },
-    handler: async (ctx, { timeRange }) => {
-        const userId = await getAuthUserId(ctx);
-        if (!userId) {
-            return null;
-        }
+    handler: async (ctx, { workspaceId, timeRange }) => {
+        await assertViewer(ctx, workspaceId);
 
         // 1. Calculate startTime
         const now = new Date();
@@ -24,10 +22,10 @@ export const getAnalytics = query({
         }
         const startTimeMs = startTime.getTime();
 
-        // 2. Get user's forms
+        // 2. Get workspace's forms
         const forms = await ctx.db
             .query("forms")
-            .withIndex("by_user", (q) => q.eq("userId", userId))
+            .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
             .collect();
 
         const formIds = forms.map(f => f._id);
@@ -93,7 +91,7 @@ export const getAnalytics = query({
             .filter(d => d.value > 0) : [];
 
         // Geographic Distribution
-        const geographicData: { [key: string]: number } = {};
+        const geographicData: { [key:string]: number } = {};
         allResponses.forEach(response => {
             const country = response.metadata?.location?.country || "Unknown";
             geographicData[country] = (geographicData[country] || 0) + 1;

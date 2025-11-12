@@ -28,15 +28,25 @@ export const getBillingInfo = query({
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        const userForms = await ctx.db
-            .query("forms")
-            .withIndex("by_user", (q) => q.eq("userId", userId))
+        // Get all workspaces owned by the user
+        const ownedWorkspaces = await ctx.db
+            .query("workspaces")
+            .withIndex("by_owner", (q) => q.eq("ownerId", userId))
             .collect();
 
-        const activeFormsCount = userForms.filter(f => f.status === 'published').length;
+        let allOwnedForms = [];
+        for (const workspace of ownedWorkspaces) {
+            const formsInWorkspace = await ctx.db
+                .query("forms")
+                .withIndex("by_workspace", (q) => q.eq("workspaceId", workspace._id))
+                .collect();
+            allOwnedForms.push(...formsInWorkspace);
+        }
+
+        const activeFormsCount = allOwnedForms.filter(f => f.status === 'published').length;
 
         let monthlyResponses = 0;
-        for (const form of userForms) {
+        for (const form of allOwnedForms) {
             const responses = await ctx.db
                 .query("responses")
                 .withIndex("by_form", (q) => q.eq("formId", form._id))
