@@ -1,9 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { internalQuery, mutation, query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
 import { api } from "./_generated/api";
 import { assertAdmin, assertEditor, assertViewer } from "./auth_helpers";
-import { Id } from "./_generated/dataModel";
 
 export const getFormsForWorkspace = query({
   args: {
@@ -332,7 +330,20 @@ export const updateSettings = mutation({
     status: v.optional(
       v.union(v.literal("draft"), v.literal("published"), v.literal("closed")),
     ),
-    // Other settings...
+    primaryColor: v.optional(v.string()),
+    logoUrl: v.optional(v.string()),
+    // notifications
+    emailOnResponse: v.optional(v.boolean()),
+    notificationEmail: v.optional(v.string()),
+    personality: v.optional(
+      v.union(
+        v.literal("professional"),
+        v.literal("friendly"),
+        v.literal("casual"),
+        v.literal("formal"),
+      ),
+    ),
+    voiceEnabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const form = await ctx.db.get(args.formId);
@@ -341,12 +352,109 @@ export const updateSettings = mutation({
       throw new ConvexError("Workspace required");
     }
     const { userId } = await assertEditor(ctx, form.workspaceId);
+    const user = await ctx.db.get(userId);
 
-    // Subscription checks can be added here as in original function
+    if (!user) {
+      throw new ConvexError("UnAuthorized");
+    }
 
-    const { formId, ...patch } = args;
-    await ctx.db.patch(formId, { ...patch, updatedAt: Date.now() });
-    return formId;
+    const subscriptionTier = user.subscriptionTier || "free";
+
+    if (subscriptionTier) {
+      if (subscriptionTier === "free") {
+        // Branding restriction
+        const hasCustomBranding =
+          (args.logoUrl && args.logoUrl !== form.settings?.branding?.logoUrl) ||
+          (args.primaryColor &&
+            args.primaryColor !== form.settings?.branding?.primaryColor);
+
+        if (hasCustomBranding) {
+          throw new ConvexError(
+            "Custom branding is not available on the free plan.",
+          );
+        }
+
+        // Voice restriction
+        if (args.voiceEnabled === true) {
+          throw new ConvexError(
+            "Voice features are not available on the free plan.",
+          );
+        }
+
+        // Publish limit restriction
+        if (args.status === "published") {
+          const userForms = await ctx.db
+            .query("forms")
+            .withIndex("by_workspace", (q) =>
+              q.eq("workspaceId", form.workspaceId),
+            )
+            .filter((q) => q.eq(q.field("status"), "published"))
+            .collect();
+
+          const isAlreadyPublished = form.status === "published";
+          if (!isAlreadyPublished && userForms.length >= 3) {
+            throw new ConvexError(
+              "You can only have 3 active (published) forms on the free plan.",
+            );
+          }
+        }
+      }
+    }
+
+    const patch: any = {
+      updatedAt: Date.now(),
+    };
+
+    // title / description
+    if (args.title !== undefined) patch.title = args.title;
+    if (args.description !== undefined) patch.description = args.description;
+    if (args.status !== undefined) patch.status = args.status;
+
+    // Nested updates (correct way)
+    const updatedSettings = { ...form.settings };
+
+    // Update branding
+    if (args.primaryColor !== undefined || args.logoUrl !== undefined) {
+      updatedSettings.branding = {
+        ...(form.settings?.branding ?? {}),
+        ...(args.primaryColor && { primaryColor: args.primaryColor }),
+        ...(args.logoUrl && { logoUrl: args.logoUrl }),
+      };
+    }
+
+    // Update notifications
+    if (
+      args.emailOnResponse !== undefined ||
+      args.notificationEmail !== undefined
+    ) {
+      updatedSettings.notifications = {
+        ...(form.settings?.notifications ?? {}),
+        ...(args.emailOnResponse !== undefined && {
+          emailOnResponse: args.emailOnResponse,
+        }),
+        ...(args.notificationEmail && {
+          notificationEmail: args.notificationEmail,
+        }),
+      };
+    }
+
+    if (Object.keys(updatedSettings).length > 0) {
+      patch.settings = updatedSettings;
+    }
+
+    // AI Config
+    if (args.personality !== undefined || args.voiceEnabled !== undefined) {
+      patch.aiConfig = {
+        ...(form.aiConfig ?? {}),
+        ...(args.personality && { personality: args.personality }),
+        ...(args.voiceEnabled !== undefined && {
+          enableVoice: args.voiceEnabled,
+        }),
+      };
+    }
+
+    await ctx.db.patch(args.formId, patch);
+    return args.formId;
   },
 });
 

@@ -26,8 +26,8 @@ export default function TeamTab() {
   const workspaceId = user?.activeWorkspace?._id;
 
   const members = useQuery(
-    api.members.list,
-    workspaceId ? { workspaceId } : "skip"
+    api.serverQuery.list,
+    workspaceId ? { workspaceId } : "skip",
   );
 
   if (!workspaceId || members === undefined) {
@@ -44,39 +44,41 @@ export default function TeamTab() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-                <CardTitle>Team Members</CardTitle>
-                <CardDescription>
-                    Manage who has access to this workspace.
-                </CardDescription>
+              <CardTitle>Team Members</CardTitle>
+              <CardDescription>
+                Manage who has access to this workspace.
+              </CardDescription>
             </div>
             <InviteMemberDialog workspaceId={workspaceId} />
           </div>
         </CardHeader>
         <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {members.map((member) => (
+                <TableRow key={member._id}>
+                  <TableCell className="font-medium">{member.name}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {member.email}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{member.role}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {/* TODO: Add actions like change role / remove */}
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {members.map((member) => (
-                  <TableRow key={member._id}>
-                    <TableCell className="font-medium">{member.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{member.email}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{member.role}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {/* TODO: Add actions like change role / remove */}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

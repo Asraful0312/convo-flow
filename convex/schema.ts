@@ -140,6 +140,7 @@ export default defineSchema({
         ),
       }),
     ),
+    logoUrl: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
     publishedAt: v.optional(v.number()),
