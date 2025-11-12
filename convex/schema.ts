@@ -357,6 +357,16 @@ export default defineSchema({
     .index("by_form", ["formId"])
     .index("by_type", ["type"]),
 
+  // Activity feed table
+  activities: defineTable({
+    workspaceId: v.id("workspaces"),
+    userId: v.id("users"),
+    action: v.string(),
+    details: v.any(),
+    createdAt: v.number(),
+  })
+    .index("by_workspace", ["workspaceId"]),
+
   oauth_temp_storage: defineTable({
     userId: v.id("users"),
     service: v.string(), // e.g., "airtable"

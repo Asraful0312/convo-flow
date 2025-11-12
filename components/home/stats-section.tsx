@@ -98,7 +98,7 @@ const StatsSection = () => {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="space-y-2"
           >
-            <div className="text-4xl font-bold text-success">{insights}x</div>
+            <div className="text-4xl font-bold text-[#F56A4D]">{insights}x</div>
             <div className="text-muted-foreground">Better insights</div>
           </motion.div>
         </div>

@@ -12,11 +12,11 @@ export const invite = action({
     role: v.union(v.literal("admin"), v.literal("editor"), v.literal("viewer")),
   },
   handler: async (ctx, { workspaceId, email, role }) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new ConvexError("Not authenticated");
+    const inviter = await ctx.runQuery(internal.users.getMe);
+    if (!inviter) {
+        throw new ConvexError("Not authenticated.");
     }
-    const inviterId = identity.subject as any;
+    const inviterId = inviter._id;
 
     const member = await ctx.runQuery(internal.serverQuery.getMember, {
       workspaceId,
@@ -53,13 +53,28 @@ export const invite = action({
       throw new ConvexError("An invite for this email already exists.");
     }
 
-    await ctx.runMutation(internal.serverMutation.addInvite, {
+    const inviteId = await ctx.runMutation(internal.serverMutation.addInvite, {
       workspaceId,
       email,
       role,
       invitedBy: inviterId,
     });
 
-    // TODO: Send an actual email with a link to accept the invite
+    await ctx.runMutation(internal.activities.logActivity, {
+        workspaceId,
+        userId: inviterId,
+        action: "member.invite",
+        details: { email, role },
+    });
+
+    const workspace = await ctx.runQuery(internal.workspaces.get, { workspaceId });
+    const inviteUrl = `${process.env.SITE_URL}/invites/${inviteId}`;
+
+    await ctx.runAction(internal.emails.sendInviteEmail, {
+        email,
+        workspaceName: workspace.name,
+        inviterName: inviter.name ?? "A user",
+        inviteUrl,
+    });
   },
 });

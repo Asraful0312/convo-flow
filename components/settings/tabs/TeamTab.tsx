@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { InviteMemberDialog } from "./InviteMemberDialog";
+import { MemberActions } from "./MemberActions";
 
 export default function TeamTab() {
   const user = useQuery(api.auth.loggedInUser);
@@ -27,16 +28,20 @@ export default function TeamTab() {
 
   const members = useQuery(
     api.serverQuery.list,
-    workspaceId ? { workspaceId } : "skip",
+    workspaceId ? { workspaceId } : "skip"
   );
 
-  if (!workspaceId || members === undefined) {
+  if (!workspaceId || members === undefined || !user) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="w-8 h-8 animate-spin" />
       </div>
     );
   }
+
+  const currentUserMemberInfo = members.find(m => m.userId === user._id);
+  const currentUserRole = currentUserMemberInfo?.role;
+  const ownerId = user.activeWorkspace?.ownerId;
 
   return (
     <div className="space-y-6">
@@ -49,7 +54,7 @@ export default function TeamTab() {
                 Manage who has access to this workspace.
               </CardDescription>
             </div>
-            <InviteMemberDialog workspaceId={workspaceId} />
+            {currentUserRole === 'admin' && <InviteMemberDialog workspaceId={workspaceId} />}
           </div>
         </CardHeader>
         <CardContent>
@@ -59,7 +64,7 @@ export default function TeamTab() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-right w-48">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -73,7 +78,11 @@ export default function TeamTab() {
                     <Badge variant="outline">{member.role}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {/* TODO: Add actions like change role / remove */}
+                    <MemberActions 
+                        member={member}
+                        isOwner={member.userId === ownerId}
+                        currentUserRole={currentUserRole!}
+                    />
                   </TableCell>
                 </TableRow>
               ))}

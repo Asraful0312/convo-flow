@@ -32,6 +32,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import ShareModal from "@/components/share-modal";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 
 export default function DashboardPage() {
   const user = useQuery(api.auth.loggedInUser);
@@ -39,13 +40,15 @@ export default function DashboardPage() {
 
   const activeWorkspace = user?.activeWorkspace;
 
+  console.log("active ", activeWorkspace?._id);
+
   const forms = useQuery(
     api.forms.getFormsForWorkspace,
-    activeWorkspace ? { workspaceId: activeWorkspace._id } : "skip",
+    activeWorkspace?._id ? { workspaceId: activeWorkspace._id } : "skip",
   );
   const dashboardStats = useQuery(
     api.forms.getDashboardStats,
-    activeWorkspace ? { workspaceId: activeWorkspace._id } : "skip",
+    activeWorkspace?._id ? { workspaceId: activeWorkspace._id } : "skip",
   );
   const deleteForm = useMutation(api.forms.deleteForm);
 
@@ -55,7 +58,7 @@ export default function DashboardPage() {
       router.push("/auth/signin"); // Not logged in
       return;
     }
-    if (user?.workspaces?.length === 0 || user?.workspaces === undefined) {
+    if (user?.workspaces?.length === 0 || !activeWorkspace) {
       router.push("/dashboard/workspaces/new");
     }
   }, [user, router]);
@@ -237,6 +240,10 @@ export default function DashboardPage() {
             </Link>
           </div>
         )}
+      </div>
+
+      <div className="">
+        {activeWorkspace && <ActivityFeed workspaceId={activeWorkspace._id} />}
       </div>
     </div>
   );

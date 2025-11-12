@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { internalQuery, mutation, query } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { assertAdmin, assertEditor, assertViewer } from "./auth_helpers";
 
 export const getFormsForWorkspace = query({
@@ -318,6 +318,13 @@ export const create = mutation({
       });
     }
 
+    await ctx.runMutation(internal.activities.logActivity, {
+      workspaceId: args.workspaceId,
+      userId,
+      action: "form.create",
+      details: { title: args.title },
+    });
+
     return formId;
   },
 });
@@ -454,6 +461,16 @@ export const updateSettings = mutation({
     }
 
     await ctx.db.patch(args.formId, patch);
+
+    if (args.status && args.status !== form.status) {
+      await ctx.runMutation(internal.activities.logActivity, {
+        workspaceId: form.workspaceId,
+        userId,
+        action: "form.updateStatus",
+        details: { title: form.title, status: args.status },
+      });
+    }
+
     return args.formId;
   },
 });

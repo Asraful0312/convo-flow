@@ -1,7 +1,6 @@
-import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { ConvexError } from "convex/values";
+import { ConvexError, v } from "convex/values";
 
 export const create = mutation({
   args: {
@@ -34,26 +33,37 @@ export const create = mutation({
   },
 });
 
-export const listForUser = query({
-    handler: async (ctx) => {
-        const userId = await getAuthUserId(ctx);
-        if (!userId) {
-            return [];
-        }
-
-        const memberRecords = await ctx.db
-            .query("workspaceMembers")
-            .withIndex("by_user", (q) => q.eq("userId", userId))
-            .collect();
-
-        const workspaceIds = memberRecords.map((m) => m.workspaceId);
-
-        const workspaces = await Promise.all(
-            workspaceIds.map((id) => ctx.db.get(id))
-        );
-
-        return workspaces.filter(Boolean);
+export const get = internalQuery({
+  args: { workspaceId: v.id("workspaces") },
+  handler: async (ctx, { workspaceId }) => {
+    const workspace = await ctx.db.get(workspaceId);
+    if (!workspace) {
+      throw new ConvexError("Workspace not found");
     }
+    return workspace;
+  },
+});
+
+export const listForUser = query({
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+
+    const memberRecords = await ctx.db
+      .query("workspaceMembers")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    const workspaceIds = memberRecords.map((m) => m.workspaceId);
+
+    const workspaces = await Promise.all(
+      workspaceIds.map((id) => ctx.db.get(id)),
+    );
+
+    return workspaces.filter(Boolean);
+  },
 });
 
 export const switchActive = mutation({
@@ -70,7 +80,7 @@ export const switchActive = mutation({
     const member = await ctx.db
       .query("workspaceMembers")
       .withIndex("by_workspace_and_user", (q) =>
-        q.eq("workspaceId", workspaceId).eq("userId", userId)
+        q.eq("workspaceId", workspaceId).eq("userId", userId),
       )
       .first();
 

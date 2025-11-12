@@ -9,6 +9,7 @@
  */
 
 import type * as ResendOTPPasswordReset from "../ResendOTPPasswordReset.js";
+import type * as activities from "../activities.js";
 import type * as ai from "../ai.js";
 import type * as airtable from "../airtable.js";
 import type * as airtableMutation from "../airtableMutation.js";
@@ -19,6 +20,7 @@ import type * as auth_helpers from "../auth_helpers.js";
 import type * as billing from "../billing.js";
 import type * as conversations from "../conversations.js";
 import type * as email from "../email.js";
+import type * as emails from "../emails.js";
 import type * as exports from "../exports.js";
 import type * as files from "../files.js";
 import type * as forms from "../forms.js";
@@ -62,6 +64,7 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   ResendOTPPasswordReset: typeof ResendOTPPasswordReset;
+  activities: typeof activities;
   ai: typeof ai;
   airtable: typeof airtable;
   airtableMutation: typeof airtableMutation;
@@ -72,6 +75,7 @@ declare const fullApi: ApiFromModules<{
   billing: typeof billing;
   conversations: typeof conversations;
   email: typeof email;
+  emails: typeof emails;
   exports: typeof exports;
   files: typeof files;
   forms: typeof forms;
