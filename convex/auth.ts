@@ -5,10 +5,11 @@ import GitHub from "@auth/core/providers/github";
 import { mutation, query } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
 
-export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  providers: [Password, Google, GitHub],
-});
+import { ResendOTPPasswordReset } from "./ResendOTPPasswordReset";
 
+export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
+  providers: [Password({ reset: ResendOTPPasswordReset }), Google, GitHub],
+});
 
 export const loggedInUser = query({
   args: {},
@@ -54,9 +55,9 @@ export const updateUserProfile = mutation({
     if (image) patchData.image = image;
 
     if (Object.keys(patchData).length > 0) {
-        await ctx.db.patch(userId, patchData);
+      await ctx.db.patch(userId, patchData);
     }
-    
+
     return { success: true };
   },
 });

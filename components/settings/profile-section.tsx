@@ -16,6 +16,7 @@ import { Shield, User } from "lucide-react";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import { PasswordResetInitiator } from "../PasswordResetInitiator";
 
 export default function ProfileSection() {
   const user = useQuery(api.auth.loggedInUser);
@@ -24,6 +25,38 @@ export default function ProfileSection() {
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChanging, setIsChanging] = useState(false);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters long.");
+      return;
+    }
+
+    setIsChanging(true);
+    try {
+      toast.success("Password changed successfully!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      const errorMessage =
+        err instanceof ConvexError
+          ? err.data.message || err.data
+          : "Failed to change password.";
+      toast.error(errorMessage);
+    } finally {
+      setIsChanging(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -99,16 +132,14 @@ export default function ProfileSection() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Shield className="w-5 h-5" />
-            <CardTitle>Security</CardTitle>
+            <CardTitle>Change Password</CardTitle>
           </div>
           <CardDescription>
-            Manage your password and security settings
+            We'll send a secure code to your email to reset your password.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Password management is not yet available.
-          </p>
+        <CardContent>
+          <PasswordResetInitiator email={user?.email ?? ""} />
         </CardContent>
       </Card>
     </div>

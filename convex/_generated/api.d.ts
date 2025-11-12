@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as ResendOTPPasswordReset from "../ResendOTPPasswordReset.js";
 import type * as ai from "../ai.js";
 import type * as airtable from "../airtable.js";
 import type * as airtableMutation from "../airtableMutation.js";
@@ -54,6 +55,7 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  ResendOTPPasswordReset: typeof ResendOTPPasswordReset;
   ai: typeof ai;
   airtable: typeof airtable;
   airtableMutation: typeof airtableMutation;
