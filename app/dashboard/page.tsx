@@ -66,18 +66,24 @@ export default function DashboardPage() {
   const stats = [
     {
       title: "Total Forms",
-      value: dashboardStats?.totalForms ?? "0",
+      value: dashboardStats?.totalForms ?? 0,
       icon: FileText,
+      color: "text-blue-600",
+      bg: "bg-blue-50",
     },
     {
       title: "Total Responses",
-      value: dashboardStats?.totalResponses ?? "0",
+      value: dashboardStats?.totalResponses ?? 0,
       icon: MessageSquare,
+      color: "text-green-600",
+      bg: "bg-green-50",
     },
     {
       title: "Avg Completion Rate",
       value: `${dashboardStats?.avgCompletionRate.toFixed(0) ?? 0}%`,
       icon: BarChart2,
+      color: "text-[#F56A4D]",
+      bg: "bg-[#F56A4D]/10",
     },
   ];
 
@@ -114,12 +120,14 @@ export default function DashboardPage() {
 
       <div className="grid md:grid-cols-3 gap-6">
         {stats.map((stat) => (
-          <Card key={stat.title}>
+          <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 {stat.title}
               </CardTitle>
-              <stat.icon className="w-4 h-4 text-muted-foreground" />
+              <div className={`p-2 rounded-lg ${stat.bg}`}>
+                <stat.icon className={`w-4 h-4 ${stat.color}`} />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{stat.value}</div>

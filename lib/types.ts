@@ -1,3 +1,12 @@
+import 'react';
+
+declare module 'react' {
+  interface CSSProperties {
+    '--primary-color'?: string;
+    '--primary-color-10'?: string;
+  }
+}
+
 // Core data types matching the database schema from PRD
 
 export type SubscriptionTier = "free" | "pro" | "business" | "enterprise"

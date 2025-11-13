@@ -139,8 +139,8 @@ export default function ResponseDetailPage({
             {isExporting && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
           </Button>
           <Button
-            variant="outline"
-            className="gap-2 text-destructive hover:text-destructive bg-transparent"
+            variant="destructive"
+            className="gap-2"
             onClick={handleDelete}
           >
             <Trash2 className="w-4 h-4" />

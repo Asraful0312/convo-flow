@@ -55,6 +55,7 @@ export const list = query({
         ...member,
         name: user?.name ?? "Unknown",
         email: user?.email ?? "No email",
+        image: user?.image,
       };
     });
   },

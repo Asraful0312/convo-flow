@@ -10,14 +10,20 @@ interface VoiceControlsProps {
   disabled?: boolean;
 }
 
-export default function VoiceControls({ isRecording, audioLevel, primaryColor, onToggle, disabled }: VoiceControlsProps) {
+export default function VoiceControls({
+  isRecording,
+  audioLevel,
+  primaryColor,
+  onToggle,
+  disabled,
+}: VoiceControlsProps) {
   return (
     <Button
       variant="ghost"
       size="sm"
       onClick={onToggle}
       disabled={disabled}
-      className={`h-10 w-10 p-0 rounded-full transition-all ${isRecording ? "text-white" : "hover:bg-gray-100"}`}
+      className={`h-10 w-10 p-0 rounded-full transition-all ${isRecording ? "text-white" : "hover:bg-gray-100 hover:text-black"}`}
       style={isRecording ? { backgroundColor: primaryColor } : {}}
     >
       {isRecording ? (
