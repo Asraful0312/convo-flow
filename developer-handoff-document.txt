@@ -772,10 +772,6 @@ Let's build something with taste! 🚀
 
 
 Missing Features:
-
-   * Team Collaboration (Priority 7): This is the most significant missing feature set. The document describes
-     Team Workspaces, user roles (Admin, Editor, Viewer), and collaboration features, none of which appear to be
-     implemented in the current backend schema or frontend structure.
    * Signature Microinteractions (Priority 3): While a typing indicator exists, the other key animations that
      define the "taste" of the product are missing:
        * Answer Drop: The spring-bounce animation for a user's answer.
@@ -787,9 +783,6 @@ Missing Features:
 
   Medium-Priority Missing/Incomplete Features:
 
-   * Candid Voice (Priority 5): While UI components like VoiceUI.tsx exist, the document implies this
-     functionality was not working in the prototype. It's likely the full implementation (speech-to-text,
-     text-to-speech, and voice visualization) is not yet complete.
 
    * Multimodal Components (Priority 4): The UI for an Image/Product Selector is missing. While other multimodal
      types like date and location are supported in the backend, their UI components may need further polish.

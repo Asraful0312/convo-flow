@@ -37,30 +37,32 @@ function renderDetails(activity: Props["activity"]) {
   const { action, userName, details } = activity;
   return (
     <>
-      <span className="font-semibold">{userName}</span>{" "}
+      <span className="font-semibold break-all">{userName}</span>{" "}
       {action === "form.create" && (
         <>
           created the form{" "}
-          <span className="font-semibold">{details.title}</span>.
+          <span className="font-semibold break-all">{details.title}</span>.
         </>
       )}
       {action === "form.updateStatus" && (
         <>
-          updated <span className="font-semibold">{details.title}</span> to{" "}
-          <span className="font-semibold">{details.status}</span>.
+          updated{" "}
+          <span className="font-semibold break-all">{details.title}</span> to{" "}
+          <span className="font-semibold break-all">{details.status}</span>.
         </>
       )}
       {action === "member.invite" && (
         <>
-          invited <span className="font-semibold">{details.email}</span> as{" "}
-          <span className="font-semibold">{details.role}</span>.
+          invited{" "}
+          <span className="font-semibold break-all">{details.email}</span> as{" "}
+          <span className="font-semibold break-all">{details.role}</span>.
         </>
       )}
       {action === "member.join" && <>joined the workspace.</>}
       {action === "member.updateRole" && (
         <>
           changed a member's role to{" "}
-          <span className="font-semibold">{details.newRole}</span>.
+          <span className="font-semibold break-all">{details.newRole}</span>.
         </>
       )}
       {action === "member.remove" && <>removed a member from the workspace.</>}
@@ -71,12 +73,14 @@ function renderDetails(activity: Props["activity"]) {
 export function ActivityItem({ activity }: Props) {
   return (
     <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-      <div className="mt-0.5 p-2 rounded-full bg-[#F56A4D]/10 text-[#F56A4D]">
+      <div className="mt-0.5 p-2 rounded-full bg-[#F56A4D]/10 text-[#F56A4D] shrink-0">
         {renderIcon(activity.action)}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm leading-tight">{renderDetails(activity)}</p>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="text-sm leading-tight w-full wrap-break-word whitespace-normal">
+          {renderDetails(activity)}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1 truncate sm:whitespace-normal">
           {formatDistanceToNow(new Date(activity.createdAt), {
             addSuffix: true,
           })}
