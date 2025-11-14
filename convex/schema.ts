@@ -174,12 +174,24 @@ export default defineSchema({
       v.literal("currency"),
       v.literal("date_range"),
       v.literal("yes_no"),
+      v.literal("image_choice"),
     ),
     text: v.string(),
     description: v.optional(v.string()),
     placeholder: v.optional(v.string()),
     // Options for choice-based questions
-    options: v.optional(v.array(v.string())),
+    options: v.optional(
+      v.array(
+        v.union(
+          v.string(),
+          v.object({
+            imageUrl: v.string(),
+            text: v.string(),
+          }),
+        ),
+      ),
+    ),
+
     // Validation rules
     validation: v.optional(
       v.object({
@@ -364,8 +376,7 @@ export default defineSchema({
     action: v.string(),
     details: v.any(),
     createdAt: v.number(),
-  })
-    .index("by_workspace", ["workspaceId"]),
+  }).index("by_workspace", ["workspaceId"]),
 
   oauth_temp_storage: defineTable({
     userId: v.id("users"),

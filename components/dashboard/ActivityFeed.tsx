@@ -52,6 +52,7 @@ export function ActivityFeed({ workspaceId }: Props) {
                   hidden: { opacity: 0, x: -10 },
                   visible: { opacity: 1, x: 0 },
                 }}
+                className="max-h-[200px] overflow-y-scroll"
               >
                 <ActivityItem activity={activity} />
               </motion.div>

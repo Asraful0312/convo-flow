@@ -1,28 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useRef, use } from "react";
-import { useQuery, useMutation, useAction } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
-import confetti from "canvas-confetti";
-import { toast } from "sonner";
-import OverLimitScreen from "@/components/form/OverLimitScreen";
-import WelcomeScreen from "@/components/form/WelcomeScreen";
-import FormHeader from "@/components/form/FormHeader";
 import ChatMessages from "@/components/form/ChatMessages";
 import CompletionScreen from "@/components/form/CompletionScreen";
-import QuestionInput from "@/components/form/QuestionInput";
+import FormHeader from "@/components/form/FormHeader";
 import MapConfirmation from "@/components/form/MapConfirmation";
+import OverLimitScreen from "@/components/form/OverLimitScreen";
+import QuestionInput from "@/components/form/QuestionInput";
+import WelcomeScreen from "@/components/form/WelcomeScreen";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { Message } from "@/lib/form-types";
+import confetti from "canvas-confetti";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
-
-interface Message {
-  id: string;
-  role: "assistant" | "user";
-  content: string;
-  timestamp: number;
-  questionId?: string;
-  isAdaptive?: boolean;
-}
+import { use, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 export default function FormSubmissionPage({
   params,
@@ -82,6 +74,9 @@ export default function FormSubmissionPage({
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   const handleStart = async () => {
     if (!form || !questions) return;
@@ -406,6 +401,13 @@ export default function FormSubmissionPage({
         answerValue = answer.storageId;
         fileDetails = { fileName: answer.fileName, fileSize: answer.fileSize };
         displayContent = answer.fileName;
+      } else if (
+        typeof answer === "object" &&
+        answer !== null &&
+        "imageUrl" in answer
+      ) {
+        answerValue = answer; // Save the whole object
+        displayContent = (answer as any).text; // Display only the text
       } else if (Array.isArray(answer)) {
         displayContent = answer.join(", ");
       } else if (answer === "") {
@@ -444,19 +446,6 @@ export default function FormSubmissionPage({
 
       setInputValue("");
       if (locationToConfirm) setLocationToConfirm(null);
-
-      await saveConversation({
-        responseId: currentResponseId,
-        messages: messages,
-        aiContext: {
-          currentQuestionIndex,
-          answeredQuestions: Object.keys({
-            ...answers,
-            [currentQuestion._id]: answer,
-          }),
-          skippedQuestions: [],
-        },
-      });
 
       setTimeout(() => {
         setCurrentQuestionIndex((prev) => prev + 1);

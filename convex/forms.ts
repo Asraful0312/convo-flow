@@ -237,7 +237,17 @@ export const create = mutation({
         text: v.string(),
         type: v.string(),
         required: v.boolean(),
-        options: v.optional(v.array(v.string())),
+        options: v.optional(
+          v.array(
+            v.union(
+              v.string(),
+              v.object({
+                imageUrl: v.string(),
+                text: v.string(),
+              }),
+            ),
+          ),
+        ),
       }),
     ),
     settings: v.object({

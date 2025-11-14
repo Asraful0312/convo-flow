@@ -46,7 +46,9 @@ export default function ResponseDetailPage({
   const form = data?.form;
   const response = data?.response;
 
-  console.log(response);
+  console.log(answers);
+  console.log("qestions", questions);
+  console.log("conversation", conversation);
 
   const handleDelete = async () => {
     if (!response) return;
@@ -223,8 +225,8 @@ export default function ResponseDetailPage({
             Full conversation thread with the respondent
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
+        <CardContent className="h-full overflow-y-auto">
+          <div className="space-y-6 ">
             {conversation?.messages.map((message, index) => {
               const question = questions?.find(
                 (q) => q._id === message.questionId,
@@ -248,6 +250,21 @@ export default function ResponseDetailPage({
                     {answer.fileName}
                   </Button>
                 );
+              } else if (
+                message.role === "user" &&
+                question?.type === "image_choice" &&
+                answer?.value?.imageUrl
+              ) {
+                messageContent = (
+                  <div className="flex items-center gap-3 text-white">
+                    <img
+                      src={answer.value.imageUrl}
+                      alt={answer.value.text}
+                      className="w-16 h-16 rounded-md object-cover"
+                    />
+                    <span>{answer.value.text}</span>
+                  </div>
+                );
               }
 
               return (
@@ -266,7 +283,7 @@ export default function ResponseDetailPage({
                     <div
                       className={`rounded-2xl px-4 py-3 max-w-[80%] ${message.role === "user" ? "bg-[#F56A4D] text-white rounded-tr-none" : "bg-muted rounded-tl-none"}`}
                     >
-                      <p className="text-sm">{messageContent}</p>
+                      <div className="text-sm">{messageContent}</div>
                     </div>
                   </div>
                   {message.role === "user" && (

@@ -37,15 +37,11 @@ export default function ChatMessages({ messages, form, isTyping }: ChatMessagesP
             )}
             <div
               className={`max-w-[80%] rounded-xl px-6 py-4 ${
-                message.role === "user" ? "text-white" : "bg-white border border-gray-200 shadow-sm"
-              }`}
-              style={
                 message.role === "user"
-                  ? { backgroundColor: primaryColor }
-                  : message.isAdaptive
-                  ? { borderColor: secondaryColor, borderWidth: 2 }
-                  : {}
-              }
+                  ? "text-white"
+                  : "bg-white border border-gray-200 shadow-sm"
+              } ${message.isAdaptive ? "branch-glow" : ""}`}
+              style={message.role === "user" ? { backgroundColor: primaryColor } : {}}
             >
               <p className="leading-relaxed">{message.content}</p>
             </div>

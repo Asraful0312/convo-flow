@@ -31,11 +31,16 @@ export interface FormData {
   ownerName?: string;
 }
 
+export interface ImageChoiceOption {
+  text: string;
+  imageUrl: string;
+}
+
 export interface Question {
   _id: string;
   text: string;
   type: string;
-  options?: string[];
+  options?: (string | ImageChoiceOption)[];
   placeholder?: string;
   required?: boolean;
 }

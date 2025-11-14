@@ -31,12 +31,13 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "./ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { Question } from "@/lib/types";
+import type { Question, ImageChoiceOption } from "@/lib/types";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import { Id } from "@/convex/_generated/dataModel";
+import ImageChoiceInput from "./form/ImageChoiceInput";
 
 interface FormPreviewProps {
   form: {
@@ -90,6 +91,8 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
           type === "dropdown" ||
           type === "likert"
             ? ["Option 1"]
+            : type === "image_choice"
+            ? [{ text: "Option 1", imageUrl: "" }]
             : undefined,
       };
       return {
@@ -179,6 +182,68 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
         questions: prev.questions.map((q) =>
           q.id === questionId ? { ...q, ...updated } : q,
         ),
+      };
+    });
+  };
+
+  const handleImageOptionChange = (
+    questionId: string,
+    optionIndex: number,
+    field: "text" | "imageUrl",
+    value: string,
+  ) => {
+    setForm((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        questions: prev.questions.map((q) => {
+          if (q.id === questionId && q.type === "image_choice") {
+            const updatedOptions = [...(q.options as ImageChoiceOption[])];
+            updatedOptions[optionIndex] = {
+              ...updatedOptions[optionIndex],
+              [field]: value,
+            };
+            return { ...q, options: updatedOptions };
+          }
+          return q;
+        }),
+      };
+    });
+  };
+
+  const addImageOption = (questionId: string) => {
+    setForm((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        questions: prev.questions.map((q) => {
+          if (q.id === questionId && q.type === "image_choice") {
+            const newOptions = [
+              ...(q.options as ImageChoiceOption[]),
+              { text: `Option ${q.options.length + 1}`, imageUrl: "" },
+            ];
+            return { ...q, options: newOptions };
+          }
+          return q;
+        }),
+      };
+    });
+  };
+
+  const removeImageOption = (questionId: string, optionIndex: number) => {
+    setForm((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        questions: prev.questions.map((q) => {
+          if (q.id === questionId && q.type === "image_choice") {
+            const newOptions = (q.options as ImageChoiceOption[]).filter(
+              (_, i) => i !== optionIndex,
+            );
+            return { ...q, options: newOptions };
+          }
+          return q;
+        }),
       };
     });
   };
@@ -313,6 +378,17 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                       />
                     )}
 
+                    {question.type === "image_choice" && (
+                      <ImageChoiceInput
+                        options={question.options as ImageChoiceOption[]}
+                        selectedOption={answers[question.id]}
+                        onSelect={(option) =>
+                          setAnswers((p) => ({ ...p, [question.id]: option }))
+                        }
+                        primaryColor={primaryColor}
+                      />
+                    )}
+
                     {question.type === "textarea" && (
                       <Textarea
                         placeholder="Long answer..."
@@ -436,14 +512,14 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         {question.options.map((opt, i) => (
                           <div key={i} className="flex items-center space-x-2">
                             <RadioGroupItem
-                              value={opt}
+                              value={opt as string}
                               id={`choice-${question.id}-${i}`}
                             />
                             <Label
                               htmlFor={`choice-${question.id}-${i}`}
                               className="font-normal cursor-pointer"
                             >
-                              {opt}
+                              {opt as string}
                             </Label>
                           </div>
                         ))}
@@ -462,16 +538,20 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                                 id={`mc-${question.id}-${i}`}
                                 checked={(
                                   (answers[question.id] as string[]) || []
-                                ).includes(opt)}
+                                ).includes(opt as string)}
                                 onCheckedChange={(c) =>
-                                  handleMultiChoiceChange(question.id, opt, !!c)
+                                  handleMultiChoiceChange(
+                                    question.id,
+                                    opt as string,
+                                    !!c,
+                                  )
                                 }
                               />
                               <Label
                                 htmlFor={`mc-${question.id}-${i}`}
                                 className="font-normal cursor-pointer"
                               >
-                                {opt}
+                                {opt as string}
                               </Label>
                             </div>
                           ))}
@@ -490,8 +570,8 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         </SelectTrigger>
                         <SelectContent>
                           {question.options.map((opt, i) => (
-                            <SelectItem key={i} value={opt}>
-                              {opt}
+                            <SelectItem key={i} value={opt as string}>
+                              {opt as string}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -575,14 +655,14 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                               className="flex flex-col items-center space-y-2"
                             >
                               <RadioGroupItem
-                                value={opt}
+                                value={opt as string}
                                 id={`likert-${question.id}-${i}`}
                               />
                               <Label
                                 htmlFor={`likert-${question.id}-${i}`}
                                 className="text-xs text-center font-normal cursor-pointer"
                               >
-                                {opt}
+                                {opt as string}
                               </Label>
                             </div>
                           ))}
@@ -661,6 +741,9 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                             <SelectItem value="multiple_choice">
                               Multiple Choice
                             </SelectItem>
+                            <SelectItem value="image_choice">
+                              Image Choice
+                            </SelectItem>
                             <SelectItem value="dropdown">Dropdown</SelectItem>
                             <SelectItem value="rating">Rating (1–5)</SelectItem>
                             <SelectItem value="scale">Scale (1–10)</SelectItem>
@@ -681,14 +764,68 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         </div>
                       </div>
                     </div>
-                    {(question.type === "choice" ||
-                      question.type === "multiple_choice" ||
-                      question.type === "dropdown" ||
-                      question.type === "likert") && (
+                    {question.type === "image_choice" ? (
+                      <div className="space-y-3">
+                        <Label>Image Options</Label>
+                        {(question.options as ImageChoiceOption[]).map(
+                          (opt, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <Input
+                                value={opt.text}
+                                onChange={(e) =>
+                                  handleImageOptionChange(
+                                    question.id,
+                                    i,
+                                    "text",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="Option text"
+                                className="flex-1"
+                              />
+                              <Input
+                                value={opt.imageUrl}
+                                onChange={(e) =>
+                                  handleImageOptionChange(
+                                    question.id,
+                                    i,
+                                    "imageUrl",
+                                    e.target.value,
+                                  )
+                                }
+                                placeholder="Image URL"
+                                className="flex-1"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  removeImageOption(question.id, i)
+                                }
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ),
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addImageOption(question.id)}
+                        >
+                          Add Option
+                        </Button>
+                      </div>
+                    ) : (question.type === "choice" ||
+                        question.type === "multiple_choice" ||
+                        question.type === "dropdown" ||
+                        question.type === "likert") && (
                       <div className="space-y-2">
                         <Label>Options (one per line)</Label>
                         <Textarea
-                          value={question.options?.join("\n") || ""}
+                          value={
+                            (question.options as string[])?.join("\n") || ""
+                          }
                           onChange={(e) =>
                             handleQuestionChange(question.id, {
                               options: e.target.value
@@ -729,7 +866,12 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                       <p className="font-medium">{question.text}</p>
                       {question.options && (
                         <p className="text-sm text-muted-foreground">
-                          Options: {question.options.join(", ")}
+                          Options:{" "}
+                          {question.type === "image_choice"
+                            ? (question.options as ImageChoiceOption[])
+                                .map((o) => o.text)
+                                .join(", ")
+                            : (question.options as string[]).join(", ")}
                         </p>
                       )}
                     </div>
@@ -777,6 +919,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                   <SelectItem value="multiple_choice">
                     Multiple Choice
                   </SelectItem>
+                  <SelectItem value="image_choice">Image Choice</SelectItem>
                   <SelectItem value="dropdown">Dropdown</SelectItem>
                   <SelectItem value="rating">Rating (1–5)</SelectItem>
                   <SelectItem value="scale">Scale (1–10)</SelectItem>

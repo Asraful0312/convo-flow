@@ -1,6 +1,7 @@
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { api, internal } from "./_generated/api";
+import { assertEditor } from "./auth_helpers";
 
 // Get all responses for a form
 export const getFormResponses = query({
@@ -145,6 +146,22 @@ export const updateResponse = mutation({
 export const deleteResponse = mutation({
   args: { responseId: v.id("responses") },
   handler: async (ctx, args) => {
+    const response = await ctx.db.get(args.responseId);
+    if (!response) {
+      throw new ConvexError("Response not found");
+    }
+
+    const form = await ctx.db.get(response.formId);
+    if (!form) {
+      throw new ConvexError("Form not found for this response");
+    }
+
+    if (!form.workspaceId) {
+      throw new ConvexError("Workspace not found");
+    }
+
+    await assertEditor(ctx, form.workspaceId);
+
     // Delete all answers
     const answers = await ctx.db
       .query("answers")

@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import VoiceControls from "./VoiceControls";
 import { useRef } from "react";
-import { Question } from "@/lib/form-types";
+import { Question, ImageChoiceOption } from "@/lib/form-types";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import ImageChoiceInput from "./ImageChoiceInput";
 
 interface QuestionInputProps {
   question: Question;
@@ -98,9 +99,7 @@ export default function QuestionInput({
 
   return (
     <>
-      {(!isTyping || !isProcessing) &&
-      question.type === "choice" &&
-      question.options ? (
+      {question.type === "choice" && question.options ? (
         <div className="space-y-3">
           <p className="text-sm text-gray-600 mb-3">Select an option:</p>
           <RadioGroup
@@ -117,7 +116,7 @@ export default function QuestionInput({
                 }}
               >
                 <RadioGroupItem
-                  value={option}
+                  value={option as string}
                   id={`option-${index}`}
                   className="peer sr-only"
                 />
@@ -132,11 +131,21 @@ export default function QuestionInput({
                     backgroundColor: "var(--primary-color)",
                   }}
                 >
-                  {option}
+                  {option as string}
                 </Label>
               </div>
             ))}
           </RadioGroup>
+        </div>
+      ) : question.type === "image_choice" && question.options ? (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600 mb-3">Choose an option:</p>
+          <ImageChoiceInput
+            options={question.options as ImageChoiceOption[]}
+            selectedOption={null} // This component is for immediate submission
+            onSelect={(option) => handleSubmit(option)}
+            primaryColor={primaryColor}
+          />
         </div>
       ) : question.type === "dropdown" && question.options ? (
         <div className="space-y-3">
@@ -150,8 +159,8 @@ export default function QuestionInput({
             </SelectTrigger>
             <SelectContent>
               {question.options.map((option, index) => (
-                <SelectItem key={index} value={option}>
-                  {option}
+                <SelectItem key={index} value={option as string}>
+                  {option as string}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -168,10 +177,10 @@ export default function QuestionInput({
               >
                 <Checkbox
                   id={`mc-${index}`}
-                  checked={multipleChoiceAnswers.includes(option)}
+                  checked={multipleChoiceAnswers.includes(option as string)}
                   onCheckedChange={(checked) => {
                     console.log("checked", checked, option);
-                    onMultipleChoiceChange(!!checked, option);
+                    onMultipleChoiceChange(!!checked, option as string);
                   }}
                 />
 
@@ -179,7 +188,7 @@ export default function QuestionInput({
                   htmlFor={`mc-${index}`}
                   className="cursor-pointer flex-1"
                 >
-                  {option}
+                  {option as string}
                 </Label>
               </div>
             ))}
@@ -221,7 +230,7 @@ export default function QuestionInput({
         <div className="space-y-3">
           <p className="text-sm text-gray-600 mb-3">{question.text}</p>
           <div className="flex flex-wrap gap-2 justify-center">
-            {question.options.map((option: string, index: number) => (
+            {question.options.map((option: any, index) => (
               <Button
                 key={index}
                 variant="outline"
@@ -457,7 +466,7 @@ export default function QuestionInput({
               variant="ghost"
               size="sm"
               onClick={() => handleSubmit("")}
-              disabled={isProcessing}
+              disabled={isProcessing || isTyping}
               className=""
             >
               Skip this question

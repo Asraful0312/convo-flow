@@ -56,29 +56,39 @@ export default function NewFormPage() {
       { role: "user" as const, content: description },
     ];
     setConversationHistory(fullConversation);
+    const currentPrompt = description;
     setDescription("");
 
     try {
-      const generated = await generateFormAction({
-        prompt: description,
+      const generated: any = await generateFormAction({
+        prompt: currentPrompt,
         conversationHistory,
       });
 
-      const formWithClientIds = {
-        ...generated,
-        questions: generated.questions.map((q: any, i: number) => ({
-          ...q,
-          id: `client-q-${i}`,
-        })),
-      };
-      setGeneratedForm(formWithClientIds);
-      setConversationHistory([
-        ...fullConversation,
-        {
-          role: "ai",
-          content: `Generated a form with ${generated.questions.length} questions. You can refine or save it!`,
-        },
-      ]);
+      if (generated.clarification) {
+        setConversationHistory([
+          ...fullConversation,
+          { role: "ai", content: generated.clarification },
+        ]);
+      } else if (generated.questions) {
+        const formWithClientIds = {
+          ...generated,
+          questions: generated.questions.map((q: any, i: number) => ({
+            ...q,
+            id: `client-q-${i}`,
+          })),
+        };
+        setGeneratedForm(formWithClientIds);
+        setConversationHistory([
+          ...fullConversation,
+          {
+            role: "ai",
+            content: `Generated a form with ${generated.questions.length} questions. You can refine or save it!`,
+          },
+        ]);
+      } else {
+        throw new Error("Invalid response from AI.");
+      }
     } catch (error) {
       console.error(error);
       setConversationHistory([
@@ -104,26 +114,35 @@ export default function NewFormPage() {
     setDescription("");
 
     try {
-      const refined = await generateFormAction({
+      const refined: any = await generateFormAction({
         prompt: refinement,
         conversationHistory,
       });
 
-      const formWithClientIds = {
-        ...refined,
-        questions: refined.questions.map((q: any, i: number) => ({
-          ...q,
-          id: `client-q-${i}`,
-        })),
-      };
-      setGeneratedForm(formWithClientIds);
-      setConversationHistory([
-        ...fullConversation,
-        {
-          role: "ai",
-          content: `Updated! Now with ${refined.questions.length} questions. Keep refining or save.`,
-        },
-      ]);
+      if (refined.clarification) {
+        setConversationHistory([
+          ...fullConversation,
+          { role: "ai", content: refined.clarification },
+        ]);
+      } else if (refined.questions) {
+        const formWithClientIds = {
+          ...refined,
+          questions: refined.questions.map((q: any, i: number) => ({
+            ...q,
+            id: `client-q-${i}`,
+          })),
+        };
+        setGeneratedForm(formWithClientIds);
+        setConversationHistory([
+          ...fullConversation,
+          {
+            role: "ai",
+            content: `Updated! Now with ${refined.questions.length} questions. Keep refining or save.`,
+          },
+        ]);
+      } else {
+        throw new Error("Invalid response from AI.");
+      }
     } catch (error) {
       console.error(error);
       setConversationHistory([

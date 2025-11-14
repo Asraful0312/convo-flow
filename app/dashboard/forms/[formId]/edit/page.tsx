@@ -24,7 +24,7 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -67,6 +67,8 @@ export default function EditFormPage({
   >("professional");
   const [voiceEnabled, setVoiceEnabled] = useState(false);
 
+  const questionsContainerRef = useRef<HTMLDivElement>(null);
+
   // Questions with sorting and optimistic state
   const rawQuestions =
     useQuery(api.questions.getFormQuestions, { formId: formId }) ?? [];
@@ -97,6 +99,15 @@ export default function EditFormPage({
     setPersonality(form.aiConfig?.personality ?? "professional");
     setVoiceEnabled(form.aiConfig?.enableVoice ?? false);
   }, [form]);
+
+  useEffect(() => {
+    if (questionsContainerRef.current) {
+      questionsContainerRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "end",
+      });
+    }
+  }, [optimisticQuestions.length]);
 
   const handleSaveSettings = async () => {
     setIsSaving(true);
@@ -270,7 +281,7 @@ export default function EditFormPage({
                   items={optimisticQuestions.map((q) => q._id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-4">
+                  <div ref={questionsContainerRef} className="space-y-4">
                     {optimisticQuestions.map((question) => (
                       <SortableQuestion
                         key={question._id}
