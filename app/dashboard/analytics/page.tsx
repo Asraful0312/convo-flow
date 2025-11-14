@@ -47,6 +47,7 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Loader2 } from "lucide-react";
+import { Id } from "@/convex/_generated/dataModel";
 
 const iconMap = {
   positive: TrendingUp,
@@ -63,7 +64,11 @@ const deviceColors: { [key: string]: string } = {
 
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y">("7d");
-  const analytics = useQuery(api.analytics.getAnalytics, { timeRange });
+  const user = useQuery(api.auth.loggedInUser);
+  const analytics = useQuery(api.analytics.getAnalytics, {
+    timeRange,
+    workspaceId: user?.activeWorkspaceId as Id<"workspaces">,
+  });
 
   const formatMinutes = (ms: number) => {
     const minutes = ms / 1000 / 60;

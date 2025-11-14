@@ -33,6 +33,7 @@ import {
 import ShareModal from "@/components/share-modal";
 import { ConvexError } from "convex/values";
 import { toast } from "sonner";
+import { EmptyForm } from "@/components/empty-form";
 
 export default function FormsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -120,6 +121,8 @@ export default function FormsPage() {
           </Button>
         </div>
       </div>
+
+      {forms?.length === 0 && <EmptyForm />}
 
       {/* Forms Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

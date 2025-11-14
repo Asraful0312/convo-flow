@@ -1,6 +1,6 @@
 import { action, internalAction } from "./_generated/server";
 import { v } from "convex/values";
-import { api, internal } from "./_generated/api";
+import { api } from "./_generated/api";
 import OpenAI from "openai";
 
 const openai = new OpenAI();
@@ -124,27 +124,42 @@ Your JSON Output:
 });
 
 export const getConversationalQuestion = action({
-    args: {
-        question: v.string(),
-        history: v.array(v.object({ role: v.union(v.literal("user"), v.literal("ai")), content: v.string() })),
-        personality: v.optional(v.string()),
-        userName: v.optional(v.string()),
-        previousAnswer: v.optional(v.string()),
-    },
-    handler: async (ctx, { question, history, personality, userName, previousAnswer }) => {
-        const personalityPrompt = {
-            professional: "You are a professional assistant. Your tone is courteous and clear.",
-            friendly: "You are a friendly assistant. Your tone is warm and encouraging.",
-            casual: "You are a casual assistant. Your tone is relaxed and conversational.",
-            formal: "You are a formal assistant. Your tone is respectful and precise.",
-        }[personality || 'friendly'] || "You are a helpful assistant.";
+  args: {
+    question: v.string(),
+    history: v.array(
+      v.object({
+        role: v.union(v.literal("user"), v.literal("ai")),
+        content: v.string(),
+      }),
+    ),
+    personality: v.optional(v.string()),
+    userName: v.optional(v.string()),
+    previousAnswer: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    { question, history, personality, userName, previousAnswer },
+  ) => {
+    const personalityPrompt =
+      {
+        professional:
+          "You are a professional assistant. Your tone is courteous and clear.",
+        friendly:
+          "You are a friendly assistant. Your tone is warm and encouraging.",
+        casual:
+          "You are a casual assistant. Your tone is relaxed and conversational.",
+        formal:
+          "You are a formal assistant. Your tone is respectful and precise.",
+      }[personality || "friendly"] || "You are a helpful assistant.";
 
-        const messages: any[] = [
-            { role: "system", content: `You are CANDID, an intelligent and conversational AI assistant. Your personality is: helpful, confident, and modern. Your goal is to make filling out this form feel like a natural and pleasant chat.
+    const messages: any[] = [
+      {
+        role: "system",
+        content: `You are CANDID, an intelligent and conversational AI assistant. Your personality is: helpful, confident, and modern. Your goal is to make filling out this form feel like a natural and pleasant chat.
 
 Your task is to rephrase the upcoming form question to make it more engaging.
 
-${userName ? `The user's name is ${userName}. Use it occasionally to make the conversation personal.` : ''}
+${userName ? `The user's name is ${userName}. Use it occasionally to make the conversation personal.` : ""}
 
 Here's how to do it:
 1.  **Acknowledge (if applicable):** If the user just provided an answer ("${previousAnswer}"), give a brief, natural acknowledgement. Examples: "Got it, thanks!", "Perfect.", "Thanks, ${userName}."
@@ -159,38 +174,43 @@ Here's how to do it:
 4.  **Be Concise:** Keep it short and to the point.
 5.  **CRITICAL:** Only return the rephrased question text. Do not add extra greetings or conversational filler.
 
-The goal is a smooth, engaging conversation that gets the form filled out efficiently.` },
-            ...history.map(msg => ({ role: msg.role === 'ai' ? 'assistant' : 'user', content: msg.content })),
-            { role: "user", content: `Rephrase: "${question}"` },
-        ];
+The goal is a smooth, engaging conversation that gets the form filled out efficiently.`,
+      },
+      ...history.map((msg) => ({
+        role: msg.role === "ai" ? "assistant" : "user",
+        content: msg.content,
+      })),
+      { role: "user", content: `Rephrase: "${question}"` },
+    ];
 
-        const response = await openai.chat.completions.create({
-            model: "gpt-5-mini",
-            messages,
-        });
+    const response = await openai.chat.completions.create({
+      model: "gpt-5-mini",
+      messages,
+    });
 
-        return response.choices[0].message.content;
-    },
+    return response.choices[0].message.content;
+  },
 });
 
 export const validateAnswer = action({
-    args: {
-        question: v.string(),
-        answer: v.string(),
-        personality: v.string(),
-    },
-    handler: async (ctx, { question, answer, personality }) => {
-        const personalityPrompt = {
-            professional: "You are a professional assistant.",
-            friendly: "You are a friendly assistant.",
-            casual: "You are a casual assistant.",
-            formal: "You are a formal assistant.",
-        }[personality] || "You are a helpful assistant.";
+  args: {
+    question: v.string(),
+    answer: v.string(),
+    personality: v.string(),
+  },
+  handler: async (ctx, { question, answer, personality }) => {
+    const personalityPrompt =
+      {
+        professional: "You are a professional assistant.",
+        friendly: "You are a friendly assistant.",
+        casual: "You are a casual assistant.",
+        formal: "You are a formal assistant.",
+      }[personality] || "You are a helpful assistant.";
 
-        const messages: any[] = [
-            {
-                role: "system",
-                content: `You are CANDID, an intelligent and helpful AI assistant. You are validating a user's answer on a form. Your tone should be helpful and confident, never condescending.
+    const messages: any[] = [
+      {
+        role: "system",
+        content: `You are CANDID, an intelligent and helpful AI assistant. You are validating a user's answer on a form. Your tone should be helpful and confident, never condescending.
 
 The user has provided an answer to a question. Determine if the answer is valid and makes sense for the question.
 
@@ -219,32 +239,42 @@ Question: "What is your name?"
 Answer: "John Doe"
 Response: \`{"isValid": true}\`
 
-Your response MUST be a valid JSON object.`
-            },
-            { role: "user", content: `Question: "${question}"
-Answer: "${answer}"` },
-        ];
+Your response MUST be a valid JSON object.`,
+      },
+      {
+        role: "user",
+        content: `Question: "${question}"
+Answer: "${answer}"`,
+      },
+    ];
 
-        const response = await openai.chat.completions.create({
-            model: "gpt-5-mini",
-            messages,
-            response_format: { type: "json_object" },
-        });
+    const response = await openai.chat.completions.create({
+      model: "gpt-5-mini",
+      messages,
+      response_format: { type: "json_object" },
+    });
 
-        const validationResult = JSON.parse(response.choices[0].message.content || "{}");
-        return validationResult;
-    },
+    const validationResult = JSON.parse(
+      response.choices[0].message.content || "{}",
+    );
+    return validationResult;
+  },
 });
 
 export const generateInsights = internalAction({
-    args: { responseId: v.id("responses") },
-    handler: async (ctx, { responseId }) => {
-        const responseData = await ctx.runQuery(api.responses.getResponseWithAnswers, { responseId });
-        if (!responseData) return;
+  args: { responseId: v.id("responses") },
+  handler: async (ctx, { responseId }) => {
+    const responseData = await ctx.runQuery(
+      api.responses.getResponseWithAnswers,
+      { responseId },
+    );
+    if (!responseData) return;
 
-        const answersText = responseData.answers.map(a => `Q: ${a.questionId}\nA: ${a.value}`).join('\n\n');
+    const answersText = responseData.answers
+      .map((a) => `Q: ${a.questionId}\nA: ${a.value}`)
+      .join("\n\n");
 
-        const prompt = `You are a data analyst AI. Your task is to analyze a submitted form response and extract meaningful insights.
+    const prompt = `You are a data analyst AI. Your task is to analyze a submitted form response and extract meaningful insights.
 
 The response is provided below:
 ${answersText}
@@ -269,27 +299,32 @@ Example JSON output:
 
 If you cannot generate meaningful insights, return an empty JSON object.`;
 
-        const aiResponse = await openai.chat.completions.create({
-            model: "gpt-5-nano",
-            messages: [{ role: "system", content: prompt }],
-            response_format: { type: "json_object" },
-        });
+    const aiResponse = await openai.chat.completions.create({
+      model: "gpt-5-nano",
+      messages: [{ role: "system", content: prompt }],
+      response_format: { type: "json_object" },
+    });
 
-        const insights = JSON.parse(aiResponse.choices[0].message.content || "{}");
+    const insights = JSON.parse(aiResponse.choices[0].message.content || "{}");
 
-        if (insights.sentiment && insights.summary && insights.keyThemes && insights.actionableInsights) {
-            await ctx.runMutation(api.responses.updateResponse, {
-                responseId,
-                sentiment: insights.sentiment,
-                summary: insights.summary,
-                themes: insights.keyThemes,
-                actionableInsights: insights.actionableInsights,
-            });
-        } else {
-            await ctx.runMutation(api.responses.updateResponse, {
-                responseId,
-                notes: "Could not generate insights for this response.",
-            });
-        }
-    },
+    if (
+      insights.sentiment &&
+      insights.summary &&
+      insights.keyThemes &&
+      insights.actionableInsights
+    ) {
+      await ctx.runMutation(api.responses.updateResponse, {
+        responseId,
+        sentiment: insights.sentiment,
+        summary: insights.summary,
+        themes: insights.keyThemes,
+        actionableInsights: insights.actionableInsights,
+      });
+    } else {
+      await ctx.runMutation(api.responses.updateResponse, {
+        responseId,
+        notes: "Could not generate insights for this response.",
+      });
+    }
+  },
 });
