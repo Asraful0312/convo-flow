@@ -10,10 +10,8 @@ import { Sparkles, Loader2, Wand2, MessageSquare, Save } from "lucide-react";
 import { FormPreview } from "@/components/form-preview";
 import type { Question } from "@/lib/types";
 import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
-import FormLoading from "@/components/FormLoading";
-import LoaderGrid from "@/components/loader-grid";
-import Loader from "@/components/loader-grid";
 import { TextDotsLoader } from "@/components/ui/loader";
+import Loader from "@/components/loader-grid";
 
 type GeneratedForm = {
   title: string;
@@ -358,7 +356,7 @@ export default function NewFormPage() {
       {/* RIGHT: Preview + Settings */}
       <div className="hidden lg:block w-1/2 bg-muted/30">
         {isGenerating ? (
-          <div className="h-full flex items-center justify-center p-12">
+          <div className="h-full flex items-center justify-center p-12 bg-white">
             <div className="text-center space-y-4 max-w-md">
               <div className="flex items-center justify-center">
                 <Loader />

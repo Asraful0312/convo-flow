@@ -105,6 +105,7 @@ export default function SignUpPage() {
                 name="name"
                 id="name"
                 type="text"
+                required
                 placeholder="John Doe"
                 className="h-11"
               />
@@ -116,6 +117,7 @@ export default function SignUpPage() {
                 name="email"
                 id="email"
                 type="email"
+                required
                 placeholder="you@example.com"
                 className="h-11"
               />
@@ -127,6 +129,7 @@ export default function SignUpPage() {
                 name="password"
                 id="password"
                 type="password"
+                required
                 placeholder="••••••••"
                 className="h-11"
               />
