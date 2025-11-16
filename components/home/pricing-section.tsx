@@ -9,7 +9,6 @@ import { Check, Star } from "lucide-react";
 import Link from "next/link";
 import { useState, useRef } from "react";
 
-
 interface PricingPlan {
   name: string;
   price: string;
@@ -21,7 +20,6 @@ interface PricingPlan {
   href: string;
   isPopular: boolean;
 }
-
 
 export const plans: PricingPlan[] = [
   {
@@ -78,25 +76,20 @@ export const plans: PricingPlan[] = [
   },
 ];
 
-
 export function Pricing({
   title = "Our Pricing",
   description = "Start free, upgrade as you grow. No hidden fees.",
 }) {
-
-    const isDesktop = useMediaQuery("(min-width: 1024px)");
-
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   return (
     <section id="pricing" className="container py-20">
-        <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold mb-3">{ title}</h2>
-                    <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          { description}
-            </p>
-                </div>
-
-
+      <div className="text-center mb-12">
+        <h2 className="text-4xl font-bold mb-3">{title}</h2>
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          {description}
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 sm:2 gap-4">
         {plans.map((plan, index) => (
@@ -131,7 +124,7 @@ export function Pricing({
                 ? "z-0 transform translate-x-0 translate-y-0 -translate-z-[50px] rotate-y-10"
                 : "z-10",
               index === 0 && "origin-right",
-              index === 2 && "origin-left"
+              index === 2 && "origin-left",
             )}
           >
             {plan.isPopular && (
@@ -149,16 +142,13 @@ export function Pricing({
               <div className="mt-6 flex items-center justify-center gap-x-2">
                 <span className="text-5xl font-bold tracking-tight text-foreground">
                   <NumberFlow
-                    value={
-                      Number(plan.price)
-                    }
+                    value={Number(plan.price)}
                     format={{
                       style: "currency",
                       currency: "USD",
                       minimumFractionDigits: 0,
                       maximumFractionDigits: 0,
                     }}
-                   
                     transformTiming={{
                       duration: 500,
                       easing: "ease-out",
@@ -175,7 +165,7 @@ export function Pricing({
               </div>
 
               <p className="text-xs leading-5 text-muted-foreground">
-                 billed monthly
+                billed monthly
               </p>
 
               <ul className="mt-5 gap-2 flex flex-col">
@@ -199,7 +189,7 @@ export function Pricing({
                   "transform-gpu ring-offset-current transition-all duration-300 ease-out hover:ring-2 hover:ring-primary hover:ring-offset-1 hover:bg-primary hover:text-primary-foreground",
                   plan.isPopular
                     ? "bg-primary text-primary-foreground"
-                    : "bg-background text-foreground"
+                    : "bg-background text-foreground",
                 )}
               >
                 {plan.buttonText}
@@ -212,14 +202,16 @@ export function Pricing({
         ))}
       </div>
 
-           <div className="text-center mt-12">
-            <p className="text-muted-foreground mb-4">Need more? Enterprise plans available</p>
-            <Link href="/contact">
-              <Button variant="secondary" className="">
-                Contact Sales →
-              </Button>
-            </Link>
-          </div>
+      <div className="text-center mt-12">
+        <p className="text-muted-foreground mb-4">
+          Need more? Enterprise plans available
+        </p>
+        <Link href="/contact">
+          <Button variant="secondary" className="">
+            Contact Sales →
+          </Button>
+        </Link>
+      </div>
     </section>
   );
 }

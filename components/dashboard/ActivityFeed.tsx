@@ -1,12 +1,14 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, Trash2 } from "lucide-react";
 import { ActivityItem } from "./ActivityItem";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 type Props = {
   workspaceId: Id<"workspaces">;
@@ -22,6 +24,18 @@ const containerVariants = {
 
 export function ActivityFeed({ workspaceId }: Props) {
   const activities = useQuery(api.activities.listForWorkspace, { workspaceId });
+  const role = useQuery(api.users.getRole, { workspaceId });
+  const deleteActivity = useMutation(api.activities.deleteActivity);
+
+  const canDelete = role === "admin" || role === "editor";
+
+  const handleDelete = (activityId: Id<"activities">) => {
+    toast.promise(deleteActivity({ activityId }), {
+      loading: "Deleting activity...",
+      success: "Activity deleted!",
+      error: "Failed to delete activity.",
+    });
+  };
 
   return (
     <Card className="border-0 shadow-sm">
@@ -44,6 +58,7 @@ export function ActivityFeed({ workspaceId }: Props) {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
+            className="space-y-2"
           >
             {activities.map((activity) => (
               <motion.div
@@ -52,9 +67,19 @@ export function ActivityFeed({ workspaceId }: Props) {
                   hidden: { opacity: 0, x: -10 },
                   visible: { opacity: 1, x: 0 },
                 }}
-                className="max-h-[200px] overflow-y-scroll"
+                className="flex items-center justify-between group"
               >
                 <ActivityItem activity={activity} />
+                {canDelete && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(activity._id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity group"
+                  >
+                    <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive " />
+                  </Button>
+                )}
               </motion.div>
             ))}
           </motion.div>

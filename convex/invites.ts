@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { internalQuery, mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError } from "convex/values";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 export const get = query({
   args: {
@@ -67,7 +67,7 @@ export const accept = mutation({
 
     await ctx.db.delete(invite._id);
 
-    await ctx.runMutation(internal.activities.logActivity, {
+    await ctx.runMutation(api.activities.logActivity, {
       workspaceId: invite.workspaceId,
       userId,
       action: "member.join",

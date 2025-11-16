@@ -141,6 +141,7 @@ export default function QuestionInput({
         <div className="space-y-3">
           <p className="text-sm text-gray-600 mb-3">Choose an option:</p>
           <ImageChoiceInput
+            disabled={isProcessing || isTyping}
             options={question.options as ImageChoiceOption[]}
             selectedOption={null} // This component is for immediate submission
             onSelect={(option) => handleSubmit(option)}

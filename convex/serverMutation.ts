@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { internalMutation, mutation } from "./_generated/server";
 import { assertAdmin } from "./auth_helpers";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const addInvite = internalMutation({
@@ -40,7 +40,7 @@ export const updateRole = mutation({
       throw new ConvexError("Not authenticated");
     }
 
-    await ctx.runMutation(internal.activities.logActivity, {
+    await ctx.runMutation(api.activities.logActivity, {
       workspaceId: member.workspaceId,
       userId: admin,
       action: "member.updateRole",
@@ -91,7 +91,7 @@ export const removeMember = mutation({
       throw new ConvexError("Not authenticated");
     }
 
-    await ctx.runMutation(internal.activities.logActivity, {
+    await ctx.runMutation(api.activities.logActivity, {
       workspaceId: member.workspaceId,
       userId: admin,
       action: "member.remove",

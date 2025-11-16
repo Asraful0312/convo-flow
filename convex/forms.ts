@@ -328,7 +328,7 @@ export const create = mutation({
       });
     }
 
-    await ctx.runMutation(internal.activities.logActivity, {
+    await ctx.runMutation(api.activities.logActivity, {
       workspaceId: args.workspaceId,
       userId,
       action: "form.create",
@@ -385,7 +385,7 @@ export const updateSettings = mutation({
           (args.primaryColor &&
             args.primaryColor !== form.settings?.branding?.primaryColor);
 
-        if (hasCustomBranding) {
+        if (args.primaryColor !== "#f56a4d" && hasCustomBranding) {
           throw new ConvexError(
             "Custom branding is not available on the free plan.",
           );
@@ -473,7 +473,7 @@ export const updateSettings = mutation({
     await ctx.db.patch(args.formId, patch);
 
     if (args.status && args.status !== form.status) {
-      await ctx.runMutation(internal.activities.logActivity, {
+      await ctx.runMutation(api.activities.logActivity, {
         workspaceId: form.workspaceId,
         userId,
         action: "form.updateStatus",

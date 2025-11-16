@@ -9,9 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Loader2, Wand2, MessageSquare, Save } from "lucide-react";
 import { FormPreview } from "@/components/form-preview";
 import type { Question } from "@/lib/types";
-import CandidLogo from "@/components/shared/candid-logo";
-import { toast } from "sonner";
-import { Id } from "@/convex/_generated/dataModel";
+import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
+import FormLoading from "@/components/FormLoading";
+import LoaderGrid from "@/components/loader-grid";
+import Loader from "@/components/loader-grid";
+import { TextDotsLoader } from "@/components/ui/loader";
 
 type GeneratedForm = {
   title: string;
@@ -27,6 +29,16 @@ type GeneratedForm = {
   };
 };
 
+const loadingMessages = [
+  "Warming up the AI hamsters...",
+  "Reticulating splines...",
+  "Asking the form gods for inspiration...",
+  "Adding a dash of conversational charm...",
+  "Making sure the pixels are perfectly aligned...",
+  "Polishing the submit button to a high shine...",
+  "Just one more thing... checking for rogue semicolons.",
+];
+
 export default function NewFormPage() {
   const router = useRouter();
   const [description, setDescription] = useState("");
@@ -34,12 +46,40 @@ export default function NewFormPage() {
   const [generatedForm, setGeneratedForm] = useState<GeneratedForm | null>(
     null,
   );
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [conversationHistory, setConversationHistory] = useState<
     Array<{ role: "user" | "ai"; content: string }>
   >([]);
 
   const generateFormAction = useAction(api.ai.generateForm);
   const createFormMutation = useMutation(api.forms.create);
+  const { textareaRef, adjustHeight } = useAutoResizeTextarea({
+    minHeight: 60,
+    maxHeight: 200,
+  });
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | undefined;
+    if (isGenerating) {
+      if (generatedForm) {
+        setLoadingMessage("Refining...");
+        return;
+      }
+
+      let i = 0;
+      setLoadingMessage(loadingMessages[0]);
+      interval = setInterval(() => {
+        i = (i + 1) % loadingMessages.length;
+        setLoadingMessage(loadingMessages[i]);
+      }, 2000);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isGenerating, generatedForm]);
 
   const examplePrompts = [
     "Create a customer feedback survey with rating scales and open-ended questions",
@@ -158,18 +198,6 @@ export default function NewFormPage() {
     <div className="h-[calc(100vh-64px)] flex">
       {/* LEFT: AI Chat */}
       <div className="w-full lg:w-1/2 border-r border-border flex flex-col bg-background">
-        <div className="px-6 border-b border-border">
-          <div className="flex items-center gap-3 py-4">
-            <CandidLogo />
-            <div>
-              <h1 className="text-2xl font-bold">Create with AI</h1>
-              <p className="text-sm text-muted-foreground">
-                Describe your form and let AI build it
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Conversation */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {conversationHistory.length === 0 ? (
@@ -254,14 +282,14 @@ export default function NewFormPage() {
               ))}
               {isGenerating && (
                 <div className="flex gap-3 justify-start">
-                  <div className="w-8 h-8 rounded-lg bg-linear-to-br from-[#F56A4D] to-[#f97316] flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-linear-to-br from-[#F56A4D] to-[#f97316] flex items-center justify-center shrink-0">
                     <Sparkles className="w-4 h-4 text-white" />
                   </div>
                   <div className="bg-muted border border-border rounded-lg p-4">
                     <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin text-[#F56A4D]" />
                       <span className="text-sm text-muted-foreground">
-                        {generatedForm ? "Refining..." : "Generating..."}
+                        {loadingMessage}
                       </span>
                     </div>
                   </div>
@@ -276,6 +304,7 @@ export default function NewFormPage() {
           <div className="space-y-3">
             <Textarea
               value={description}
+              ref={textareaRef}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={
                 generatedForm
@@ -328,7 +357,22 @@ export default function NewFormPage() {
 
       {/* RIGHT: Preview + Settings */}
       <div className="hidden lg:block w-1/2 bg-muted/30">
-        {generatedForm ? (
+        {isGenerating ? (
+          <div className="h-full flex items-center justify-center p-12">
+            <div className="text-center space-y-4 max-w-md">
+              <div className="flex items-center justify-center">
+                <Loader />
+              </div>
+              <TextDotsLoader
+                size="lg"
+                text={generatedForm ? "Refining form" : "Generating form"}
+              />
+              <p className="text-sm text-muted-foreground">
+                Please wait while the AI works its magic.
+              </p>
+            </div>
+          </div>
+        ) : generatedForm ? (
           <div className="h-full flex flex-col">
             <FormPreview form={generatedForm} setForm={setGeneratedForm} />
           </div>

@@ -31,13 +31,14 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "./ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { Question, ImageChoiceOption } from "@/lib/types";
+import type { Question } from "@/lib/types";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { toast } from "sonner";
 import { ConvexError } from "convex/values";
 import { Id } from "@/convex/_generated/dataModel";
 import ImageChoiceInput from "./form/ImageChoiceInput";
+import { ImageChoiceOption } from "@/lib/form-types";
 
 interface FormPreviewProps {
   form: {
@@ -92,8 +93,8 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
           type === "likert"
             ? ["Option 1"]
             : type === "image_choice"
-            ? [{ text: "Option 1", imageUrl: "" }]
-            : undefined,
+              ? [{ text: "Option 1", imageUrl: "" }]
+              : undefined,
       };
       return {
         ...prev,
@@ -135,7 +136,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
   );
 
   useEffect(() => {
-    setPrimaryColor(form.settings?.branding?.primaryColor ?? "#6366f1");
+    setPrimaryColor(form.settings?.branding?.primaryColor ?? "#f56a4d");
     setLogoUrl(form.settings?.branding?.logoUrl ?? "");
     setEmailOnResponse(form.settings?.notifications?.emailOnResponse ?? false);
     setNotificationEmail(form.settings?.notifications?.notificationEmail ?? "");
@@ -192,11 +193,11 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
     field: "text" | "imageUrl",
     value: string,
   ) => {
-    setForm((prev) => {
+    setForm((prev: any) => {
       if (!prev) return null;
       return {
         ...prev,
-        questions: prev.questions.map((q) => {
+        questions: prev.questions.map((q: any) => {
           if (q.id === questionId && q.type === "image_choice") {
             const updatedOptions = [...(q.options as ImageChoiceOption[])];
             updatedOptions[optionIndex] = {
@@ -212,11 +213,11 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
   };
 
   const addImageOption = (questionId: string) => {
-    setForm((prev) => {
+    setForm((prev: any) => {
       if (!prev) return null;
       return {
         ...prev,
-        questions: prev.questions.map((q) => {
+        questions: prev.questions.map((q: any) => {
           if (q.id === questionId && q.type === "image_choice") {
             const newOptions = [
               ...(q.options as ImageChoiceOption[]),
@@ -231,11 +232,11 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
   };
 
   const removeImageOption = (questionId: string, optionIndex: number) => {
-    setForm((prev) => {
+    setForm((prev: any) => {
       if (!prev) return null;
       return {
         ...prev,
-        questions: prev.questions.map((q) => {
+        questions: prev.questions.map((q: any) => {
           if (q.id === questionId && q.type === "image_choice") {
             const newOptions = (q.options as ImageChoiceOption[]).filter(
               (_, i) => i !== optionIndex,
@@ -816,25 +817,27 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                           Add Option
                         </Button>
                       </div>
-                    ) : (question.type === "choice" ||
+                    ) : (
+                      (question.type === "choice" ||
                         question.type === "multiple_choice" ||
                         question.type === "dropdown" ||
                         question.type === "likert") && (
-                      <div className="space-y-2">
-                        <Label>Options (one per line)</Label>
-                        <Textarea
-                          value={
-                            (question.options as string[])?.join("\n") || ""
-                          }
-                          onChange={(e) =>
-                            handleQuestionChange(question.id, {
-                              options: e.target.value
-                                .split("\n")
-                                .filter(Boolean),
-                            })
-                          }
-                        />
-                      </div>
+                        <div className="space-y-2">
+                          <Label>Options (one per line)</Label>
+                          <Textarea
+                            value={
+                              (question.options as string[])?.join("\n") || ""
+                            }
+                            onChange={(e) =>
+                              handleQuestionChange(question.id, {
+                                options: e.target.value
+                                  .split("\n")
+                                  .filter(Boolean),
+                              })
+                            }
+                          />
+                        </div>
+                      )
                     )}
                     <Button
                       size="sm"

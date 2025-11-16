@@ -321,6 +321,18 @@ export default function FormSubmissionPage({
     if (!currentQuestion || isProcessing) return;
 
     if (
+      currentQuestion.type === "image_choice" &&
+      typeof answer === "string"
+    ) {
+      const option = currentQuestion.options?.find(
+        (opt: any) => typeof opt === "object" && opt.text === answer,
+      );
+      if (option) {
+        answer = option as any;
+      }
+    }
+
+    if (
       currentQuestion.type === "location" &&
       typeof answer === "string" &&
       !isConfirmed
@@ -401,13 +413,23 @@ export default function FormSubmissionPage({
         answerValue = answer.storageId;
         fileDetails = { fileName: answer.fileName, fileSize: answer.fileSize };
         displayContent = answer.fileName;
-      } else if (
-        typeof answer === "object" &&
-        answer !== null &&
-        "imageUrl" in answer
-      ) {
-        answerValue = answer; // Save the whole object
-        displayContent = (answer as any).text; // Display only the text
+      } else if (currentQuestion.type === "image_choice") {
+        if (typeof answer === "string") {
+          const option = currentQuestion.options?.find(
+            (opt: any) => typeof opt === "object" && opt.text === answer,
+          );
+          answerValue = option || answer;
+          displayContent = answer;
+        } else if (
+          typeof answer === "object" &&
+          answer !== null &&
+          (answer as any).imageUrl
+        ) {
+          answerValue = answer;
+          displayContent = (answer as any).text;
+        } else {
+          displayContent = ""; // Should not happen
+        }
       } else if (Array.isArray(answer)) {
         displayContent = answer.join(", ");
       } else if (answer === "") {
@@ -464,6 +486,10 @@ export default function FormSubmissionPage({
     setIsTyping(true);
 
     try {
+      await saveConversation({
+        responseId,
+        messages,
+      });
       await updateResponse({
         responseId,
         status: "completed",

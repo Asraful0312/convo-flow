@@ -125,3 +125,28 @@ export const updateSubscription = mutation({
     });
   },
 });
+
+export const getRole = query({
+  args: { workspaceId: v.id("workspaces") },
+  handler: async (ctx, { workspaceId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return null;
+    }
+
+    const user = await ctx.db.get(userId);
+
+    if (!user) {
+      return null;
+    }
+
+    const member = await ctx.db
+      .query("workspaceMembers")
+      .withIndex("by_workspace_and_user", (q) =>
+        q.eq("workspaceId", workspaceId).eq("userId", user._id),
+      )
+      .unique();
+
+    return member ? member.role : null;
+  },
+});

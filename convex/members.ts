@@ -1,9 +1,10 @@
 "use node";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { action, query } from "./_generated/server";
 import { assertViewer } from "./auth_helpers";
 import { ConvexError } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const invite = action({
   args: {
@@ -14,7 +15,7 @@ export const invite = action({
   handler: async (ctx, { workspaceId, email, role }) => {
     const inviter = await ctx.runQuery(internal.users.getMe);
     if (!inviter) {
-        throw new ConvexError("Not authenticated.");
+      throw new ConvexError("Not authenticated.");
     }
     const inviterId = inviter._id;
 
@@ -60,21 +61,23 @@ export const invite = action({
       invitedBy: inviterId,
     });
 
-    await ctx.runMutation(internal.activities.logActivity, {
-        workspaceId,
-        userId: inviterId,
-        action: "member.invite",
-        details: { email, role },
+    await ctx.runMutation(api.activities.logActivity, {
+      workspaceId,
+      userId: inviterId,
+      action: "member.invite",
+      details: { email, role },
     });
 
-    const workspace = await ctx.runQuery(internal.workspaces.get, { workspaceId });
+    const workspace = await ctx.runQuery(internal.workspaces.get, {
+      workspaceId,
+    });
     const inviteUrl = `${process.env.SITE_URL}/invites/${inviteId}`;
 
     await ctx.runAction(internal.emails.sendInviteEmail, {
-        email,
-        workspaceName: workspace.name,
-        inviterName: inviter.name ?? "A user",
-        inviteUrl,
+      email,
+      workspaceName: workspace.name,
+      inviterName: inviter.name ?? "A user",
+      inviteUrl,
     });
   },
 });

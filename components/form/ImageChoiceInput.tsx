@@ -13,6 +13,7 @@ interface ImageChoiceInputProps {
   selectedOption: ImageChoiceOption | null;
   onSelect: (option: ImageChoiceOption) => void;
   primaryColor: string;
+  disabled?: boolean;
 }
 
 export default function ImageChoiceInput({
@@ -20,12 +21,14 @@ export default function ImageChoiceInput({
   selectedOption,
   onSelect,
   primaryColor,
+  disabled,
 }: ImageChoiceInputProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
       {options.map((option, index) => (
-        <div
+        <button
           key={index}
+          disabled={disabled}
           onClick={() => onSelect(option)}
           className={cn(
             "relative rounded-xl border-2 p-2 cursor-pointer transition-all duration-200",
@@ -55,7 +58,7 @@ export default function ImageChoiceInput({
           <p className="text-center text-sm font-medium text-gray-700">
             {option.text}
           </p>
-        </div>
+        </button>
       ))}
     </div>
   );
