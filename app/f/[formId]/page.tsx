@@ -132,8 +132,8 @@ export default function FormSubmissionPage({
         recognitionRef.current.lang = form?.aiConfig?.language || "en-US";
 
         recognitionRef.current.onresult = (event: any) => {
-          // If assistant is speaking, ignore any recognition results
-          if (isSpeakingRef.current) {
+          // If assistant is speaking or processing, ignore recognition results
+          if (isSpeakingRef.current || isProcessing) {
             return;
           }
 
@@ -154,38 +154,66 @@ export default function FormSubmissionPage({
 
           if (finalTranscriptPart) {
             finalTranscriptRef.current += finalTranscriptPart;
-            setInputValue(finalTranscriptRef.current); // Set final value
+            setInputValue(finalTranscriptRef.current);
 
-            // Only auto-submit if autoSubmit enabled, voice enabled, and NOT speaking
-            if (autoSubmit && voiceEnabled && !isSpeakingRef.current) {
+            // Only auto-submit if conditions are met
+            if (
+              autoSubmit &&
+              voiceEnabled &&
+              !isSpeakingRef.current &&
+              !isProcessing
+            ) {
               if (autoSubmitTimeoutRef.current) {
                 clearTimeout(autoSubmitTimeoutRef.current);
               }
               autoSubmitTimeoutRef.current = setTimeout(() => {
-                if (finalTranscriptRef.current.trim()) {
-                  handleSubmitAnswer(finalTranscriptRef.current.trim());
+                const currentTranscript = finalTranscriptRef.current.trim();
+                if (
+                  currentTranscript &&
+                  !isProcessing &&
+                  !isSpeakingRef.current
+                ) {
+                  handleSubmitAnswer(currentTranscript);
                 }
               }, 1500);
             }
           }
         };
 
-        recognitionRef.current.onend = () => {
+        recognitionRef.current.onerror = (event: any) => {
+          console.error("Speech recognition error:", event.error);
+          if (event.error === "no-speech") {
+            // Ignore no-speech errors, keep recording
+            return;
+          }
           setIsRecording(false);
           stopAudioVisualization();
+        };
+
+        recognitionRef.current.onend = () => {
+          // Only set recording to false if we're not supposed to restart
+          if (!wasRecordingBeforeSpeakRef.current) {
+            setIsRecording(false);
+            stopAudioVisualization();
+          }
         };
       }
     }
 
     return () => {
-      if (recognitionRef.current) recognitionRef.current.stop();
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // ignore
+        }
+      }
       stopAudioVisualization();
       if (autoSubmitTimeoutRef.current) {
         clearTimeout(autoSubmitTimeoutRef.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form, autoSubmit, voiceEnabled]);
+  }, [form, autoSubmit, voiceEnabled, isProcessing]);
 
   useEffect(() => {
     if (form && form.aiConfig?.enableVoice) {
@@ -360,31 +388,63 @@ export default function FormSubmissionPage({
     }
   };
 
+  useEffect(() => {
+    // When assistant stops speaking, restart recording if it was active before
+    if (!isSpeaking && wasRecordingBeforeSpeakRef.current && voiceEnabled) {
+      const timer = setTimeout(() => {
+        if (recognitionRef.current && !isProcessing && !isTyping) {
+          try {
+            recognitionRef.current.start();
+            setIsRecording(true);
+            startAudioVisualization();
+            wasRecordingBeforeSpeakRef.current = false;
+          } catch (e) {
+            console.error("Failed to restart recognition:", e);
+          }
+        }
+      }, 500); // Small delay to ensure audio has finished
+
+      return () => clearTimeout(timer);
+    }
+  }, [isSpeaking, voiceEnabled, isProcessing, isTyping]);
+
+  // Update the handleSubmitAnswer function
   const handleSubmitAnswer = async (
     answer:
       | string
       | string[]
-      | { storageId: string; fileName: string; fileSize: number },
+      | { storageId: string; fileName: string; fileSize: number }
+      | { imageUrl: string; text: string },
     isConfirmed: boolean = false,
   ) => {
+    // Clear auto-submit timeout
     if (autoSubmitTimeoutRef.current) {
       clearTimeout(autoSubmitTimeoutRef.current);
+      autoSubmitTimeoutRef.current = null;
     }
+
+    // Stop recording immediately
+    if (recognitionRef.current && isRecording) {
+      try {
+        recognitionRef.current.stop();
+        setIsRecording(false);
+        stopAudioVisualization();
+      } catch (e) {
+        console.error("Failed to stop recognition:", e);
+      }
+    }
+
+    // Clear transcript
     finalTranscriptRef.current = "";
+    setInputValue("");
 
     if (!currentQuestion || isProcessing) return;
 
-    console.log("is iamge choice", typeof answer === "string");
-    console.log("currentQuestion", currentQuestion);
-    console.log("answer", answer);
-    if (currentQuestion.type === "image_choice") {
+    if (currentQuestion.type === "image_choice" && typeof answer === "string") {
       const option = currentQuestion.options?.find(
-        (opt: any) => opt.text === answer?.text,
+        (opt: any) => typeof opt === "object" && opt.text === answer,
       );
-
-      console.log("option", option);
       if (option) {
-        console.log("option workkk");
         answer = option as any;
       }
     }
@@ -409,7 +469,6 @@ export default function FormSubmissionPage({
         timestamp: Date.now(),
       };
       setMessages((prev) => [...prev, userMessage, assistantMessage]);
-      setInputValue("");
       return;
     }
 
@@ -465,6 +524,7 @@ export default function FormSubmissionPage({
       let answerValue: any = answer;
       let fileDetails: { fileName?: string; fileSize?: number } = {};
       let displayContent: string;
+      let messageValue: any = undefined;
 
       if (typeof answer === "object" && "storageId" in answer) {
         answerValue = answer.storageId;
@@ -477,6 +537,7 @@ export default function FormSubmissionPage({
           );
           answerValue = option || answer;
           displayContent = answer;
+          messageValue = option;
         } else if (
           typeof answer === "object" &&
           answer !== null &&
@@ -484,8 +545,9 @@ export default function FormSubmissionPage({
         ) {
           answerValue = answer;
           displayContent = (answer as any).text;
+          messageValue = answer;
         } else {
-          displayContent = ""; // Should not happen
+          displayContent = "";
         }
       } else if (Array.isArray(answer)) {
         displayContent = answer.join(", ");
@@ -519,16 +581,25 @@ export default function FormSubmissionPage({
           content: displayContent,
           timestamp: Date.now(),
           questionId: currentQuestion._id,
+          value: messageValue,
         };
         setMessages((prev) => [...prev, answerMessage]);
       }
 
-      setInputValue("");
       if (locationToConfirm) setLocationToConfirm(null);
 
       setCurrentQuestionIndex((prev) => {
         const nextIndex = prev + 1;
-        askQuestion(nextIndex, displayContent);
+        // Don't call askQuestion here if voice is enabled
+        // Let the speaking finish, then askQuestion will be called
+        if (!voiceEnabled) {
+          askQuestion(nextIndex, displayContent);
+        } else {
+          // Delay askQuestion until after the user's answer message is spoken
+          setTimeout(() => {
+            askQuestion(nextIndex, displayContent);
+          }, 500);
+        }
         return nextIndex;
       });
 
@@ -560,27 +631,40 @@ export default function FormSubmissionPage({
     }
   };
 
+  // Update the speakText function
   const speakText = async (text: string) => {
     if (!voiceEnabled) return;
+
+    // Stop any pending speech
+    if (typeof window !== "undefined") {
+      window.speechSynthesis.cancel();
+    }
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
+      audioElementRef.current = null;
+    }
 
     setIsSpeaking(true);
     isSpeakingRef.current = true;
 
-    // If we are recording, stop recognition and remember to restart later.
+    // If we are recording, stop recognition and remember to restart later
     if (recognitionRef.current && isRecording) {
       try {
         wasRecordingBeforeSpeakRef.current = true;
         recognitionRef.current.stop();
+        setIsRecording(false);
+        stopAudioVisualization();
       } catch (e) {
-        // ignore
+        console.error("Failed to stop recognition:", e);
       }
     } else {
       wasRecordingBeforeSpeakRef.current = false;
     }
 
-    // clear any pending auto-submit while speaking
+    // Clear any pending auto-submit while speaking
     if (autoSubmitTimeoutRef.current) {
       clearTimeout(autoSubmitTimeoutRef.current);
+      autoSubmitTimeoutRef.current = null;
     }
 
     try {
@@ -610,12 +694,11 @@ export default function FormSubmissionPage({
           const audioBlob = await response.blob();
           const audioUrl = URL.createObjectURL(audioBlob);
 
-          if (audioElementRef.current) {
-            audioElementRef.current.pause();
-          }
-
           audioElementRef.current = new Audio(audioUrl);
-          audioElementRef.current.onended = () => setIsSpeaking(false);
+          audioElementRef.current.onended = () => {
+            setIsSpeaking(false);
+            isSpeakingRef.current = false;
+          };
           await audioElementRef.current.play();
           return;
         }
@@ -626,7 +709,10 @@ export default function FormSubmissionPage({
         utterance.rate = 0.9;
         utterance.pitch = 1;
         utterance.volume = 1;
-        utterance.onend = () => setIsSpeaking(false);
+        utterance.onend = () => {
+          setIsSpeaking(false);
+          isSpeakingRef.current = false;
+        };
         window.speechSynthesis.speak(utterance);
       }
     } catch (error) {
