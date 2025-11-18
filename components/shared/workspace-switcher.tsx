@@ -41,7 +41,7 @@ export default function WorkspaceSwitcher() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger className="bg-white" asChild>
         <Button variant="outline" className="w-48 justify-between">
           <span className="truncate">{user.activeWorkspace.name}</span>
           <ChevronsUpDown className="h-4 w-4 opacity-50" />
@@ -52,20 +52,23 @@ export default function WorkspaceSwitcher() {
         <DropdownMenuGroup>
           {user.workspaces.map((workspace) => (
             <DropdownMenuItem
-              key={workspace._id}
-              onClick={() => handleSwitch(workspace._id)}
+              key={workspace?._id}
+              onClick={() => handleSwitch(workspace?._id)}
               className="justify-between"
             >
-              <span className="truncate">{workspace.name}</span>
-              {workspace._id === user.activeWorkspace?._id && (
+              <span className="truncate">{workspace?.name}</span>
+              {workspace?._id === user.activeWorkspace?._id && (
                 <Check className="h-4 w-4" />
               )}
             </DropdownMenuItem>
           ))}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => router.push("/dashboard/workspaces/new")}>
-          <PlusCircle className="mr-2 h-4 w-4" />
+        <DropdownMenuItem
+          className="group"
+          onSelect={() => router.push("/dashboard/workspaces/new")}
+        >
+          <PlusCircle className="mr-2 h-4 w-4 group-hover:text-white" />
           <span>Create Workspace</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

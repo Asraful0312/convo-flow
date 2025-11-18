@@ -166,7 +166,13 @@ export default function EditFormPage({
   };
 
   const updateQuestion = async (id: Id<"questions">, updates: any) => {
-    await updateQ({ questionId: id, ...updates });
+    try {
+      await updateQ({ questionId: id, ...updates });
+    } catch (error) {
+      toast.error(
+        error instanceof ConvexError ? error.data : "Failed to update!",
+      );
+    }
   };
 
   const deleteQuestion = async (id: Id<"questions">) => {

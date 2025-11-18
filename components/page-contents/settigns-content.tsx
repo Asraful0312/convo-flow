@@ -9,7 +9,6 @@ import NotificationsTab from "../settings/tabs/NotificationsTab";
 import IntegrationsTab from "../settings/tabs/IntegrationsTab";
 import WebhooksTab from "../settings/tabs/WebhooksTab";
 import TeamTab from "../settings/tabs/TeamTab";
-import SettingsLayout from "../settings/SettingsLayout";
 
 type Props = {
   preloadedIntegrations: Preloaded<typeof api.integrations.getIntegrations>;
@@ -40,5 +39,5 @@ export default function SettingsContent({ preloadedIntegrations }: Props) {
     }
   };
 
-  return <SettingsLayout>{renderTab()}</SettingsLayout>;
+  return renderTab();
 }

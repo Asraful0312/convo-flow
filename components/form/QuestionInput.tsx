@@ -97,6 +97,8 @@ export default function QuestionInput({
     }
   };
 
+  console.log(question);
+
   return (
     <>
       {question.type === "choice" && question.options ? (
@@ -227,7 +229,38 @@ export default function QuestionInput({
             ))}
           </div>
         </div>
-      ) : ["scale", "likert"].includes(question.type) && question.options ? (
+      ) : question.type === "scale" ? (
+        <div className="space-y-3">
+          <p className="text-sm text-gray-600 mb-3">{question.text}</p>
+          <div className="space-y-2">
+            <div className="flex justify-between text-xs text-muted-foreground px-2">
+              <span>1</span>
+              <span>10</span>
+            </div>
+            <RadioGroup
+              onValueChange={(value) => handleSubmit(value)}
+              disabled={isProcessing || isTyping}
+              className="flex justify-between"
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => (
+                <div key={v} className="flex flex-col items-center">
+                  <RadioGroupItem
+                    value={v.toString()}
+                    id={`scale-${question._id}-${v}`}
+                    className="sr-only"
+                  />
+                  <Label
+                    htmlFor={`scale-${question._id}-${v}`}
+                    className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all bg-muted hover:bg-muted/80"
+                  >
+                    {v}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
+        </div>
+      ) : question.type === "likert" && question.options ? (
         <div className="space-y-3">
           <p className="text-sm text-gray-600 mb-3">{question.text}</p>
           <div className="flex flex-wrap gap-2 justify-center">
@@ -312,7 +345,7 @@ export default function QuestionInput({
               placeholder={
                 question.placeholder || "Type a full address and press Send"
               }
-              className="h-14 pl-10 pr-24 bg-white rounded-xl"
+              className={cn("h-14 pl-10 pr-24 bg-white rounded-xl")}
               onKeyDown={onKeyPress}
               disabled={isProcessing || isTyping}
             />

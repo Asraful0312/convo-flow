@@ -252,28 +252,15 @@ export default function ResponseDetailPage({
                 );
               } else if (
                 message.role === "user" &&
-                question?.type === "image_choice" &&
-                answer?.value
+                question?.type === "image_choice"
               ) {
-                let imageUrl: string | undefined;
-                if (typeof answer.value === "string") {
-                  imageUrl = answer.value;
-                } else if (
-                  typeof answer.value === "object" &&
-                  answer.value !== null
-                ) {
-                  imageUrl = (answer.value as any).imageUrl;
-                }
+                const v = message.value || answer?.value;
 
-                if (imageUrl) {
+                if (v?.imageUrl) {
                   messageContent = (
                     <div className="flex items-center gap-3 text-white">
-                      <img
-                        src={imageUrl}
-                        alt={message.content}
-                        className="w-16 h-16 rounded-md object-cover"
-                      />
-                      <span>{message.content}</span>
+                      <img src={v.imageUrl} className="w-16 h-16 rounded-md" />
+                      <span>{v.text}</span>
                     </div>
                   );
                 }

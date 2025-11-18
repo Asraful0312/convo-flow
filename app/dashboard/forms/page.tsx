@@ -76,7 +76,7 @@ export default function FormsPage() {
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Header */}
 
-      <div className="space-y-8 bg-white p-4 rounded-xl shadow-subtle">
+      <div className="space-y-8 bg-white p-4 rounded-xl ">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <h1 className="text-3xl font-bold">My Forms</h1>
@@ -137,7 +137,7 @@ export default function FormsPage() {
           : forms?.map((form) => (
               <Card
                 key={form._id}
-                className="bg-white rounded-xl shadow-subtle border-[#E9ECF1] hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer group"
+                className="bg-white rounded-xl border-[#E9ECF1] hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer group"
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">

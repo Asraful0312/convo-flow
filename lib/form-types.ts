@@ -1,12 +1,14 @@
 import { Id } from "@/convex/_generated/dataModel";
 
+// Add this to your Message type definition in lib/form-types.ts
 export interface Message {
   id: string;
-  role: "assistant" | "user";
+  role: "user" | "assistant";
   content: string;
   timestamp: number;
   questionId?: string;
   isAdaptive?: boolean;
+  value?: any; // ✅ Add this to store full objects for special types like image_choice
 }
 
 export interface FormData {

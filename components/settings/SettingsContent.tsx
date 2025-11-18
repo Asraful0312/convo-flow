@@ -1,7 +1,6 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import SettingsLayout from "./SettingsLayout";
 import ProfileTab from "./tabs/ProfileTab";
 import NotificationsTab from "./tabs/NotificationsTab";
 import IntegrationsTab from "./tabs/IntegrationsTab";
@@ -35,5 +34,5 @@ export default function SettingsContent({ preloadedIntegrations }: Props) {
     }
   };
 
-  return <SettingsLayout>{renderTab()}</SettingsLayout>;
+  return renderTab();
 }

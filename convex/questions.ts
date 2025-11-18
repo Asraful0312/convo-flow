@@ -1,5 +1,5 @@
-import { v } from "convex/values"
-import { mutation, query } from "./_generated/server"
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
 
 // Get all questions for a form
 export const getFormQuestions = query({
@@ -9,9 +9,9 @@ export const getFormQuestions = query({
       .query("questions")
       .withIndex("by_form", (q) => q.eq("formId", args.formId))
       .order("asc")
-      .collect()
+      .collect();
   },
-})
+});
 
 // Create a question
 export const createQuestion = mutation({
@@ -37,9 +37,9 @@ export const createQuestion = mutation({
       validation: args.validation,
       required: args.required,
       order: args.order,
-    })
+    });
   },
-})
+});
 
 // Update question
 export const updateQuestion = mutation({
@@ -52,40 +52,43 @@ export const updateQuestion = mutation({
     validation: v.optional(v.any()),
     required: v.optional(v.boolean()),
     order: v.optional(v.number()),
-       type: v.union(
-      v.literal("text"),
-      v.literal("email"),
-      v.literal("number"),
-      v.literal("phone"),
-      v.literal("url"),
-      v.literal("textarea"),
-      v.literal("choice"),
-      v.literal("multiple_choice"),
-      v.literal("dropdown"),
-      v.literal("rating"),
-      v.literal("scale"),
-      v.literal("date"),
-      v.literal("time"),
-      v.literal("file"),
-      v.literal("location"),
-      v.literal("currency"),
-      v.literal("date_range"),
-      v.literal("yes_no"),
+    type: v.optional(
+      v.union(
+        v.literal("text"),
+        v.literal("email"),
+        v.literal("number"),
+        v.literal("phone"),
+        v.literal("url"),
+        v.literal("textarea"),
+        v.literal("choice"),
+        v.literal("multiple_choice"),
+        v.literal("dropdown"),
+        v.literal("rating"),
+        v.literal("scale"),
+        v.literal("date"),
+        v.literal("time"),
+        v.literal("file"),
+        v.literal("location"),
+        v.literal("currency"),
+        v.literal("date_range"),
+        v.literal("yes_no"),
+        v.literal("image_choice"),
+      ),
     ),
   },
   handler: async (ctx, args) => {
-    const { questionId, ...updates } = args
-    await ctx.db.patch(questionId, updates)
+    const { questionId, ...updates } = args;
+    await ctx.db.patch(questionId, updates);
   },
-})
+});
 
 // Delete question
 export const deleteQuestion = mutation({
   args: { questionId: v.id("questions") },
   handler: async (ctx, args) => {
-    await ctx.db.delete(args.questionId)
+    await ctx.db.delete(args.questionId);
   },
-})
+});
 
 // Reorder questions
 export const reorderQuestions = mutation({
@@ -95,7 +98,7 @@ export const reorderQuestions = mutation({
   },
   handler: async (ctx, args) => {
     for (let i = 0; i < args.questionIds.length; i++) {
-      await ctx.db.patch(args.questionIds[i], { order: i })
+      await ctx.db.patch(args.questionIds[i], { order: i });
     }
   },
-})
+});

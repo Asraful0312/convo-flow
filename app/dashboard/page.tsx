@@ -203,7 +203,7 @@ export default function DashboardPage() {
             {forms.slice(0, 2).map((form) => (
               <Card
                 key={form._id}
-                className="bg-white rounded-xl shadow-subtle border-[#E9ECF1] hover:shadow-lg hover:-translate-y-1 transition-all group"
+                className="bg-white rounded-xl border-[#E9ECF1] hover:shadow-lg hover:-translate-y-1 transition-all group"
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">

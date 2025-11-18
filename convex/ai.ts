@@ -110,7 +110,7 @@ Your JSON Output:
     ];
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4-turbo",
+      model: "gpt-5-mini",
       messages,
       response_format: { type: "json_object" },
     });
@@ -172,7 +172,7 @@ Here's how to do it:
     *   \`casual\`: Relaxed and conversational.
     *   \`formal\`: Respectful and precise.
 4.  **Be Concise:** Keep it short and to the point.
-5.  **CRITICAL:** Only return the rephrased question text. Do not add extra greetings or conversational filler.
+5.  **CRITICAL:** Only return the rephrased question text. Do not add extra greetings or conversational filler. **Do not repeat questions from the chat history.**
 
 The goal is a smooth, engaging conversation that gets the form filled out efficiently.`,
       },

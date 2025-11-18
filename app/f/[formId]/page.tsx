@@ -6,7 +6,10 @@ import FormHeader from "@/components/form/FormHeader";
 import MapConfirmation from "@/components/form/MapConfirmation";
 import OverLimitScreen from "@/components/form/OverLimitScreen";
 import QuestionInput from "@/components/form/QuestionInput";
+import VoiceUI from "@/components/form/VoiceUI";
 import WelcomeScreen from "@/components/form/WelcomeScreen";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Message } from "@/lib/form-types";
@@ -58,10 +61,14 @@ export default function FormSubmissionPage({
   const [isRecording, setIsRecording] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [autoSubmit, setAutoSubmit] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
+  const autoSubmitTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const finalTranscriptRef = useRef("");
+  const wasRecordingBeforeSpeakRef = useRef<boolean>(false);
 
   const currentQuestion = questions?.[currentQuestionIndex];
   const progress = questions
@@ -74,9 +81,15 @@ export default function FormSubmissionPage({
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const isSpeakingRef = useRef<boolean>(false);
+  const askingRef = useRef(false);
 
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
+
+  useEffect(() => {
+    isSpeakingRef.current = isSpeaking;
+  }, [isSpeaking]);
 
   const handleStart = async () => {
     if (!form || !questions) return;
@@ -102,9 +115,8 @@ export default function FormSubmissionPage({
 
     setMessages([welcomeMessage]);
 
-    setTimeout(() => {
-      askQuestion(0);
-    }, 1500);
+    setCurrentQuestionIndex(0);
+    askQuestion(0);
   };
 
   useEffect(() => {
@@ -119,22 +131,42 @@ export default function FormSubmissionPage({
         recognitionRef.current.interimResults = true;
         recognitionRef.current.lang = form?.aiConfig?.language || "en-US";
 
-        let lastFinalTranscript = ""; // ✅ keep track of what was already added
-
         recognitionRef.current.onresult = (event: any) => {
-          let finalTranscript = "";
+          // If assistant is speaking, ignore any recognition results
+          if (isSpeakingRef.current) {
+            return;
+          }
+
+          let interimTranscript = "";
+          let finalTranscriptPart = "";
 
           for (let i = event.resultIndex; i < event.results.length; i++) {
             const transcript = event.results[i][0].transcript;
             if (event.results[i].isFinal) {
-              finalTranscript += transcript;
+              finalTranscriptPart += transcript;
+            } else {
+              interimTranscript += transcript;
             }
           }
 
-          // ✅ Only append new final transcript text
-          if (finalTranscript && finalTranscript !== lastFinalTranscript) {
-            setInputValue((prev) => prev + " " + finalTranscript.trim());
-            lastFinalTranscript = finalTranscript;
+          // Update UI with interim transcript for live feedback
+          setInputValue(finalTranscriptRef.current + interimTranscript);
+
+          if (finalTranscriptPart) {
+            finalTranscriptRef.current += finalTranscriptPart;
+            setInputValue(finalTranscriptRef.current); // Set final value
+
+            // Only auto-submit if autoSubmit enabled, voice enabled, and NOT speaking
+            if (autoSubmit && voiceEnabled && !isSpeakingRef.current) {
+              if (autoSubmitTimeoutRef.current) {
+                clearTimeout(autoSubmitTimeoutRef.current);
+              }
+              autoSubmitTimeoutRef.current = setTimeout(() => {
+                if (finalTranscriptRef.current.trim()) {
+                  handleSubmitAnswer(finalTranscriptRef.current.trim());
+                }
+              }, 1500);
+            }
           }
         };
 
@@ -148,8 +180,12 @@ export default function FormSubmissionPage({
     return () => {
       if (recognitionRef.current) recognitionRef.current.stop();
       stopAudioVisualization();
+      if (autoSubmitTimeoutRef.current) {
+        clearTimeout(autoSubmitTimeoutRef.current);
+      }
     };
-  }, [form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, autoSubmit, voiceEnabled]);
 
   useEffect(() => {
     if (form && form.aiConfig?.enableVoice) {
@@ -168,12 +204,23 @@ export default function FormSubmissionPage({
     }
   }, [messages]);
 
+  // Clear transcripts whenever we move to a new question to avoid leftover auto submits
+  useEffect(() => {
+    finalTranscriptRef.current = "";
+    setInputValue("");
+    if (autoSubmitTimeoutRef.current) {
+      clearTimeout(autoSubmitTimeoutRef.current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentQuestionIndex]);
+
   const stopAudioVisualization = () => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
     if (audioContextRef.current) {
       audioContextRef.current.close();
+      audioContextRef.current = null;
     }
     setAudioLevel(0);
   };
@@ -188,14 +235,32 @@ export default function FormSubmissionPage({
     return messages[personality] || messages.friendly;
   };
 
-  const askQuestion = (index: number) => {
+  const isTextBasedQuestion = (type: string) => {
+    const nonTextTypes = [
+      "choice",
+      "dropdown",
+      "rating",
+      "scale",
+      "likert",
+      "file",
+      "image_choice",
+      "multiple_choice",
+    ];
+    return !nonTextTypes.includes(type);
+  };
+
+  const askQuestion = (index: number, previousAnswer?: string) => {
+    if (askingRef.current) return; // already asking
+    askingRef.current = true; // 🔥 lock it immediately
+
     if (!questions || index >= questions.length) {
+      askingRef.current = false;
       completeForm();
       return;
     }
 
     const question = questions[index];
-    setMultipleChoiceAnswers([]); // Reset for next question
+    setMultipleChoiceAnswers([]);
     setIsTyping(true);
 
     setTimeout(async () => {
@@ -203,32 +268,13 @@ export default function FormSubmissionPage({
       let isAdaptive = false;
 
       const historyForAI = messages.map((m) => ({
-        role: m.role === "assistant" ? ("ai" as const) : ("user" as const),
+        role: m.role === "assistant" ? "ai" : "user",
         content: m.content,
       }));
 
-      const previousQuestionIndex = index - 1;
-      let previousAnswer: string | undefined = undefined;
-      if (previousQuestionIndex >= 0) {
-        const previousQuestion = questions[previousQuestionIndex];
-        const prevAnswerValue = answers[previousQuestion._id];
-        if (prevAnswerValue) {
-          if (Array.isArray(prevAnswerValue)) {
-            previousAnswer = prevAnswerValue.join(", ");
-          } else if (
-            typeof prevAnswerValue === "object" &&
-            prevAnswerValue.fileName
-          ) {
-            previousAnswer = prevAnswerValue.fileName;
-          } else {
-            previousAnswer = String(prevAnswerValue);
-          }
-        }
-      }
-
       const conversationalText = await getConversationalQuestion({
         question: question.text,
-        history: historyForAI,
+        history: historyForAI as any,
         personality: form?.aiConfig?.personality || "friendly",
         userName: userName || undefined,
         previousAnswer,
@@ -249,8 +295,11 @@ export default function FormSubmissionPage({
       };
 
       setMessages((prev) => [...prev, questionMessage]);
+
       setIsTyping(false);
       inputRef.current?.focus();
+
+      askingRef.current = false; // 🔥 unlock when ready
     }, 800);
   };
 
@@ -318,16 +367,24 @@ export default function FormSubmissionPage({
       | { storageId: string; fileName: string; fileSize: number },
     isConfirmed: boolean = false,
   ) => {
+    if (autoSubmitTimeoutRef.current) {
+      clearTimeout(autoSubmitTimeoutRef.current);
+    }
+    finalTranscriptRef.current = "";
+
     if (!currentQuestion || isProcessing) return;
 
-    if (
-      currentQuestion.type === "image_choice" &&
-      typeof answer === "string"
-    ) {
+    console.log("is iamge choice", typeof answer === "string");
+    console.log("currentQuestion", currentQuestion);
+    console.log("answer", answer);
+    if (currentQuestion.type === "image_choice") {
       const option = currentQuestion.options?.find(
-        (opt: any) => typeof opt === "object" && opt.text === answer,
+        (opt: any) => opt.text === answer?.text,
       );
+
+      console.log("option", option);
       if (option) {
+        console.log("option workkk");
         answer = option as any;
       }
     }
@@ -469,11 +526,13 @@ export default function FormSubmissionPage({
       setInputValue("");
       if (locationToConfirm) setLocationToConfirm(null);
 
-      setTimeout(() => {
-        setCurrentQuestionIndex((prev) => prev + 1);
-        askQuestion(currentQuestionIndex + 1);
-        setIsProcessing(false);
-      }, 500);
+      setCurrentQuestionIndex((prev) => {
+        const nextIndex = prev + 1;
+        askQuestion(nextIndex, displayContent);
+        return nextIndex;
+      });
+
+      setIsProcessing(false);
     } catch (error) {
       console.error("Error saving answer:", error);
       setIsProcessing(false);
@@ -505,6 +564,24 @@ export default function FormSubmissionPage({
     if (!voiceEnabled) return;
 
     setIsSpeaking(true);
+    isSpeakingRef.current = true;
+
+    // If we are recording, stop recognition and remember to restart later.
+    if (recognitionRef.current && isRecording) {
+      try {
+        wasRecordingBeforeSpeakRef.current = true;
+        recognitionRef.current.stop();
+      } catch (e) {
+        // ignore
+      }
+    } else {
+      wasRecordingBeforeSpeakRef.current = false;
+    }
+
+    // clear any pending auto-submit while speaking
+    if (autoSubmitTimeoutRef.current) {
+      clearTimeout(autoSubmitTimeoutRef.current);
+    }
 
     try {
       const ELEVENLABS_API_KEY = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY;
@@ -555,6 +632,7 @@ export default function FormSubmissionPage({
     } catch (error) {
       console.error("TTS error:", error);
       setIsSpeaking(false);
+      isSpeakingRef.current = false;
     }
   };
 
@@ -611,6 +689,10 @@ export default function FormSubmissionPage({
   const toggleRecording = () => {
     if (!recognitionRef.current) {
       alert("Speech recognition is not supported in your browser");
+      return;
+    }
+    if (isSpeakingRef.current) {
+      // if speaking, do nothing (or you could queue start)
       return;
     }
 
@@ -695,7 +777,7 @@ export default function FormSubmissionPage({
         </div>
       </div>
 
-      {!isCompleted && currentQuestion && (
+      {!isCompleted && currentQuestion && !isTyping && (
         <div className="border-t bg-white/80 backdrop-blur-sm sticky bottom-0">
           <div className="container mx-auto px-4 py-6 max-w-3xl">
             {locationToConfirm ? (
@@ -703,6 +785,31 @@ export default function FormSubmissionPage({
                 address={locationToConfirm}
                 onConfirm={handleLocationConfirmation}
               />
+            ) : voiceEnabled &&
+              currentQuestion &&
+              isTextBasedQuestion(currentQuestion.type) ? (
+              <div className="flex flex-col items-center space-y-4">
+                <VoiceUI
+                  audioLevel={audioLevel}
+                  isRecording={isRecording}
+                  isSpeaking={isSpeaking}
+                  transcript={inputValue}
+                  onToggleRecording={toggleRecording}
+                  question={currentQuestion.text}
+                  isProcessing={isProcessing}
+                  isTyping={isTyping}
+                  onSubmit={() => handleSubmitAnswer(inputValue)}
+                  primaryColor={primaryColor}
+                />
+                <div className="flex items-center space-x-2 pt-4">
+                  <Switch
+                    id="auto-submit-switch"
+                    checked={autoSubmit}
+                    onCheckedChange={setAutoSubmit}
+                  />
+                  <Label htmlFor="auto-submit-switch">Auto-submit answer</Label>
+                </div>
+              </div>
             ) : (
               <QuestionInput
                 audioLevel={audioLevel}
