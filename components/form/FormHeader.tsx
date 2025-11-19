@@ -10,6 +10,8 @@ interface FormHeaderProps {
   voiceEnabled: boolean;
   onToggleVoice: () => void;
   isCompleted: boolean;
+  allowSaveAndResume?: boolean;
+  onSave?: () => void;
 }
 
 export default function FormHeader({
@@ -20,6 +22,8 @@ export default function FormHeader({
   voiceEnabled,
   onToggleVoice,
   isCompleted,
+  allowSaveAndResume,
+  onSave,
 }: FormHeaderProps) {
   const primaryColor = form.settings.branding?.primaryColor || "#F56A4D";
   const secondaryColor = form.settings.branding?.secondaryColor || "#2EB7A7";
@@ -53,6 +57,11 @@ export default function FormHeader({
         </div>
 
         <div className="flex items-center gap-3">
+          {allowSaveAndResume && !isCompleted && (
+            <Button variant="ghost" size="sm" onClick={onSave}>
+              Save & resume
+            </Button>
+          )}
           {form.aiConfig?.enableVoice && (
             <Button
               variant="ghost"

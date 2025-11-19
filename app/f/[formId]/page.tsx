@@ -16,21 +16,34 @@ import { Message } from "@/lib/form-types";
 import confetti from "canvas-confetti";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
-import { use, useEffect, useRef, useState } from "react";
+import { use, useEffect, useRef, useState, Suspense } from "react";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useSearchParams } from "next/navigation";
 
-export default function FormSubmissionPage({
-  params,
-}: {
-  params: { formId: string };
-}) {
-  const { formId } = use<any>(params as any);
+function FormSubmissionComponent({ formId }: { formId: Id<"forms"> }) {
+  const searchParams = useSearchParams();
+  const resumeId = searchParams.get("resume");
 
   const formData = useQuery(api.forms.getPublicFormData, {
     formId: formId as Id<"forms">,
   });
   const form: any = formData;
   const questions = form?.questions;
+
+  const getResumeData = useQuery(
+    api.resume.getResumeData,
+    resumeId ? { responseId: resumeId as Id<"responses"> } : "skip",
+  );
 
   const createResponse = useMutation(api.responses.createResponse);
   const updateResponse = useMutation(api.responses.updateResponse);
@@ -39,6 +52,9 @@ export default function FormSubmissionPage({
   const getConversationalQuestion = useAction(api.ai.getConversationalQuestion);
   const validateAnswer = useAction(api.ai.validateAnswer);
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+  const saveProgressAndSendLink = useMutation(
+    api.resume.saveProgressAndSendLink,
+  );
 
   const [started, setStarted] = useState(false);
   const [responseId, setResponseId] = useState<Id<"responses"> | null>(null);
@@ -62,6 +78,9 @@ export default function FormSubmissionPage({
   const [audioLevel, setAudioLevel] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoSubmit, setAutoSubmit] = useState(true);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [resumeEmail, setResumeEmail] = useState("");
+  const [isSendingLink, setIsSendingLink] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -88,11 +107,28 @@ export default function FormSubmissionPage({
   messagesRef.current = messages;
 
   useEffect(() => {
+    if (resumeId && getResumeData) {
+      const { conversation, answers } = getResumeData;
+      if (conversation && answers) {
+        setMessages(conversation.messages as Message[]);
+        const newAnswers = answers.reduce((acc, ans) => {
+          acc[ans.questionId] = ans.value;
+          return acc;
+        }, {} as Record<string, any>);
+        setAnswers(newAnswers);
+        setResponseId(resumeId as Id<"responses">);
+        setCurrentQuestionIndex(answers.length);
+        setStarted(true);
+      }
+    }
+  }, [resumeId, getResumeData]);
+
+  useEffect(() => {
     isSpeakingRef.current = isSpeaking;
   }, [isSpeaking]);
 
   const handleStart = async () => {
-    if (!form || !questions) return;
+    if (!form || !questions || resumeId) return;
 
     if (form.status === "draft") {
       toast.error(
@@ -102,6 +138,16 @@ export default function FormSubmissionPage({
     }
 
     setStarted(true);
+
+    const newResponseId = await createResponse({
+      formId: formId as Id<"forms">,
+      metadata: {
+        device: navigator.userAgent,
+        browser: navigator.userAgent,
+        os: navigator.platform,
+      },
+    });
+    setResponseId(newResponseId);
 
     const personality = form.aiConfig?.personality || "friendly";
     const welcomeText = getWelcomeMessage(personality, form.title);
@@ -132,7 +178,6 @@ export default function FormSubmissionPage({
         recognitionRef.current.lang = form?.aiConfig?.language || "en-US";
 
         recognitionRef.current.onresult = (event: any) => {
-          // If assistant is speaking or processing, ignore recognition results
           if (isSpeakingRef.current || isProcessing) {
             return;
           }
@@ -149,14 +194,12 @@ export default function FormSubmissionPage({
             }
           }
 
-          // Update UI with interim transcript for live feedback
           setInputValue(finalTranscriptRef.current + interimTranscript);
 
           if (finalTranscriptPart) {
             finalTranscriptRef.current += finalTranscriptPart;
             setInputValue(finalTranscriptRef.current);
 
-            // Only auto-submit if conditions are met
             if (
               autoSubmit &&
               voiceEnabled &&
@@ -183,7 +226,6 @@ export default function FormSubmissionPage({
         recognitionRef.current.onerror = (event: any) => {
           console.error("Speech recognition error:", event.error);
           if (event.error === "no-speech") {
-            // Ignore no-speech errors, keep recording
             return;
           }
           setIsRecording(false);
@@ -191,7 +233,6 @@ export default function FormSubmissionPage({
         };
 
         recognitionRef.current.onend = () => {
-          // Only set recording to false if we're not supposed to restart
           if (!wasRecordingBeforeSpeakRef.current) {
             setIsRecording(false);
             stopAudioVisualization();
@@ -232,14 +273,12 @@ export default function FormSubmissionPage({
     }
   }, [messages]);
 
-  // Clear transcripts whenever we move to a new question to avoid leftover auto submits
   useEffect(() => {
     finalTranscriptRef.current = "";
     setInputValue("");
     if (autoSubmitTimeoutRef.current) {
       clearTimeout(autoSubmitTimeoutRef.current);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentQuestionIndex]);
 
   const stopAudioVisualization = () => {
@@ -278,8 +317,8 @@ export default function FormSubmissionPage({
   };
 
   const askQuestion = (index: number, previousAnswer?: string) => {
-    if (askingRef.current) return; // already asking
-    askingRef.current = true; // 🔥 lock it immediately
+    if (askingRef.current) return;
+    askingRef.current = true;
 
     if (!questions || index >= questions.length) {
       askingRef.current = false;
@@ -298,7 +337,7 @@ export default function FormSubmissionPage({
 
       const historyForAI = messages.map((m) => ({
         role: m.role === "assistant" ? "ai" : "user",
-        content: m.content,
+        content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
       }));
 
       const conversationalText = await getConversationalQuestion({
@@ -328,7 +367,7 @@ export default function FormSubmissionPage({
       setIsTyping(false);
       inputRef.current?.focus();
 
-      askingRef.current = false; // 🔥 unlock when ready
+      askingRef.current = false;
     }, 800);
   };
 
@@ -368,8 +407,6 @@ export default function FormSubmissionPage({
       const updated = checked
         ? [...prev, option]
         : prev.filter((item) => item !== option);
-
-      // ✅ Filter out stray booleans or invalid items
       return updated.filter((item): item is string => typeof item === "string");
     });
   };
@@ -390,7 +427,6 @@ export default function FormSubmissionPage({
   };
 
   useEffect(() => {
-    // When assistant stops speaking, restart recording if it was active before
     if (!isSpeaking && wasRecordingBeforeSpeakRef.current && voiceEnabled) {
       const timer = setTimeout(() => {
         if (recognitionRef.current && !isProcessing && !isTyping) {
@@ -403,13 +439,12 @@ export default function FormSubmissionPage({
             console.error("Failed to restart recognition:", e);
           }
         }
-      }, 500); // Small delay to ensure audio has finished
+      }, 500);
 
       return () => clearTimeout(timer);
     }
   }, [isSpeaking, voiceEnabled, isProcessing, isTyping]);
 
-  // Update the handleSubmitAnswer function
   const handleSubmitAnswer = async (
     answer:
       | string
@@ -426,13 +461,11 @@ export default function FormSubmissionPage({
       return;
     }
 
-    // Clear auto-submit timeout
     if (autoSubmitTimeoutRef.current) {
       clearTimeout(autoSubmitTimeoutRef.current);
       autoSubmitTimeoutRef.current = null;
     }
 
-    // Stop recording immediately
     if (recognitionRef.current && isRecording) {
       try {
         recognitionRef.current.stop();
@@ -443,7 +476,6 @@ export default function FormSubmissionPage({
       }
     }
 
-    // Clear transcript
     finalTranscriptRef.current = "";
     setInputValue("");
 
@@ -511,23 +543,8 @@ export default function FormSubmissionPage({
     }
 
     try {
-      let currentResponseId = responseId;
-
-      if (!currentResponseId) {
-        const newResponseId = await createResponse({
-          formId: formId as Id<"forms">,
-          metadata: {
-            device: navigator.userAgent,
-            browser: navigator.userAgent,
-            os: navigator.platform,
-          },
-        });
-        setResponseId(newResponseId);
-        currentResponseId = newResponseId;
-      }
-
-      if (!currentResponseId) {
-        throw new Error("Failed to create or find response ID");
+      if (!responseId) {
+        throw new Error("Response ID not found");
       }
 
       let answerValue: any = answer;
@@ -575,7 +592,7 @@ export default function FormSubmissionPage({
       }
 
       await saveAnswer({
-        responseId: currentResponseId,
+        responseId: responseId,
         questionId: currentQuestion._id,
         value: answerValue,
         ...fileDetails,
@@ -599,12 +616,9 @@ export default function FormSubmissionPage({
 
       setCurrentQuestionIndex((prev) => {
         const nextIndex = prev + 1;
-        // Don't call askQuestion here if voice is enabled
-        // Let the speaking finish, then askQuestion will be called
         if (!voiceEnabled) {
           askQuestion(nextIndex, displayContent);
         } else {
-          // Delay askQuestion until after the user's answer message is spoken
           setTimeout(() => {
             askQuestion(nextIndex, displayContent);
           }, 500);
@@ -638,11 +652,9 @@ export default function FormSubmissionPage({
     }
   };
 
-  // Update the speakText function
   const speakText = async (text: string) => {
     if (!voiceEnabled) return;
 
-    // Stop any pending speech
     if (typeof window !== "undefined") {
       window.speechSynthesis.cancel();
     }
@@ -654,7 +666,6 @@ export default function FormSubmissionPage({
     setIsSpeaking(true);
     isSpeakingRef.current = true;
 
-    // If we are recording, stop recognition and remember to restart later
     if (recognitionRef.current && isRecording) {
       try {
         wasRecordingBeforeSpeakRef.current = true;
@@ -668,7 +679,6 @@ export default function FormSubmissionPage({
       wasRecordingBeforeSpeakRef.current = false;
     }
 
-    // Clear any pending auto-submit while speaking
     if (autoSubmitTimeoutRef.current) {
       clearTimeout(autoSubmitTimeoutRef.current);
       autoSubmitTimeoutRef.current = null;
@@ -785,7 +795,6 @@ export default function FormSubmissionPage({
       return;
     }
     if (isSpeakingRef.current) {
-      // if speaking, do nothing (or you could queue start)
       return;
     }
 
@@ -839,6 +848,33 @@ export default function FormSubmissionPage({
     }
   };
 
+  const handleSendResumeLink = async () => {
+    if (!resumeEmail || !responseId) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    setIsSendingLink(true);
+    try {
+      const baseUrl = window.location.origin;
+      await saveProgressAndSendLink({
+        responseId,
+        email: resumeEmail,
+        baseUrl,
+        messages: messagesRef.current,
+      });
+      toast.success(
+        "A link to resume your session has been sent to your email.",
+      );
+      setIsSaveModalOpen(false);
+      setResumeEmail("");
+    } catch (error) {
+      toast.error("Failed to send resume link. Please try again.");
+      console.error(error);
+    } finally {
+      setIsSendingLink(false);
+    }
+  };
+
   if (!form)
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -848,9 +884,7 @@ export default function FormSubmissionPage({
   if (formData?.isOverResponseLimit)
     return <OverLimitScreen primaryColor={primaryColor} form={form} />;
 
-  if (!started) return <WelcomeScreen form={form} onStart={handleStart} />;
-
-  console.log("is show ui", !isCompleted && currentQuestion && !isTyping);
+  if (!started && !resumeId) return <WelcomeScreen form={form} onStart={handleStart} />;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -862,6 +896,8 @@ export default function FormSubmissionPage({
         isCompleted={isCompleted}
         voiceEnabled={voiceEnabled}
         onToggleVoice={toggleVoice}
+        allowSaveAndResume={form.settings?.allowSaveAndResume}
+        onSave={() => setIsSaveModalOpen(true)}
       />
 
       <div className="flex-1 overflow-y-auto">
@@ -928,6 +964,53 @@ export default function FormSubmissionPage({
           </div>
         </div>
       )}
+      <Dialog open={isSaveModalOpen} onOpenChange={setIsSaveModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save your progress</DialogTitle>
+            <DialogDescription>
+              Enter your email below to receive a link to resume this form
+              later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="resume-email">Email Address</Label>
+            <Input
+              id="resume-email"
+              type="email"
+              value={resumeEmail}
+              onChange={(e) => setResumeEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsSaveModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSendResumeLink} disabled={isSendingLink}>
+              {isSendingLink ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
+              Send Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+export default function FormSubmissionPageWrapper({
+  params,
+}: {
+  params: { formId: string };
+}) {
+  return (
+    <Suspense fallback={<div className="w-full h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+      <FormSubmissionComponent formId={params.formId as Id<"forms">} />
+    </Suspense>
   );
 }

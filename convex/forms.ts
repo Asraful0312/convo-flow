@@ -361,6 +361,7 @@ export const updateSettings = mutation({
       ),
     ),
     voiceEnabled: v.optional(v.boolean()),
+    allowSaveAndResume: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const form = await ctx.db.get(args.formId);
@@ -453,6 +454,10 @@ export const updateSettings = mutation({
           notificationEmail: args.notificationEmail,
         }),
       };
+    }
+
+    if (args.allowSaveAndResume !== undefined) {
+      updatedSettings.allowSaveAndResume = args.allowSaveAndResume;
     }
 
     if (Object.keys(updatedSettings).length > 0) {

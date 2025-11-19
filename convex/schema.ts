@@ -109,6 +109,7 @@ export default defineSchema({
       requireAuth: v.optional(v.boolean()),
       allowMultipleResponses: v.optional(v.boolean()),
       showProgressBar: v.optional(v.boolean()),
+      allowSaveAndResume: v.optional(v.boolean()),
     }),
     // AI configuration
     aiConfig: v.object({

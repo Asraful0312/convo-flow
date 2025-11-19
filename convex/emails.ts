@@ -50,3 +50,44 @@ export const sendInviteEmail = internalAction({
     }
   },
 });
+
+export const sendResumeLink = internalAction({
+  args: {
+    email: v.string(),
+    formTitle: v.string(),
+    resumeUrl: v.string(),
+  },
+  handler: async (ctx, { email, formTitle, resumeUrl }) => {
+    if (!resend) {
+      console.warn(
+        "Resend client not initialized. Set AUTH_RESEND_KEY to send emails.",
+      );
+      return;
+    }
+
+    try {
+      await resend.emails.send({
+        from: "no-reply@imagetotextnow.xyz",
+        to: [email],
+        subject: `Continue your form: ${formTitle}`,
+        html: `
+              <div style="font-family: sans-serif; padding: 20px; color: #333;">
+                  <h1 style="font-size: 24px;">Your form progress has been saved</h1>
+                  <p>You can continue filling out the <strong>${formTitle}</strong> form by clicking the button below.</p>
+                  <a 
+                      href="${resumeUrl}" 
+                      style="display: inline-block; padding: 12px 24px; background-color: #F56A4D; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;"
+                  >
+                      Resume Form
+                  </a>
+                  <p style="font-size: 12px; color: #999; margin-top: 20px;">
+                      If you didn't request this, you can ignore this email.
+                  </p>
+              </div>
+          `,
+      });
+    } catch (error) {
+      console.error("Failed to send resume link email:", error);
+    }
+  },
+});

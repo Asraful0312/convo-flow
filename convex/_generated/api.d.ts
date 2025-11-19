@@ -37,6 +37,7 @@ import type * as notion from "../notion.js";
 import type * as notionMutation from "../notionMutation.js";
 import type * as questions from "../questions.js";
 import type * as responses from "../responses.js";
+import type * as resume from "../resume.js";
 import type * as salesforce from "../salesforce.js";
 import type * as salesforceMutation from "../salesforceMutation.js";
 import type * as serverMutation from "../serverMutation.js";
@@ -92,6 +93,7 @@ declare const fullApi: ApiFromModules<{
   notionMutation: typeof notionMutation;
   questions: typeof questions;
   responses: typeof responses;
+  resume: typeof resume;
   salesforce: typeof salesforce;
   salesforceMutation: typeof salesforceMutation;
   serverMutation: typeof serverMutation;

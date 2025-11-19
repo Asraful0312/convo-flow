@@ -66,6 +66,7 @@ export default function EditFormPage({
     "professional" | "friendly" | "casual" | "formal"
   >("professional");
   const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [allowSaveAndResume, setAllowSaveAndResume] = useState(false);
 
   const questionsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -98,6 +99,7 @@ export default function EditFormPage({
     setNotificationEmail(form.settings?.notifications?.notificationEmail ?? "");
     setPersonality(form.aiConfig?.personality ?? "professional");
     setVoiceEnabled(form.aiConfig?.enableVoice ?? false);
+    setAllowSaveAndResume(form.settings?.allowSaveAndResume ?? false);
   }, [form]);
 
   useEffect(() => {
@@ -133,6 +135,9 @@ export default function EditFormPage({
 
       if (voiceEnabled !== form?.aiConfig?.enableVoice)
         payload.voiceEnabled = voiceEnabled;
+
+      if (allowSaveAndResume !== form?.settings?.allowSaveAndResume)
+        payload.allowSaveAndResume = allowSaveAndResume;
 
       if (primaryColor !== form?.settings?.branding?.primaryColor)
         payload.primaryColor = primaryColor;
@@ -398,6 +403,22 @@ export default function EditFormPage({
                   <Switch
                     checked={voiceEnabled}
                     onCheckedChange={setVoiceEnabled}
+                  />
+                </div>
+              </div>
+              {/* Respondent Experience */}
+              <div className="space-y-4">
+                <h3 className="font-medium">Respondent Experience</h3>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Save and Resume</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Allow respondents to save their progress and resume later
+                    </p>
+                  </div>
+                  <Switch
+                    checked={allowSaveAndResume}
+                    onCheckedChange={setAllowSaveAndResume}
                   />
                 </div>
               </div>
