@@ -310,6 +310,7 @@ export default defineSchema({
         timestamp: v.number(),
         questionId: v.optional(v.string()),
         isAdaptive: v.optional(v.boolean()),
+        value: v.optional(v.any()),
       }),
     ),
     // AI context for maintaining conversation state

@@ -15,8 +15,13 @@ import { Button } from "@/components/ui/button";
 import { ChevronsUpDown, Check, PlusCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
-export default function WorkspaceSwitcher() {
+export default function WorkspaceSwitcher({
+  className,
+}: {
+  className?: string;
+}) {
   const user = useQuery(api.auth.loggedInUser);
   const switchWorkspace = useMutation(api.workspaces.switchActive);
   const router = useRouter();
@@ -41,7 +46,7 @@ export default function WorkspaceSwitcher() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="bg-white" asChild>
+      <DropdownMenuTrigger className={cn("bg-white", className)} asChild>
         <Button variant="outline" className="w-48 justify-between">
           <span className="truncate">{user.activeWorkspace.name}</span>
           <ChevronsUpDown className="h-4 w-4 opacity-50" />

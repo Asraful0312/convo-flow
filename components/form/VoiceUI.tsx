@@ -130,7 +130,9 @@ export default function VoiceUI({
         <Button
           variant="outline"
           onClick={onSubmit}
-          disabled={isSpeaking || isProcessing || isTyping}
+          disabled={
+            isSpeaking || isProcessing || isTyping || !transcript.trim()
+          }
         >
           <Send className="mr-2 h-4 w-4" /> Submit Manually
         </Button>

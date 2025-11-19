@@ -290,6 +290,7 @@ export default function FormSubmissionPage({
     const question = questions[index];
     setMultipleChoiceAnswers([]);
     setIsTyping(true);
+    setIsProcessing(false);
 
     setTimeout(async () => {
       let questionText = question.text;
@@ -417,6 +418,14 @@ export default function FormSubmissionPage({
       | { imageUrl: string; text: string },
     isConfirmed: boolean = false,
   ) => {
+    if (
+      currentQuestion?.required &&
+      (answer === "" || (Array.isArray(answer) && answer.length === 0))
+    ) {
+      toast.error("This question is required.");
+      return;
+    }
+
     // Clear auto-submit timeout
     if (autoSubmitTimeoutRef.current) {
       clearTimeout(autoSubmitTimeoutRef.current);
@@ -602,8 +611,6 @@ export default function FormSubmissionPage({
         }
         return nextIndex;
       });
-
-      setIsProcessing(false);
     } catch (error) {
       console.error("Error saving answer:", error);
       setIsProcessing(false);
@@ -618,7 +625,7 @@ export default function FormSubmissionPage({
     try {
       await saveConversation({
         responseId,
-        messages,
+        messages: messagesRef.current,
       });
       await updateResponse({
         responseId,
@@ -843,6 +850,8 @@ export default function FormSubmissionPage({
 
   if (!started) return <WelcomeScreen form={form} onStart={handleStart} />;
 
+  console.log("is show ui", !isCompleted && currentQuestion && !isTyping);
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <FormHeader
@@ -863,7 +872,7 @@ export default function FormSubmissionPage({
         </div>
       </div>
 
-      {!isCompleted && currentQuestion && !isTyping && (
+      {!isCompleted && currentQuestion && !isTyping && !isProcessing && (
         <div className="border-t bg-white/80 backdrop-blur-sm sticky bottom-0">
           <div className="container mx-auto px-4 py-6 max-w-3xl">
             {locationToConfirm ? (

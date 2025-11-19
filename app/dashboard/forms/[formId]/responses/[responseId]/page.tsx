@@ -254,15 +254,34 @@ export default function ResponseDetailPage({
                 message.role === "user" &&
                 question?.type === "image_choice"
               ) {
-                const v = message.value || answer?.value;
+                let v = message.value || answer?.value;
 
-                if (v?.imageUrl) {
+                if (typeof v === "string") {
+                  try {
+                    v = JSON.parse(v);
+                  } catch (e) {
+                    // Not a JSON string, treat as plain text
+                  }
+                }
+
+                if (typeof v === "object" && v !== null && v.imageUrl) {
                   messageContent = (
                     <div className="flex items-center gap-3 text-white">
-                      <img src={v.imageUrl} className="w-16 h-16 rounded-md" />
+                      <img
+                        src={v.imageUrl}
+                        alt={v.text || "Image choice"}
+                        className="w-16 h-16 rounded-md object-cover"
+                      />
                       <span>{v.text}</span>
                     </div>
                   );
+                } else if (typeof v === "object" && v !== null && v.text) {
+                  messageContent = <span>{v.text}</span>;
+                } else if (typeof v === "string") {
+                  messageContent = <span>{v}</span>;
+                } else {
+                  // Fallback for unexpected format
+                  messageContent = <span>{message.content}</span>;
                 }
               }
 

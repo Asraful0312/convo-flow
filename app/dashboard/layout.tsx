@@ -8,15 +8,21 @@ import {
   BarChart3,
   Settings,
   Plus,
+  Menu,
+  UserCog,
+  Bell,
+  Zap,
+  Webhook,
+  CreditCard,
+  Users,
 } from "lucide-react";
 import CandidLogo from "@/components/shared/candid-logo";
 import UserMenu from "@/components/shared/user-menu";
 import WorkspaceSwitcher from "@/components/shared/workspace-switcher";
-import { UserCog, Bell, Zap, Webhook, CreditCard, Users } from "lucide-react";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { useState } from "react";
-
 import { usePathname } from "next/navigation";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const links = [
   {
@@ -72,12 +78,13 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const path = usePathname();
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className=" bg-background backdrop-blur-sm sticky top-0 z-50">
+      <header className="bg-background backdrop-blur-sm sticky top-0 z-50 border-b">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/dashboard" className="flex items-center gap-2">
@@ -86,7 +93,8 @@ export default function DashboardLayout({
             </Link>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Desktop Menu */}
+          <div className="hidden md:flex items-center gap-3">
             <WorkspaceSwitcher />
             <Link href="/dashboard/forms/new">
               <Button
@@ -97,8 +105,35 @@ export default function DashboardLayout({
                 New Form
               </Button>
             </Link>
-
             <UserMenu />
+          </div>
+
+          {/* Mobile Menu */}
+          <div className="md:hidden flex items-center p4 gap-2">
+            <UserMenu />
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="w-5 h-5" />
+                  <span className="sr-only">Open Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[240px] p-5">
+                <div className="flex flex-col gap-6 pt-8">
+                  <WorkspaceSwitcher className="w-full" />
+                  <Link href="/dashboard/forms/new">
+                    <Button
+                      size="sm"
+                      className="bg-[#F56A4D] hover:bg-[#F56A4D]/90 gap-2 w-full"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Plus className="w-4 h-4" />
+                      New Form
+                    </Button>
+                  </Link>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </header>

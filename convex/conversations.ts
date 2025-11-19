@@ -1,6 +1,16 @@
 import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
 
+const messagePayload = v.object({
+  id: v.string(),
+  role: v.union(v.literal("assistant"), v.literal("user")),
+  content: v.string(),
+  timestamp: v.number(),
+  questionId: v.optional(v.string()),
+  isAdaptive: v.optional(v.boolean()),
+  value: v.optional(v.any()),
+})
+
 // Get conversation for a response
 export const getConversation = query({
   args: { responseId: v.id("responses") },
@@ -16,7 +26,7 @@ export const getConversation = query({
 export const saveConversation = mutation({
   args: {
     responseId: v.id("responses"),
-    messages: v.any(),
+    messages: v.array(messagePayload),
     aiContext: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
@@ -24,7 +34,7 @@ export const saveConversation = mutation({
       .query("conversations")
       .withIndex("by_response", (q) => q.eq("responseId", args.responseId))
       .first()
-    
+
     if (existing) {
       await ctx.db.patch(existing._id, {
         messages: args.messages,
@@ -32,7 +42,7 @@ export const saveConversation = mutation({
       })
       return existing._id
     }
-    
+
     return await ctx.db.insert("conversations", args)
   },
 })
@@ -41,13 +51,7 @@ export const saveConversation = mutation({
 export const addMessage = mutation({
   args: {
     responseId: v.id("responses"),
-    message: v.object({
-      id: v.string(),
-      role: v.union(v.literal("assistant"), v.literal("user")),
-      content: v.string(),
-      timestamp: v.number(),
-      questionId: v.optional(v.string()),
-    }),
+    message: messagePayload,
   },
   handler: async (ctx, args) => {
     const conversation = await ctx.db

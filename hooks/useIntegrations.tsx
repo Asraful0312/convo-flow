@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   usePreloadedQuery,
   useMutation,
@@ -246,11 +246,59 @@ export default function useIntegrations(preloadedIntegrations: any) {
     { id: string; title: string }[]
   >([]);
   const [isFetchingSheets, setIsFetchingSheets] = useState(false);
+  const [autoDisconnecting, setAutoDisconnecting] = useState<
+    Id<"integrations">[]
+  >([]);
+
+  useEffect(() => {
+    if (!userIntegrations) return;
+    for (const integration of userIntegrations) {
+      if (
+        integration.config?.expiresAt &&
+        Date.now() > integration.config.expiresAt &&
+        !autoDisconnecting.includes(integration._id)
+      ) {
+        setAutoDisconnecting((prev) => [...prev, integration._id]);
+        deleteIntegration({ integrationId: integration._id })
+          .then(() => {
+            toast.success(
+              `Automatically disconnected from ${integration.name} due to expired token.`,
+            );
+          })
+          .catch((error: any) => {
+            toast.error(
+              error.message ||
+                `Failed to auto-disconnect from ${integration.name}.`,
+            );
+            // Allow retry on failure
+            setAutoDisconnecting((prev) =>
+              prev.filter((id) => id !== integration._id),
+            );
+          });
+      }
+    }
+  }, [userIntegrations, deleteIntegration, autoDisconnecting]);
 
   const integrations = availableIntegrations.map((availInt) => {
     const connectedInt = userIntegrations?.find(
       (userInt: any) => userInt.type === availInt.type,
     );
+
+    if (connectedInt) {
+      const isExpired =
+        connectedInt.config?.expiresAt &&
+        Date.now() > connectedInt.config.expiresAt;
+
+      if (isExpired || autoDisconnecting.includes(connectedInt._id)) {
+        return {
+          ...availInt,
+          connected: false,
+          id: connectedInt._id,
+          config: connectedInt.config,
+        };
+      }
+    }
+
     return {
       ...availInt,
       connected: !!connectedInt,
@@ -284,15 +332,45 @@ export default function useIntegrations(preloadedIntegrations: any) {
     }
   }, [notionIntegration?.connected, getNotionDatabases]);
 
+  const handleDisconnect = useCallback(
+    async (integrationId: Id<"integrations">, name: string) => {
+      try {
+        await deleteIntegration({ integrationId });
+        toast.success(`Successfully disconnected from ${name}`);
+      } catch (error: any) {
+        toast.error(error.message || "Failed to disconnect integration");
+      }
+    },
+    [deleteIntegration],
+  );
+
   useEffect(() => {
     if (googleSheetsIntegration?.connected) {
       setIsFetchingSheets(true);
       getGoogleSheets()
         .then(setGoogleSheets)
-        .catch(() => toast.error("Failed to fetch Google Sheets."))
+        .catch((error: any) => {
+          const errorMessage =
+            error.data || error.message || "Failed to fetch Google Sheets.";
+          toast.error(errorMessage);
+          if (
+            errorMessage.includes("invalid_grant") ||
+            errorMessage.includes("Token has been expired or revoked")
+          ) {
+            if (googleSheetsIntegration.id) {
+              handleDisconnect(
+                googleSheetsIntegration.id,
+                googleSheetsIntegration.name,
+              );
+              toast.error(
+                "Google connection expired. Automatically disconnected.",
+              );
+            }
+          }
+        })
         .finally(() => setIsFetchingSheets(false));
     }
-  }, [googleSheetsIntegration?.connected, getGoogleSheets]);
+  }, [googleSheetsIntegration, getGoogleSheets, handleDisconnect]);
 
   const handleConnectClick = (integration: any) => {
     if (billingInfo?.tier === "free") {
@@ -412,18 +490,6 @@ export default function useIntegrations(preloadedIntegrations: any) {
       setIntegrationModalOpen(false);
     } catch (error: any) {
       toast.error(error.message || "Failed to connect integration");
-    }
-  };
-
-  const handleDisconnect = async (
-    integrationId: Id<"integrations">,
-    name: string,
-  ) => {
-    try {
-      await deleteIntegration({ integrationId });
-      toast.success(`Successfully disconnected from ${name}`);
-    } catch (error: any) {
-      toast.error(error.message || "Failed to disconnect integration");
     }
   };
 
