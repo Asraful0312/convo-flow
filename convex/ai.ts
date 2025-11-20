@@ -5,24 +5,7 @@ import OpenAI from "openai";
 
 const openai = new OpenAI();
 
-export const generateForm = action({
-  args: {
-    prompt: v.string(),
-    conversationHistory: v.optional(
-      v.array(
-        v.object({
-          role: v.union(v.literal("user"), v.literal("ai")),
-          content: v.string(),
-        }),
-      ),
-    ),
-  },
-  handler: async (ctx, { prompt, conversationHistory }) => {
-    const userMessage = `Generate a form based on this prompt: ${prompt}`;
-    const messages: any[] = [
-      {
-        role: "system",
-        content: `You are an expert form generation assistant named CANDID. Your goal is to create a structured JSON representation of a form based on a user's prompt.
+const formGenerationSystemPrompt = `You are an expert form generation assistant named CANDID. Your goal is to create a structured JSON representation of a form based on a user's prompt.
 
 You must generate a JSON object with the following structure:
 {
@@ -40,7 +23,8 @@ You must generate a JSON object with the following structure:
 
 CRITICAL INSTRUCTIONS:
 1.  **Interpret Intent:** Carefully analyze the user's prompt to understand the purpose of the form and the specific questions and types required.
-2.  **Accurate Question Types:** You MUST use one of the following supported question types:
+2.  **Handle Completed Forms:** If the input text appears to be a completed form that includes both questions and answers, you MUST ignore the answers. Your task is to extract only the questions and create a new, blank form template from them. If a question has a placeholder answer like \`[object Object]\`, try to infer the question type, defaulting to 'text' if it's ambiguous.
+3.  **Accurate Question Types:** You MUST use one of the following supported question types:
     *   \`text\`: For short text answers (e.g., Name, City).
     *   \`textarea\`: For long text answers (e.g., Feedback, Comments).
     *   \`email\`: For email addresses.
@@ -60,16 +44,16 @@ CRITICAL INSTRUCTIONS:
     *   \`location\`: For picking an address or location on a map.
     *   \`yes_no\`: For a binary yes/no question.
     *   \`image_choice\`: For selecting from a list of images.
-3.  **Handle Complex Requests:** If the user asks for a "customer feedback survey with rating scales and open-ended questions", you must include \`rating\` or \`scale\` questions and \`textarea\` questions. Do not default to a generic contact form.
-4.  **Ambiguity Handling:** If the user's prompt is too vague or ambiguous to create a detailed form (e.g., "Make a form"), do NOT invent details. Instead, you MUST ask a clarifying question. To do this, return a JSON object with a single key "clarification".
+4.  **Handle Complex Requests:** If the user asks for a "customer feedback survey with rating scales and open-ended questions", you must include \`rating\` or \`scale\` questions and \`textarea\` questions. Do not default to a generic contact form.
+5.  **Ambiguity Handling:** If the user's prompt is too vague or ambiguous to create a detailed form (e.g., "Make a form"), do NOT invent details. Instead, you MUST ask a clarifying question. To do this, return a JSON object with a single key "clarification".
     *   Example for ambiguous prompt:
     *   User Prompt: "A form for my business"
     *   Your JSON Output: \`{ "clarification": "Of course! What kind of form do you need for your business? For example, is it for contact, customer feedback, or something else?" }\`
-5.  **Options:**
+6.  **Options:**
     *   For \`choice\`, \`multiple_choice\`, and \`dropdown\` questions, you MUST provide an array of strings in the \`options\` field.
-    *   For \`image_choice\` questions, you MUST provide an array of objects in the \`options\` field, where each object has a \`text\` (string) and an \`imageUrl\` (string). Example: \`[{ "text": "Option 1", "imageUrl": "https://example.com/image1.png" }]\`
-6.  **Required Fields:** Use your best judgment to mark fields as \`required\`. For example, a name or email in a contact form should usually be required.
-7.  **JSON Output:** Your entire response MUST be a single, valid JSON object. Do not include any text or explanations outside of the JSON structure.
+    *   For \`image_choice\`: This is not supported for text uploads, so you can ignore this.
+7.  **Required Fields:** Use your best judgment to mark fields as \`required\`. For example, a name or email in a contact form should usually be required.
+8.  **JSON Output:** Your entire response MUST be a single, valid JSON object. Do not include any text or explanations outside of the JSON structure.
 
 EXAMPLE (Good Prompt):
 User Prompt: "Create a customer satisfaction survey about our new product. Ask for their name, email, a rating from 1 to 10 for the product, and some open feedback."
@@ -100,17 +84,24 @@ Your JSON Output:
       "required": false
     }
   ]
-}`,
+}`;
+
+export const generateFormFromText = action({
+  args: {
+    prompt: v.string(),
+  },
+  handler: async (ctx, { prompt }) => {
+    const userMessage = `Generate a form based on the following text extracted from a document:\n\n${prompt}`;
+    const messages: any[] = [
+      {
+        role: "system",
+        content: formGenerationSystemPrompt,
       },
-      ...(conversationHistory || []).map((msg) => ({
-        role: msg.role === "ai" ? "assistant" : "user",
-        content: msg.content,
-      })),
       { role: "user", content: userMessage },
     ];
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4-turbo",
       messages,
       response_format: { type: "json_object" },
     });
@@ -118,10 +109,10 @@ Your JSON Output:
     const formJson = response.choices[0].message.content;
     const parsedJson = JSON.parse(formJson || "{}");
 
-    // The handler now returns the parsed JSON, which could be a form or a clarification.
     return parsedJson;
   },
 });
+
 
 export const getConversationalQuestion = action({
   args: {

@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { internalQuery, mutation, query } from "./_generated/server";
-import { api, internal } from "./_generated/api";
+import { api } from "./_generated/api";
 import { assertAdmin, assertEditor, assertViewer } from "./auth_helpers";
 
 export const getFormsForWorkspace = query({
@@ -333,6 +333,68 @@ export const create = mutation({
       userId,
       action: "form.create",
       details: { title: args.title },
+    });
+
+    return formId;
+  },
+});
+
+export const createFormFromUpload = mutation({
+  args: {
+    workspaceId: v.id("workspaces"),
+    title: v.string(),
+    description: v.optional(v.string()),
+    questions: v.array(
+      v.object({
+        text: v.string(),
+        type: v.string(),
+        required: v.boolean(),
+        options: v.optional(
+          v.array(
+            v.union(
+              v.string(),
+              v.object({
+                imageUrl: v.string(),
+                text: v.string(),
+              }),
+            ),
+          ),
+        ),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const { userId } = await assertEditor(ctx, args.workspaceId);
+
+    const formId = await ctx.db.insert("forms", {
+      workspaceId: args.workspaceId,
+      creatorId: userId,
+      title: args.title,
+      description: args.description,
+      status: "draft",
+      settings: {},
+      aiConfig: {},
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+
+    for (let i = 0; i < args.questions.length; i++) {
+      const q = args.questions[i];
+      await ctx.db.insert("questions", {
+        formId,
+        order: i,
+        text: q.text,
+        type: q.type as any,
+        required: q.required,
+        options: q.options,
+      });
+    }
+
+    await ctx.runMutation(api.activities.logActivity, {
+      workspaceId: args.workspaceId,
+      userId,
+      action: "form.create",
+      details: { title: args.title, source: "upload" },
     });
 
     return formId;

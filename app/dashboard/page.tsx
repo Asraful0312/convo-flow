@@ -21,6 +21,7 @@ import {
   Pencil,
   Trash2,
   Loader2,
+  Upload,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -31,15 +32,17 @@ import {
 import { Id } from "@/convex/_generated/dataModel";
 import ShareModal from "@/components/share-modal";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { AnimatedStat } from "@/components/dashboard/AnimatedStat";
 import { FormCardSkeleton } from "@/components/skeleton/form-card-skeleton";
 import { StatCardSkeleton } from "@/components/skeleton/stat-card-skeleton";
+import ImportFormModal from "@/components/dashboard/ImportFormModal";
 
 export default function DashboardPage() {
   const user = useQuery(api.auth.loggedInUser);
   const router = useRouter();
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const activeWorkspace = user?.activeWorkspace;
 
@@ -120,7 +123,7 @@ export default function DashboardPage() {
           {activeWorkspace?.name ?? "Welcome"}
         </h1>
         <p className="text-muted-foreground">
-          Here's what's happening in your workspace today.
+          Here&apos;s what&apos;s happening in your workspace today.
         </p>
       </div>
 
@@ -278,6 +281,23 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
             </Link>
+
+            <Card
+              onClick={() => setIsImportModalOpen(true)}
+              className="hover:shadow-lg transition-shadow cursor-pointer border-dashed border-2 h-full flex items-center justify-center min-h-[200px]"
+            >
+              <CardContent className="flex flex-col items-center justify-center gap-3 py-8">
+                <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
+                  <Upload className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="text-center">
+                  <p className="font-medium">Import Form</p>
+                  <p className="text-sm text-muted-foreground">
+                    Upload PDF or JSON
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
@@ -285,6 +305,15 @@ export default function DashboardPage() {
       <div className="">
         {activeWorkspace && <ActivityFeed workspaceId={activeWorkspace._id} />}
       </div>
+
+      <ImportFormModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportSuccess={(formId) => {
+          setIsImportModalOpen(false);
+          router.push(`/dashboard/forms/${formId}/edit`);
+        }}
+      />
     </div>
   );
 }

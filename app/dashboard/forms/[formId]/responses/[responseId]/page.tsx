@@ -21,9 +21,16 @@ import {
   Clock,
   Monitor,
   Loader2,
+  MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { use, useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function ResponseDetailPage({
   params,
@@ -55,14 +62,14 @@ export default function ResponseDetailPage({
     try {
       await deleteResponse({ responseId: response._id });
       toast.success("Response deleted successfully");
-      router.push(`/dashboard/forms/${params.formId}/responses`);
+      router.push(`/dashboard/forms`);
     } catch (error) {
       toast.error("Failed to delete response");
       console.error("Failed to delete response:", error);
     }
   };
 
-  const handleExport = async (format: "csv" | "xlsx" | "pdf") => {
+  const handleExport = async (format: "csv" | "xlsx" | "pdf" | "json") => {
     if (!response) return;
     setIsExporting(true);
     try {
@@ -131,15 +138,30 @@ export default function ResponseDetailPage({
           </div>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="gap-2 bg-transparent"
-            onClick={() => handleExport("pdf")}
-          >
-            <Download className="w-4 h-4" />
-            Export
-            {isExporting && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2 bg-transparent">
+                <Download className="w-4 h-4" />
+                Export
+                {isExporting && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport("csv")}>
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("xlsx")}>
+                Export as XLSX
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("pdf")}>
+                Export as PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("json")}>
+                Export as JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button
             variant="destructive"
             className="gap-2"

@@ -50,7 +50,11 @@ export const exportResponses = action({
                           row.push(String(answer.value));
                       }
                   } else {
-                      row.push(String(answer.value));
+                      if (typeof answer.value === 'object' && answer.value !== null && 'text' in answer.value) {
+                          row.push(String((answer.value as { text: string }).text));
+                      } else {
+                        row.push(String(answer.value));
+                      }
                   }
               } else {
                   row.push("");
@@ -80,7 +84,11 @@ export const exportResponses = action({
                             row.push(String(answer.value));
                         }
                     } else {
-                        row.push(String(answer.value));
+                        if (typeof answer.value === 'object' && answer.value !== null && 'text' in answer.value) {
+                            row.push(String((answer.value as { text: string }).text));
+                        } else {
+                            row.push(String(answer.value));
+                        }
                     }
                 } else {
                     row.push("");
@@ -144,7 +152,11 @@ export const exportResponses = action({
                             answerText = String(answer.value);
                         }
                     } else {
-                        answerText = String(answer.value);
+                        if (typeof answer.value === 'object' && answer.value !== null && 'text' in answer.value) {
+                            answerText = String((answer.value as { text: string }).text);
+                        } else {
+                            answerText = String(answer.value);
+                        }
                     }
                 }
                 page.drawText(answerText, { x: pageMargin + 10, y, font, size: 10, color: rgb(0.2, 0.2, 0.2) });

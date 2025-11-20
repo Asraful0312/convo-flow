@@ -124,6 +124,24 @@ export const updateResponse = mutation({
         ...updates,
         completedAt: Date.now(),
       });
+
+      const response = await ctx.db.get(responseId);
+      const form = response ? await ctx.db.get(response.formId) : null;
+
+      if (form && form.settings?.notifications?.emailOnResponse) {
+        const email = form.settings.notifications.notificationEmail;
+
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+        if (baseUrl && email) {
+          const responseUrl = `${baseUrl}/dashboard/forms/${form._id}/responses/${responseId}`;
+          await ctx.scheduler.runAfter(0, internal.emails.sendCompletionEmail, {
+            to: email,
+            subject: `New response for ${form.title}`,
+            html: `You have a new response for your form "${form.title}".<br/><br/><a href="${responseUrl}">View response</a>`,
+          });
+        }
+      }
+
       await ctx.scheduler.runAfter(0, internal.ai.generateInsights, {
         responseId,
       });

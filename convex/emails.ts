@@ -91,3 +91,30 @@ export const sendResumeLink = internalAction({
     }
   },
 });
+
+export const sendCompletionEmail = internalAction({
+  args: {
+    to: v.union(v.string(), v.array(v.string())),
+    subject: v.string(),
+    html: v.string(),
+  },
+  handler: async (ctx, { to, subject, html }) => {
+    if (!resend) {
+      console.warn(
+        "Resend client not initialized. Set AUTH_RESEND_KEY to send emails.",
+      );
+      return;
+    }
+
+    try {
+      await resend.emails.send({
+        from: "no-reply@imagetotextnow.xyz",
+        to,
+        subject,
+        html,
+      });
+    } catch (error) {
+      console.error("Failed to send completion email:", error);
+    }
+  },
+});
