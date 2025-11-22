@@ -43,7 +43,9 @@ export default function FormSubmissionComponent({
   const getConversationalQuestion = useAction(api.ai.getConversationalQuestion);
   const validateAnswer = useAction(api.ai.validateAnswer);
   const generateUploadUrl = useMutation(api.files.generateUploadUrl);
-  const saveProgressAndSendLink = useMutation(api.resume.saveProgressAndSendLink);
+  const saveProgressAndSendLink = useMutation(
+    api.resume.saveProgressAndSendLink,
+  );
   const resumeData = useQuery(
     api.resume.getResumeData,
     resumeToken ? { responseId: resumeToken as Id<"responses"> } : "skip",
@@ -167,7 +169,9 @@ export default function FormSubmissionComponent({
     }
 
     if (!currentResponseId) {
-      throw new Error("Could not create or get a response ID to save progress.");
+      throw new Error(
+        "Could not create or get a response ID to save progress.",
+      );
     }
 
     await saveProgressAndSendLink({
@@ -668,7 +672,7 @@ export default function FormSubmissionComponent({
       } else if (answer === "") {
         displayContent = "Skip this question";
       } else {
-        displayContent = answer;
+        displayContent = answer as any;
       }
 
       if (
@@ -958,8 +962,6 @@ export default function FormSubmissionComponent({
     return <OverLimitScreen primaryColor={primaryColor} form={form} />;
 
   if (!started) return <WelcomeScreen form={form} onStart={handleStart} />;
-
-  console.log("is show ui", !isCompleted && currentQuestion && !isTyping);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

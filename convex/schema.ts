@@ -366,6 +366,8 @@ export default defineSchema({
     enabled: v.boolean(),
     createdAt: v.number(),
     lastSyncedAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    lastErrorTimestamp: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_form", ["formId"])

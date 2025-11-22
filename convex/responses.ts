@@ -131,7 +131,8 @@ export const updateResponse = mutation({
       if (form && form.settings?.notifications?.emailOnResponse) {
         const email = form.settings.notifications.notificationEmail;
 
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+        const baseUrl = process.env.SITE_URL;
+        console.log("submit response", baseUrl, email);
         if (baseUrl && email) {
           const responseUrl = `${baseUrl}/dashboard/forms/${form._id}/responses/${responseId}`;
           await ctx.scheduler.runAfter(0, internal.emails.sendCompletionEmail, {

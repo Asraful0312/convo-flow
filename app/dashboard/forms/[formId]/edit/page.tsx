@@ -112,6 +112,12 @@ export default function EditFormPage({
   }, [optimisticQuestions.length]);
 
   const handleSaveSettings = async () => {
+    if (emailOnResponse && !notificationEmail.trim()) {
+      toast.error(
+        "A notification email must be provided if email on response is enabled.",
+      );
+      return;
+    }
     setIsSaving(true);
     try {
       const payload: any = {

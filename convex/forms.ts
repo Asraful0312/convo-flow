@@ -438,6 +438,17 @@ export const updateSettings = mutation({
       throw new ConvexError("UnAuthorized");
     }
 
+    const emailOnResponse =
+      args.emailOnResponse ?? form.settings?.notifications?.emailOnResponse;
+    const notificationEmail =
+      args.notificationEmail ?? form.settings?.notifications?.notificationEmail;
+
+    if (emailOnResponse && !notificationEmail) {
+      throw new ConvexError(
+        "A notification email must be provided if email on response is enabled.",
+      );
+    }
+
     const subscriptionTier = user.subscriptionTier || "free";
 
     if (subscriptionTier) {
@@ -512,7 +523,7 @@ export const updateSettings = mutation({
         ...(args.emailOnResponse !== undefined && {
           emailOnResponse: args.emailOnResponse,
         }),
-        ...(args.notificationEmail && {
+        ...(args.notificationEmail !== undefined && {
           notificationEmail: args.notificationEmail,
         }),
       };

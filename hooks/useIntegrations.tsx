@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   usePreloadedQuery,
   useMutation,
@@ -279,33 +279,37 @@ export default function useIntegrations(preloadedIntegrations: any) {
     }
   }, [userIntegrations, deleteIntegration, autoDisconnecting]);
 
-  const integrations = availableIntegrations.map((availInt) => {
-    const connectedInt = userIntegrations?.find(
-      (userInt: any) => userInt.type === availInt.type,
-    );
+  const integrations = useMemo(() => {
+    return availableIntegrations.map((availInt) => {
+      const connectedInt = userIntegrations?.find(
+        (userInt: any) => userInt.type === availInt.type,
+      );
 
-    if (connectedInt) {
-      const isExpired =
-        connectedInt.config?.expiresAt &&
-        Date.now() > connectedInt.config.expiresAt;
+      if (connectedInt) {
+        const isExpired =
+          connectedInt.config?.expiresAt &&
+          Date.now() > connectedInt.config.expiresAt;
 
-      if (isExpired || autoDisconnecting.includes(connectedInt._id)) {
-        return {
-          ...availInt,
-          connected: false,
-          id: connectedInt._id,
-          config: connectedInt.config,
-        };
+        if (isExpired || autoDisconnecting.includes(connectedInt._id)) {
+          return {
+            ...availInt,
+            connected: false,
+            id: connectedInt._id,
+            config: connectedInt.config,
+          };
+        }
       }
-    }
 
-    return {
-      ...availInt,
-      connected: !!connectedInt,
-      id: connectedInt?._id,
-      config: connectedInt?.config,
-    };
-  });
+      return {
+        ...availInt,
+        connected: !!connectedInt,
+        id: connectedInt?._id,
+        config: connectedInt?.config,
+        lastError: connectedInt?.lastError,
+        lastErrorTimestamp: connectedInt?.lastErrorTimestamp,
+      };
+    });
+  }, [userIntegrations, autoDisconnecting]);
 
   const notionIntegration = integrations.find((int) => int.type === "notion");
   const googleSheetsIntegration = integrations.find(

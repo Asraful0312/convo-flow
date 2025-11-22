@@ -90,11 +90,23 @@ export const sendToIntegrations = internalAction({
             await sendToSalesforce(ctx, integration, form, answersWithQuestions);
             break;
         }
+        // If successful and an error was previously recorded, clear it
+        if (integration.lastError) {
+          await ctx.runMutation(internal.integrations.clearIntegrationError, {
+            integrationId: integration._id,
+          });
+        }
       } catch (error) {
+        const errorMessage = (error as Error).message;
         console.error(`Failed to send to integration ${integration.name}`, {
           responseId,
           integrationId: integration._id,
-          error: (error as Error).message,
+          error: errorMessage,
+        });
+        // Store the error message in the integration document
+        await ctx.runMutation(internal.integrations.updateIntegrationError, {
+          integrationId: integration._id,
+          errorMessage: errorMessage,
         });
       }
     }
@@ -107,14 +119,14 @@ async function sendToSalesforce(
     form: Doc<"forms"> & { questions: Doc<"questions">[] },
     answers: (Doc<"answers"> & { questionText: string })[]
 ) {
-    const jsforce = await import("jsforce");
+    const { Connection } = await import("jsforce");
     const { accessToken, refreshToken, instanceUrl } = integration.config;
 
     if (!accessToken || !refreshToken || !instanceUrl) {
         throw new Error("Salesforce configuration is incomplete.");
     }
 
-    const conn = new jsforce.Connection({
+    const conn = new Connection({
         instanceUrl,
         accessToken,
         refreshToken,

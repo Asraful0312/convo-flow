@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check } from "lucide-react";
+import { Check, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 type Integration = {
@@ -11,6 +11,8 @@ type Integration = {
   connected: boolean;
   id?: string;
   config?: any;
+  lastError?: string;
+  lastErrorTimestamp?: number;
 };
 
 type Props = {
@@ -71,6 +73,29 @@ export default function IntegrationCard({
           </Button>
         )}
       </div>
+
+      {integration.lastError && (
+        <div className="p-3 rounded-md bg-red-50 dark:bg-red-900/20">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+            <div>
+              <p className="font-semibold text-sm text-red-600 dark:text-red-400">
+                Integration Error
+              </p>
+              <p className="text-xs text-red-700/80 dark:text-red-400/80 mt-1">
+                {integration.lastError}
+              </p>
+              {integration.lastErrorTimestamp && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Last occurred:{" "}
+                  {new Date(integration.lastErrorTimestamp).toLocaleString()}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {children}
     </motion.div>
   );
