@@ -12,11 +12,18 @@ import {
   CardTitle,
 } from "../ui/card";
 import { useState } from "react";
-import { CreditCard, ExternalLink, DollarSign } from "lucide-react";
+import {
+  CreditCard,
+  ExternalLink,
+  Zap,
+  BarChart3,
+  FileText,
+  CheckCircle2,
+  ArrowUpRight,
+} from "lucide-react";
 import { Badge } from "../ui/badge";
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { Avatar, AvatarFallback } from "../ui/avatar";
 
 import { motion } from "framer-motion";
 import { Skeleton } from "../ui/skeleton";
@@ -31,8 +38,8 @@ const containerVariants = {
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, type: "spring" } },
 };
 
 export default function BillingSection() {
@@ -60,11 +67,11 @@ export default function BillingSection() {
 
   const responsePercentage = Math.min(
     (billingInfo.responsesUsed / (billingInfo.responseLimit || 1)) * 100,
-    100,
+    100
   );
   const formPercentage = Math.min(
     (billingInfo.formsUsed / (billingInfo.formLimit || 1)) * 100,
-    100,
+    100
   );
 
   return (
@@ -72,151 +79,118 @@ export default function BillingSection() {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="space-y-6"
+      className="grid grid-cols-1 md:grid-cols-3 gap-4"
     >
-      {/* Subscription Card */}
-      <motion.div variants={itemVariants}>
-        <Card className="border-0 shadow-sm overflow-hidden">
-          <CardHeader className="">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-[#F56A4D]/20">
-                  <CreditCard className="w-5 h-5 text-[#F56A4D]" />
-                </div>
-                <div>
-                  <CardTitle className="text-xl">Current Plan</CardTitle>
-                  <CardDescription>
-                    {billingInfo.tier !== "free"
-                      ? "Active subscription"
-                      : "Free tier"}
-                  </CardDescription>
-                </div>
-              </div>
-              {billingInfo.tier !== "free" && (
-                <Badge className="bg-[#F56A4D] text-white">Active</Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
-            {/* Plan Highlight */}
-            <div className="flex items-center justify-between p-5 rounded-xl bg-linear-to-r from-[#F56A4D]/10 to-[#F56A4D]/5 border border-[#F56A4D]/20">
-              <div>
-                <h3 className="text-2xl font-bold flex items-center gap-2">
+      {/* Main Plan Card - Spans 2 columns */}
+      <motion.div variants={itemVariants as any} className="md:col-span-2">
+        <Card className="h-full border-0 shadow-sm bg-linear-to-br from-white to-gray-50/50 dark:from-zinc-900 dark:to-zinc-900/50 overflow-hidden relative group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
+            <Zap className="w-24 h-24 text-[#F56A4D]" />
+          </div>
+          <CardHeader>
+            <div className="flex justify-between items-start">
+              <div className="space-y-1">
+                <CardTitle className="text-2xl font-bold flex items-center gap-2">
                   {billingInfo.planName}
                   {billingInfo.tier === "business" && (
-                    <Badge className="bg-[#F56A4D] text-white text-xs">
-                      Pro
+                    <Badge className="bg-[#F56A4D] hover:bg-[#F56A4D]/90 text-white border-0">
+                      PRO
                     </Badge>
                   )}
-                </h3>
-                <p className="text-muted-foreground mt-1">
-                  {isFinite(billingInfo.formLimit)
-                    ? `${billingInfo.formLimit} forms`
-                    : "Unlimited forms"}
-                  {" • "}
-                  {isFinite(billingInfo.responseLimit)
-                    ? `${billingInfo.responseLimit} responses`
-                    : "Unlimited responses"}
-                  /month
-                </p>
+                </CardTitle>
+                <CardDescription className="text-base">
+                  {billingInfo.tier !== "free"
+                    ? "Your active subscription plan"
+                    : "Upgrade to unlock more features"}
+                </CardDescription>
               </div>
               <div className="text-right">
-                <div className="text-3xl font-bold flex items-center justify-end gap-1">
-                  <DollarSign className="w-6 h-6 text-[#F56A4D]" />
+                <div className="text-3xl font-bold text-[#F56A4D] flex items-center justify-end">
+                  {billingInfo.price !== "Custom" && "$"}
                   {billingInfo.price}
-                </div>
-                {billingInfo.price !== "Custom" && (
-                  <p className="text-sm text-muted-foreground">per month</p>
-                )}
-              </div>
-            </div>
-
-            {/* Usage Stats */}
-            <div className="space-y-5">
-              <h4 className="font-semibold text-lg">Usage This Month</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* Responses */}
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span>Responses</span>
-                    <span className="text-muted-foreground">
-                      {billingInfo.responsesUsed} /{" "}
-                      {isFinite(billingInfo.responseLimit)
-                        ? billingInfo.responseLimit
-                        : "∞"}
+                  {billingInfo.price !== "Custom" && (
+                    <span className="text-sm text-muted-foreground font-normal ml-1">
+                      /mo
                     </span>
-                  </div>
-                  <Progress
-                    value={responsePercentage}
-                    className="h-3 bg-muted"
-                    indicatorClassName="bg-gradient-to-r from-[#F56A4D] to-[#f97316]"
-                  />
-                </div>
-
-                {/* Forms */}
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span>Forms</span>
-                    <span className="text-muted-foreground">
-                      {billingInfo.formsUsed} /{" "}
-                      {isFinite(billingInfo.formLimit)
-                        ? billingInfo.formLimit
-                        : "∞"}
-                    </span>
-                  </div>
-                  <Progress
-                    value={formPercentage}
-                    className="h-3 bg-muted"
-                    indicatorClassName="bg-gradient-to-r from-[#F56A4D] to-[#f97316]"
-                  />
+                  )}
                 </div>
               </div>
             </div>
-
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link href="/dashboard/pricing" className="flex-1">
-                <Button variant="outline" className="w-full">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  View All Plans
-                </Button>
-              </Link>
-              {billingInfo.tier !== "free" && (
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-zinc-800/50 border shadow-sm">
+                <div className="p-2 rounded-lg bg-[#F56A4D]/10 text-[#F56A4D]">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Form Limit</p>
+                  <p className="text-sm text-muted-foreground">
+                    {isFinite(billingInfo.formLimit)
+                      ? `${billingInfo.formLimit} forms`
+                      : "Unlimited"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-zinc-800/50 border shadow-sm">
+                <div className="p-2 rounded-lg bg-[#F56A4D]/10 text-[#F56A4D]">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Response Limit</p>
+                  <p className="text-sm text-muted-foreground">
+                    {isFinite(billingInfo.responseLimit)
+                      ? `${billingInfo.responseLimit} / month`
+                      : "Unlimited"}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-3 pt-2">
+             {billingInfo.tier !== "free" && (
                 <Button
                   onClick={handleManageSubscription}
                   disabled={isBillingLoading}
-                  className="flex-1 bg-[#F56A4D] hover:bg-[#F56A4D]/90 text-white"
+                  className="bg-[#F56A4D] hover:bg-[#F56A4D]/90 text-white shadow-md shadow-[#F56A4D]/20"
                 >
-                  {isBillingLoading ? "Loading..." : "Manage Subscription"}
+                   {isBillingLoading ? "Loading..." : "Manage Subscription"}
                 </Button>
               )}
+               <Link href="/dashboard/pricing">
+                <Button variant="outline" className="gap-2">
+                  View Plans <ArrowUpRight className="w-4 h-4" />
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
       </motion.div>
 
-      {/* Payment Method Card */}
-      <motion.div variants={itemVariants}>
-        <Card className="border-0 shadow-sm">
+      {/* Payment Method - Spans 1 column */}
+      <motion.div variants={itemVariants as any} className="md:col-span-1">
+        <Card className="h-full border-0 shadow-sm flex flex-col justify-between">
           <CardHeader>
-            <CardTitle>Payment Method</CardTitle>
-            <CardDescription>
-              Update card, view invoices, and manage billing
-            </CardDescription>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <CreditCard className="w-5 h-5 text-[#F56A4D]" />
+              Payment Method
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50">
-              <Avatar className="w-10 h-10">
-                <AvatarFallback className="bg-[#F56A4D] text-white text-xs">
-                  <CreditCard className="w-5 h-5" />
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <p className="font-medium">Managed via Stripe</p>
-                <p className="text-sm text-muted-foreground">
-                  Securely stored and encrypted
-                </p>
-              </div>
+          <CardContent className="space-y-6">
+            <div className="p-4 rounded-xl bg-linear-to-br from-[#F56A4D] to-[#e0583b] text-white shadow-lg relative overflow-hidden">
+               <div className="absolute top-0 right-0 p-3 opacity-10">
+                  <CreditCard className="w-24 h-24" />
+               </div>
+               <div className="relative z-10">
+                 <p className="text-xs text-white/80 uppercase tracking-wider mb-4">Current Method</p>
+                 <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-6 bg-white/20 rounded-sm"></div>
+                    <div className="text-lg font-mono">•••• 4242</div>
+                 </div>
+                 <div className="flex justify-between items-end">
+                    <p className="text-xs text-white/80">Stripe Secure</p>
+                 </div>
+               </div>
             </div>
             <Button
               onClick={handleManageSubscription}
@@ -224,47 +198,109 @@ export default function BillingSection() {
               variant="outline"
               className="w-full"
             >
-              {isBillingLoading ? "Opening..." : "Open Billing Portal"}
+              Update Payment Method
             </Button>
           </CardContent>
         </Card>
+      </motion.div>
+
+      {/* Usage Stats - Responses */}
+      <motion.div variants={itemVariants as any}>
+        <Card className="h-full border-0 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-[#F56A4D]" />
+              Responses Usage
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="mt-2 space-y-2">
+              <div className="flex items-end justify-between">
+                <span className="text-3xl font-bold">
+                  {billingInfo.responsesUsed}
+                </span>
+                <span className="text-sm text-muted-foreground mb-1">
+                  / {isFinite(billingInfo.responseLimit) ? billingInfo.responseLimit : "∞"}
+                </span>
+              </div>
+              <Progress
+                value={responsePercentage}
+                className="h-2"
+                indicatorClassName="bg-[#F56A4D]"
+              />
+              <p className="text-xs text-muted-foreground pt-1">
+                Resets on the 1st of next month
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Usage Stats - Forms */}
+      <motion.div variants={itemVariants as any}>
+        <Card className="h-full border-0 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <FileText className="w-4 h-4 text-[#F56A4D]" />
+              Forms Created
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="mt-2 space-y-2">
+              <div className="flex items-end justify-between">
+                <span className="text-3xl font-bold">
+                  {billingInfo.formsUsed}
+                </span>
+                <span className="text-sm text-muted-foreground mb-1">
+                   / {isFinite(billingInfo.formLimit) ? billingInfo.formLimit : "∞"}
+                </span>
+              </div>
+              <Progress
+                value={formPercentage}
+                className="h-2"
+                indicatorClassName="bg-[#F56A4D]"
+              />
+              <p className="text-xs text-muted-foreground pt-1">
+                Active forms in your account
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Upgrade Callout (if not business) or Support */}
+      <motion.div variants={itemVariants as any}>
+         <Card className="h-full border-0 shadow-sm bg-[#F56A4D]/5 border-[#F56A4D]/10 flex flex-col justify-center items-center text-center p-4">
+            <div className="p-3 rounded-full bg-[#F56A4D]/10 mb-3">
+               <ExternalLink className="w-6 h-6 text-[#F56A4D]" />
+            </div>
+            <h3 className="font-semibold mb-1">Need more power?</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+               Upgrade to Business for unlimited limits.
+            </p>
+            <Link href="/dashboard/pricing" className="w-full">
+               <Button variant="outline" className="w-full border-[#F56A4D]/20 hover:bg-[#F56A4D]/10 hover:text-[#F56A4D]">
+                  View Upgrades
+               </Button>
+            </Link>
+         </Card>
       </motion.div>
     </motion.div>
   );
 }
 
-// Skeleton Loader
 function BillingSkeleton() {
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-7 w-32" />
-          <Skeleton className="h-4 w-48 mt-2" />
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <Skeleton className="h-32 w-full rounded-xl" />
-          <div className="space-y-4">
-            <Skeleton className="h-5 w-32" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-          <div className="flex gap-3">
-            <Skeleton className="h-10 flex-1" />
-            <Skeleton className="h-10 flex-1" />
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-40" />
-          <Skeleton className="h-4 w-56 mt-2" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-20 w-full rounded-lg" />
-          <Skeleton className="h-10 w-full mt-4" />
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="md:col-span-2">
+        <Skeleton className="h-[300px] w-full rounded-xl" />
+      </div>
+      <div className="md:col-span-1">
+        <Skeleton className="h-[300px] w-full rounded-xl" />
+      </div>
+      <Skeleton className="h-[150px] w-full rounded-xl" />
+      <Skeleton className="h-[150px] w-full rounded-xl" />
+      <Skeleton className="h-[150px] w-full rounded-xl" />
     </div>
   );
 }

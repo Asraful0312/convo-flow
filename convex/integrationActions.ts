@@ -119,14 +119,14 @@ async function sendToSalesforce(
     form: Doc<"forms"> & { questions: Doc<"questions">[] },
     answers: (Doc<"answers"> & { questionText: string })[]
 ) {
-    const { Connection } = await import("jsforce");
+    const jsforce = await import("jsforce");
     const { accessToken, refreshToken, instanceUrl } = integration.config;
 
     if (!accessToken || !refreshToken || !instanceUrl) {
         throw new Error("Salesforce configuration is incomplete.");
     }
 
-    const conn = new Connection({
+    const conn = new jsforce.Connection({
         instanceUrl,
         accessToken,
         refreshToken,
@@ -140,21 +140,46 @@ async function sendToSalesforce(
     const salesforceLead: { [key: string]: any } = {};
     answers.forEach(answer => {
         const qText = answer.questionText.toLowerCase();
+        let value = answer.value;
+
+        const question = form.questions.find(q => q._id === answer.questionId);
+        if (question && value !== null && value !== undefined) {
+            switch (question.type) {
+                case "image_choice":
+                    if (typeof value === "object" && "text" in value) {
+                        value = (value as { text: string }).text;
+                    } else {
+                        value = JSON.stringify(value);
+                    }
+                    break;
+                case "file":
+                    value = answer.fileUrl ?? "";
+                    break;
+                default:
+                    if (typeof value === "object") {
+                        value = JSON.stringify(value);
+                    }
+                    break;
+            }
+        }
+
         if (qText.includes('company')) {
-            salesforceLead['Company'] = answer.value;
+            salesforceLead['Company'] = value;
         } else if (qText.includes('last name')) {
-            salesforceLead['LastName'] = answer.value;
+            salesforceLead['LastName'] = value;
         } else if (qText.includes('first name')) {
-            salesforceLead['FirstName'] = answer.value;
+            salesforceLead['FirstName'] = value;
         } else if (qText.includes('email')) {
-            salesforceLead['Email'] = answer.value;
+            salesforceLead['Email'] = value;
         } else if (qText.includes('phone')) {
-            salesforceLead['Phone'] = answer.value;
+            salesforceLead['Phone'] = value;
         } else if (qText.includes('name')) {
-            const nameParts = answer.value.toString().split(' ');
-            salesforceLead['FirstName'] = nameParts[0];
-            if (nameParts.length > 1) {
-                salesforceLead['LastName'] = nameParts.slice(1).join(' ');
+            if (value) {
+                const nameParts = value.toString().split(' ');
+                salesforceLead['FirstName'] = nameParts[0];
+                if (nameParts.length > 1) {
+                    salesforceLead['LastName'] = nameParts.slice(1).join(' ');
+                }
             }
         }
     });
@@ -323,7 +348,30 @@ async function sendToGoogleSheets(
   // 2. Append data to the sheet using the access token
   const orderedAnswers = form.questions.map((question) => {
     const answer = answers.find((a) => a.questionId === question._id);
-    return answer ? answer.value : "";
+    if (!answer || answer.value === null || answer.value === undefined) {
+      return "";
+    }
+
+    switch (question.type) {
+      case "image_choice":
+        if (
+          typeof answer.value === "object" &&
+          "text" in answer.value &&
+          (answer.value as any).text
+        ) {
+          return (answer.value as { text: string }).text;
+        }
+        // Fallback for unexpected format
+        return JSON.stringify(answer.value);
+      case "file":
+        return answer.fileUrl ?? ""; // Use the file URL
+      default:
+        // For primitive values, just return them. For objects, stringify.
+        if (typeof answer.value === "object") {
+          return JSON.stringify(answer.value);
+        }
+        return answer.value;
+    }
   });
 
   const range = "A1";

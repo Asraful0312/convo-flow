@@ -2,17 +2,20 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useInView } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface AnimatedStatProps {
   finalValue: number;
   suffix?: string;
   duration?: number;
+  className?: string
 }
 
 export function AnimatedStat({
   finalValue,
   suffix = "",
   duration = 1500,
+  className
 }: AnimatedStatProps) {
   const [currentValue, setCurrentValue] = useState(0);
   const ref = useRef(null);
@@ -39,7 +42,7 @@ export function AnimatedStat({
   }, [isInView, finalValue, duration]);
 
   return (
-    <div ref={ref} className="text-3xl font-bold">
+    <div ref={ref} className={cn("text-3xl font-bold", className)}>
       {currentValue}
       {suffix}
     </div>

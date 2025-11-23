@@ -38,6 +38,7 @@ import { AnimatedStat } from "@/components/dashboard/AnimatedStat";
 import { FormCardSkeleton } from "@/components/skeleton/form-card-skeleton";
 import { StatCardSkeleton } from "@/components/skeleton/stat-card-skeleton";
 import ImportFormModal from "@/components/dashboard/ImportFormModal";
+import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
   const user = useQuery(api.auth.loggedInUser);
@@ -135,7 +136,7 @@ export default function DashboardPage() {
             <StatCardSkeleton />
           </>
         ) : (
-          stats.map((stat) => {
+          stats.map((stat, index) => {
             const isRate =
               typeof stat.value === "string" && stat.value.endsWith("%");
             const numericValue = isRate
@@ -143,11 +144,12 @@ export default function DashboardPage() {
               : typeof stat.value === "number"
                 ? stat.value
                 : 0;
+            const textColor = index ===0 ? "text-blue-600": index === 1 ? "text-green-600": index === 2 ? "text-yellow-600": "text-orange-600";
 
             return (
               <Card
                 key={stat.title}
-                className="border-0 shadow-sm hover:shadow-md transition-shadow"
+                className={cn("h-full border-0 shadow-sm bg-linear-to-br dark:from-blue-950/20 dark:to-zinc-900", index ===0 ? "from-blue-50 to-white": index === 1 ? "from-green-50 to-white": index === 2 ? "from-yellow-50 to-white": "from-orange-50 to-white ")}
               >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -159,6 +161,7 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <AnimatedStat
+                    className={textColor}
                     finalValue={numericValue}
                     suffix={isRate ? "%" : ""}
                   />

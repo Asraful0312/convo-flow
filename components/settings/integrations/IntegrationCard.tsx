@@ -75,14 +75,14 @@ export default function IntegrationCard({
       </div>
 
       {integration.lastError && (
-        <div className="p-3 rounded-md bg-red-50 dark:bg-red-900/20">
-          <div className="flex items-start gap-3">
+        <div className="p-3 rounded-md bg-red-50 dark:bg-red-900/20 w-full">
+          <div className="flex items-start gap-3 w-full">
             <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
             <div>
               <p className="font-semibold text-sm text-red-600 dark:text-red-400">
                 Integration Error
               </p>
-              <p className="text-xs text-red-700/80 dark:text-red-400/80 mt-1">
+              <p className="text-xs text-red-700/80 dark:text-red-400/80 mt-1 w-full whitespace-normal break-all">
                 {integration.lastError}
               </p>
               {integration.lastErrorTimestamp && (
