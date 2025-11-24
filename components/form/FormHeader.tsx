@@ -1,6 +1,8 @@
+"use client"
 import { Button } from "@/components/ui/button";
 import { FormData } from "@/lib/form-types";
 import { Sparkles, Volume2, VolumeX } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface FormHeaderProps {
   form: FormData;
@@ -29,65 +31,73 @@ export default function FormHeader({
   const secondaryColor = form.settings.branding?.secondaryColor || "#2EB7A7";
 
   return (
-    <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+      <div className="absolute inset-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-black/5 dark:border-white/5 shadow-sm" />
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between relative z-10">
+        <div className="flex items-center gap-3 overflow-hidden">
           {form.settings.branding?.logoUrl ? (
             <img
               src={form.settings.branding.logoUrl}
               alt="Logo"
-              className="w-8 h-8 rounded-lg"
+              className="w-8 h-8 rounded-lg object-cover shadow-sm shrink-0"
             />
           ) : (
             <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center"
+              className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm shrink-0"
               style={{ backgroundColor: primaryColor }}
             >
-              <Sparkles className="w-5 h-5 text-white" />
+              <Sparkles className="w-4 h-4 text-white" />
             </div>
           )}
-          <div>
-            <h1 className="font-semibold text-gray-900 text-xl">
+          <div className="min-w-0">
+            <h1 className="font-semibold text-foreground text-sm sm:text-base truncate leading-tight">
               {form.title}
             </h1>
-            {form.description && (
-              <p className="text-xs text-gray-500">{form.description}</p>
-            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           {allowSaveAndResume && !isCompleted && (
-            <Button variant="ghost" size="sm" onClick={onSave}>
+            <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={onSave}
+                className="hidden sm:flex text-muted-foreground hover:text-foreground"
+            >
               Save & resume
             </Button>
           )}
+          
           {form.aiConfig?.enableVoice && (
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={onToggleVoice}
-              className="h-9 w-9 p-0 hover:bg-transparent"
+              className={cn(
+                "h-8 w-8 rounded-full transition-colors group",
+                voiceEnabled ?  "bg-primary/10" : "hover:bg-muted"
+              )}
             >
               {voiceEnabled ? (
                 <Volume2
-                  className="w-4 h-4"
-                  style={{ color: secondaryColor }}
+                  className="w-4 h-4 "
+                  style={{ color: primaryColor }}
                 />
               ) : (
-                <VolumeX className="w-4 h-4 text-gray-400" />
+                <VolumeX className="w-4 h-4 text-muted-foreground" />
               )}
             </Button>
           )}
+
           {!isCompleted && totalQuestions > 0 && (
-            <>
-              <span className="text-sm text-gray-600 hidden sm:block">
-                {currentQuestionIndex + 1} of {totalQuestions}
+            <div className="flex flex-col items-end gap-1 min-w-[60px] sm:min-w-[100px]">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                {Math.round(progress)}% completed
               </span>
               {form.settings.showProgressBar !== false && (
-                <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full transition-all duration-500"
+                    className="h-full transition-all duration-500 ease-out rounded-full"
                     style={{
                       width: `${progress}%`,
                       backgroundColor: primaryColor,
@@ -95,7 +105,7 @@ export default function FormHeader({
                   />
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

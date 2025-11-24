@@ -899,7 +899,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                 )}
               </Card>
             ))}
-            <div className="mt-6 p-4 border rounded-lg flex items-center gap-4 bg-white">
+            <div className="mt-6 p-4 border rounded-lg flex items-center flex-wrap gap-4 bg-white">
               <Select
                 value={newQuestionType}
                 onValueChange={(value: Question["type"]) =>
@@ -931,6 +931,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
               </Select>
               <Button
                 onClick={() => handleAddQuestion(newQuestionType as any)}
+                className="w-full"
                 disabled={!newQuestionType}
               >
                 <Plus className="w-4 h-4 mr-2" /> Add Question

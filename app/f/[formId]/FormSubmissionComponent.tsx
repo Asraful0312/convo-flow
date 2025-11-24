@@ -982,7 +982,7 @@ export default function FormSubmissionComponent({
         onSave={() => setIsSaveModalOpen(true)}
       />
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto mt-20">
         <div className="container mx-auto px-4 py-8 max-w-3xl">
           <ChatMessages messages={messages} form={form} isTyping={isTyping} />
           {isCompleted && <CompletionScreen secondaryColor={secondaryColor} />}

@@ -4,6 +4,7 @@ import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { redirect } from "next/navigation";
+import Loader from "@/components/loader-grid";
 
 export default async function FormSubmissionPage({
   params,
@@ -22,8 +23,8 @@ export default async function FormSubmissionPage({
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          Loading...
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <Loader />
         </div>
       }
     >

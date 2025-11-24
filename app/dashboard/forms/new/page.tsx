@@ -6,7 +6,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, Loader2, Wand2, MessageSquare, Save, ArrowUp, Send } from "lucide-react";
+import { Sparkles, Loader2, Wand2, MessageSquare, Save, ArrowUp, Send, Eye, LayoutTemplate } from "lucide-react";
 import { FormPreview } from "@/components/form-preview";
 import type { Question } from "@/lib/types";
 import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
@@ -50,6 +50,7 @@ export default function NewFormPage() {
   const [conversationHistory, setConversationHistory] = useState<
     Array<{ role: "user" | "ai"; content: string }>
   >([]);
+  const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
 
   const generateFormAction = useAction(api.ai.generateForm);
   const createFormMutation = useMutation(api.forms.create);
@@ -80,6 +81,13 @@ export default function NewFormPage() {
       }
     };
   }, [isGenerating, generatedForm]);
+
+  // Switch to preview tab automatically when form is generated on mobile
+  useEffect(() => {
+    if (generatedForm && window.innerWidth < 1024) {
+      setMobileTab("preview");
+    }
+  }, [generatedForm]);
 
   const examplePrompts = [
     "Create a customer feedback survey with rating scales and open-ended questions",
@@ -195,9 +203,42 @@ export default function NewFormPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-64px)] flex overflow-hidden">
+    <div className="h-[calc(100vh-64px)] flex flex-col lg:flex-row overflow-hidden">
+      {/* Mobile Tab Switcher */}
+      <div className="lg:hidden flex items-center p-2 bg-white dark:bg-zinc-900 border-b border-border gap-2 shrink-0 z-20">
+        <Button
+          variant={mobileTab === "chat" ? "secondary" : "ghost"}
+          onClick={() => setMobileTab("chat")}
+          className={cn(
+            "flex-1 gap-2",
+            mobileTab === "chat" && "bg-[#F56A4D]/10 text-[#F56A4D] hover:bg-[#F56A4D]/20"
+          )}
+          size="sm"
+        >
+          <MessageSquare className="w-4 h-4" />
+          Chat
+        </Button>
+        <Button
+          variant={mobileTab === "preview" ? "secondary" : "ghost"}
+          onClick={() => setMobileTab("preview")}
+          className={cn(
+            "flex-1 gap-2",
+            mobileTab === "preview" && "bg-[#F56A4D]/10 text-[#F56A4D] hover:bg-[#F56A4D]/20"
+          )}
+          size="sm"
+        >
+          <Eye className="w-4 h-4" />
+          Preview
+        </Button>
+      </div>
+
       {/* LEFT: AI Chat */}
-      <div className="w-full lg:w-[45%] xl:w-[40%] border-r border-border flex flex-col bg-white dark:bg-zinc-900 relative z-10 shadow-xl">
+      <div 
+        className={cn(
+          "w-full lg:w-[45%] xl:w-[40%] border-r border-border flex flex-col bg-white dark:bg-zinc-900 relative z-10 shadow-xl transition-all h-full",
+          mobileTab === "chat" ? "flex" : "hidden lg:flex"
+        )}
+      >
         {/* Header */}
         <div className="p-6 border-b border-border bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-10">
             <h1 className="text-xl font-bold flex items-center gap-2">
@@ -361,7 +402,12 @@ export default function NewFormPage() {
       </div>
 
       {/* RIGHT: Preview + Settings */}
-      <div className="hidden lg:block flex-1 bg-muted/30 relative">
+      <div 
+        className={cn(
+          "flex-1 bg-muted/30 relative transition-all h-full overflow-hidden",
+          mobileTab === "preview" ? "flex flex-col" : "hidden lg:flex flex-col"
+        )}
+      >
         <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[16px_16px] opacity-50 pointer-events-none" />
         
         {isGenerating && !generatedForm ? (
@@ -383,7 +429,7 @@ export default function NewFormPage() {
             </div>
           </div>
         ) : generatedForm ? (
-          <div className="h-full flex flex-col relative z-10">
+          <div className="h-full flex flex-col relative z-10 overflow-hidden">
             <FormPreview form={generatedForm} setForm={setGeneratedForm} />
           </div>
         ) : (

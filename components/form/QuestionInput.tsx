@@ -1,4 +1,4 @@
-// components/QuestionInput.tsx
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -230,34 +230,45 @@ export default function QuestionInput({
           </div>
         </div>
       ) : question.type === "scale" ? (
-        <div className="space-y-3">
-          <p className="text-sm text-gray-600 mb-3">{question.text}</p>
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs text-muted-foreground px-2">
-              <span>1</span>
-              <span>10</span>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground mb-3 font-medium">{question.text}</p>
+          <div className="space-y-3">
+            <div className="flex justify-between text-xs text-muted-foreground px-2 font-medium">
+              <span>1 (Lowest)</span>
+              <span>10 (Highest)</span>
             </div>
-            <RadioGroup
-              onValueChange={(value) => handleSubmit(value)}
-              disabled={isProcessing || isTyping}
-              className="flex justify-between"
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => (
-                <div key={v} className="flex flex-col items-center">
-                  <RadioGroupItem
-                    value={v.toString()}
-                    id={`scale-${question._id}-${v}`}
-                    className="sr-only"
-                  />
-                  <Label
-                    htmlFor={`scale-${question._id}-${v}`}
-                    className="w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all bg-muted hover:bg-muted/80"
-                  >
-                    {v}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
+            <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 scrollbar-hide">
+                <RadioGroup
+                onValueChange={(value) => handleSubmit(value)}
+                disabled={isProcessing || isTyping}
+                className="flex gap-2 sm:justify-between min-w-max sm:min-w-0"
+                >
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => (
+                    <div key={v} className="flex flex-col items-center gap-1">
+                    <RadioGroupItem
+                        value={v.toString()}
+                        id={`scale-${question._id}-${v}`}
+                        className="peer sr-only"
+                    />
+                    <Label
+                        htmlFor={`scale-${question._id}-${v}`}
+                        className={cn(
+                            "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center cursor-pointer transition-all border-2 border-transparent font-medium text-sm sm:text-base",
+                            "bg-muted hover:bg-muted/80 text-muted-foreground",
+                            "peer-data-[state=checked]:bg-primary peer-data-[state=checked]:text-primary-foreground peer-data-[state=checked]:shadow-md peer-data-[state=checked]:scale-110"
+                        )}
+                        style={
+                            {
+                                "--primary": primaryColor,
+                            } as React.CSSProperties
+                        }
+                    >
+                        {v}
+                    </Label>
+                    </div>
+                ))}
+                </RadioGroup>
+            </div>
           </div>
         </div>
       ) : question.type === "likert" && question.options ? (
