@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useState } from "react";
@@ -53,11 +53,19 @@ export default function FormsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const user = useQuery(api.auth.loggedInUser);
 
-  const forms = useQuery(api.forms.getFormsForWorkspace, {
-    searchQuery: searchQuery,
-    status: filterStatus === "all" ? undefined : filterStatus,
-    workspaceId: user?.activeWorkspaceId as Id<"workspaces">,
-  });
+  const {
+    results: forms,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
+    api.forms.getFormsForWorkspace,
+    {
+      searchQuery: searchQuery,
+      status: filterStatus === "all" ? undefined : filterStatus,
+      workspaceId: user?.activeWorkspaceId as Id<"workspaces">,
+    },
+    { initialNumItems: 12 },
+  );
   const deleteForm = useMutation(api.forms.deleteForm);
   const duplicateForm = useMutation(api.forms.duplicateForm);
 
@@ -137,7 +145,7 @@ export default function FormsPage() {
                   "capitalize rounded-md transition-all",
                   filterStatus === status 
                     ? "bg-white dark:bg-zinc-800 shadow-sm text-[#F56A4D]" 
-                    : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-white"
                 )}
               >
                 {status}
@@ -169,7 +177,7 @@ export default function FormsPage() {
       </div>
 
       {/* Content */}
-      {forms === undefined ? (
+      {status === "LoadingFirstPage" ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
             <FormCardSkeleton key={i} />
@@ -297,6 +305,24 @@ export default function FormsPage() {
               </motion.div>
             ))}
           </AnimatePresence>
+          {(status === "CanLoadMore" || status === "LoadingMore") && (
+            <div className="col-span-full flex justify-center mt-8">
+              <Button
+                variant="outline"
+                onClick={() => loadMore(12)}
+                disabled={status === "LoadingMore"}
+              >
+                {status === "LoadingMore" ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "Load More"
+                )}
+              </Button>
+            </div>
+          )}
         </motion.div>
       )}
     </div>

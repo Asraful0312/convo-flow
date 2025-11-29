@@ -9,9 +9,11 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Bell, Mail, BarChart3, Sparkles, Megaphone } from "lucide-react";
+import { Bell, Mail, BarChart3, Sparkles, Megaphone, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { toast } from "sonner";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -26,34 +28,63 @@ const itemVariants = {
   visible: { opacity: 1, x: 0, transition: { duration: 0.3 } },
 };
 
-const notifications = [
-  {
-    label: "New Responses",
-    description: "Get notified when someone submits a form",
-    icon: Mail,
-    defaultChecked: true,
-  },
-  {
-    label: "Weekly Summary",
-    description: "Receive a weekly report of form activity",
-    icon: BarChart3,
-    defaultChecked: true,
-  },
-  {
-    label: "Product Updates",
-    description: "Stay up to date with new features and improvements",
-    icon: Sparkles,
-    defaultChecked: false,
-  },
-  {
-    label: "Marketing Emails",
-    description: "Occasional tips, offers, and inspiration",
-    icon: Megaphone,
-    defaultChecked: false,
-  },
-];
-
 export default function NotificationsTab() {
+  const user = useQuery(api.auth.loggedInUser);
+  const updatePreferences = useMutation(api.users.updateNotificationPreferences);
+
+  const notifications = [
+    {
+      key: "emailOnResponse",
+      label: "New Responses",
+      description: "Get notified when someone submits a form",
+      icon: Mail,
+      defaultChecked: true,
+    },
+    {
+      key: "weeklySummary",
+      label: "Weekly Summary",
+      description: "Receive a weekly report of form activity",
+      icon: BarChart3,
+      defaultChecked: true,
+    },
+    {
+      key: "productUpdates",
+      label: "Product Updates",
+      description: "Stay up to date with new features and improvements",
+      icon: Sparkles,
+      defaultChecked: false,
+    },
+    {
+      key: "marketingEmails",
+      label: "Marketing Emails",
+      description: "Occasional tips, offers, and inspiration",
+      icon: Megaphone,
+      defaultChecked: false,
+    },
+  ];
+
+  const handleToggle = async (key: string, checked: boolean) => {
+    try {
+      await updatePreferences({
+        notifications: {
+          [key]: checked,
+        },
+      });
+      toast.success("Preferences updated");
+    } catch (error) {
+      toast.error("Failed to update preferences");
+      console.error(error);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="w-6 h-6 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <motion.div
       variants={containerVariants}
@@ -76,40 +107,38 @@ export default function NotificationsTab() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {notifications.map((notif, i) => (
-            <motion.div
-              key={i}
-              variants={itemVariants}
-              className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
-            >
-              <div className="flex items-start gap-4 flex-1">
-                <div className="p-2 rounded-md bg-[#F56A4D]/5 text-[#F56A4D]">
-                  <notif.icon className="w-4 h-4" />
+          {notifications.map((notif, i) => {
+            const isChecked = user.notifications?.[notif.key as keyof typeof user.notifications] ?? notif.defaultChecked;
+            
+            return (
+              <motion.div
+                key={i}
+                variants={itemVariants}
+                className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-start gap-4 flex-1">
+                  <div className="p-2 rounded-md bg-[#F56A4D]/5 text-[#F56A4D]">
+                    <notif.icon className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-base font-medium cursor-pointer">
+                      {notif.label}
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      {notif.description}
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-base font-medium cursor-pointer">
-                    {notif.label}
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    {notif.description}
-                  </p>
-                </div>
-              </div>
-              <Switch
-                defaultChecked={notif.defaultChecked}
-                className="data-[state=checked]:bg-[#F56A4D]"
-              />
-            </motion.div>
-          ))}
+                <Switch
+                  checked={isChecked}
+                  onCheckedChange={(checked) => handleToggle(notif.key, checked)}
+                  className="data-[state=checked]:bg-[#F56A4D]"
+                />
+              </motion.div>
+            );
+          })}
         </CardContent>
       </Card>
-
-      {/* Optional: Future "Save" button */}
-      {/* <div className="flex justify-end">
-        <Button className="bg-[#F56A4D] hover:bg-[#F56A4D]/90">
-          Save Preferences
-        </Button>
-      </div> */}
     </motion.div>
   );
 }

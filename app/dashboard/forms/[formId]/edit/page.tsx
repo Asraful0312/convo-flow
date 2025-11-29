@@ -52,6 +52,7 @@ export default function EditFormPage({
 }) {
   const { formId } = use<any>(params as any);
   const form = useQuery(api.forms.getSingleForm, { formId: formId });
+  const user = useQuery(api.auth.loggedInUser);
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState<"draft" | "published" | "closed">(
     "draft",
@@ -369,6 +370,24 @@ export default function EditFormPage({
                     onCheckedChange={setEmailOnResponse}
                   />
                 </div>
+                
+                {/* Global Notification Warning */}
+                {emailOnResponse && user?.notifications?.emailOnResponse === false && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-md p-3 flex gap-3">
+                    <div className="text-amber-600 mt-0.5">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                        <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="text-sm text-amber-800">
+                      <p className="font-medium">Notifications are globally disabled</p>
+                      <p className="mt-1">
+                        You have disabled "New Responses" emails in your <Link href="/dashboard/settings?selected=notifications" className="underline hover:text-amber-900">account settings</Link>. You won't receive emails even if this is enabled.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="notification-email">Notification Email</Label>
                   <Input

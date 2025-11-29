@@ -150,3 +150,32 @@ export const getRole = query({
     return member ? member.role : null;
   },
 });
+
+export const updateNotificationPreferences = mutation({
+  args: {
+    notifications: v.object({
+      emailOnResponse: v.optional(v.boolean()),
+      weeklySummary: v.optional(v.boolean()),
+      productUpdates: v.optional(v.boolean()),
+      marketingEmails: v.optional(v.boolean()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await ctx.db.patch(userId, {
+      notifications: {
+        ...user.notifications,
+        ...args.notifications,
+      },
+    });
+  },
+});

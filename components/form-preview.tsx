@@ -308,7 +308,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant={activeTab === "preview" ? "default" : "ghost"}
             size="sm"
@@ -770,7 +770,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         <Label>Image Options</Label>
                         {(question.options as ImageChoiceOption[]).map(
                           (opt, i) => (
-                            <div key={i} className="flex items-center gap-2">
+                            <div key={i} className="flex items-center flex-wrap gap-2">
                               <Input
                                 value={opt.text}
                                 onChange={(e) =>
@@ -847,7 +847,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between flex-wrap">
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2 text-sm">
                         <span className="font-medium text-muted-foreground">
@@ -878,7 +878,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         </p>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         variant="ghost"
                         size="sm"

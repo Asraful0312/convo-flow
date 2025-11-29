@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import { useState, useMemo, use } from "react";
 import Link from "next/link";
@@ -35,6 +35,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowLeft,
   Download,
   Search,
@@ -49,6 +56,8 @@ import {
   Tag,
   Plus,
   Lock,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -74,13 +83,34 @@ export default function ResponsesPage({
   );
   const [isExporting, setIsExporting] = useState(false);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  // Fetch all IDs for current filter
+  const allResponseIds = useQuery(api.forms.getResponseIds, {
+    formId: formId as Id<"forms">,
+    status: filterStatus === "all" ? undefined : filterStatus,
+  });
+
+  // Calculate pagination
+  const totalItems = allResponseIds?.length ?? 0;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const currentIds = allResponseIds?.slice(startIndex, endIndex) ?? [];
+
+  // Fetch details for current page
+  const responses = useQuery(api.forms.getResponsesByIds, {
+    responseIds: currentIds,
+  });
+
   const form = data?.form;
-  const responses = data?.responses ?? [];
   const analytics = data?.analytics;
 
   const filteredResponses = useMemo(
     () =>
-      responses.filter((response: any) => {
+      (responses ?? []).filter((response: any) => {
         const firstAnswer = response.firstAnswer;
         const searchText = firstAnswer
           ? String(firstAnswer.value).toLowerCase()
@@ -91,11 +121,9 @@ export default function ResponsesPage({
           response._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
           searchText.includes(searchQuery.toLowerCase());
 
-        const matchesFilter =
-          filterStatus === "all" || response.status === filterStatus;
-        return matchesSearch && matchesFilter;
+        return matchesSearch;
       }),
-    [responses, searchQuery, filterStatus],
+    [responses, searchQuery],
   );
 
   const handleSelectResponse = (responseId: Id<"responses">) => {
@@ -136,7 +164,7 @@ export default function ResponsesPage({
         responseIds:
           selectedResponses.length > 0
             ? selectedResponses
-            : responses.map((r: any) => r._id),
+            : (allResponseIds ?? []),
         format,
       });
       if (url) {
@@ -156,12 +184,12 @@ export default function ResponsesPage({
   };
 
   const getDeviceIcon = (device?: string) => {
-    if (!device) return <Monitor className="w-4 h-4" />;
+    if (!device) return <Monitor className="w-4 h-4 text-primary" />;
     const lowerDevice = device.toLowerCase();
     if (lowerDevice.includes("mobile"))
       return <Smartphone className="w-4 h-4" />;
-    if (lowerDevice.includes("tablet")) return <Tablet className="w-4 h-4" />;
-    return <Monitor className="w-4 h-4" />;
+    if (lowerDevice.includes("tablet")) return <Tablet className="w-4 h-4 text-[#2eb7a7]" />;
+    return <Monitor className="w-4 h-4 text-primary" />;
   };
 
   const formatDuration = (started: number, completed?: number) => {
@@ -179,6 +207,23 @@ export default function ResponsesPage({
       hour: "numeric",
       minute: "2-digit",
     });
+  };
+
+  // Pagination Logic
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 4) {
+        pages.push(1, 2, 3, 4, 5, "...", totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        pages.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+      }
+    }
+    return pages;
   };
 
   if (data === undefined) {
@@ -329,7 +374,10 @@ export default function ResponsesPage({
                 <Button
                   variant={filterStatus === "all" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setFilterStatus("all")}
+                  onClick={() => {
+                    setFilterStatus("all");
+                    setCurrentPage(1);
+                  }}
                   className={
                     filterStatus === "all"
                       ? "bg-[#F56A4D] hover:bg-[#E55A3D]"
@@ -341,7 +389,10 @@ export default function ResponsesPage({
                 <Button
                   variant={filterStatus === "completed" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setFilterStatus("completed")}
+                  onClick={() => {
+                    setFilterStatus("completed");
+                    setCurrentPage(1);
+                  }}
                   className={
                     filterStatus === "completed"
                       ? "bg-[#F56A4D] hover:bg-[#E55A3D]"
@@ -355,7 +406,10 @@ export default function ResponsesPage({
                     filterStatus === "in_progress" ? "default" : "outline"
                   }
                   size="sm"
-                  onClick={() => setFilterStatus("in_progress")}
+                  onClick={() => {
+                    setFilterStatus("in_progress");
+                    setCurrentPage(1);
+                  }}
                   className={
                     filterStatus === "in_progress"
                       ? "bg-[#F56A4D] hover:bg-[#E55A3D]"
@@ -367,7 +421,10 @@ export default function ResponsesPage({
                 <Button
                   variant={filterStatus === "abandoned" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setFilterStatus("abandoned")}
+                  onClick={() => {
+                    setFilterStatus("abandoned");
+                    setCurrentPage(1);
+                  }}
                   className={
                     filterStatus === "abandoned"
                       ? "bg-[#F56A4D] hover:bg-[#E55A3D]"
@@ -454,131 +511,206 @@ export default function ResponsesPage({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredResponses.map((response: any) => (
-                  <TableRow
-                    key={response._id}
-                    className={`cursor-pointer hover:bg-[#F0F2F5] ${selectedResponses.includes(response._id) ? "bg-[#F0F2F5]" : ""}`}
-                  >
-                    <TableCell
-                      onClick={() => handleSelectResponse(response._id)}
-                    >
-                      <Checkbox
-                        checked={selectedResponses.includes(response._id)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        href={`/dashboard/forms/${formId}/responses/${response._id}`}
-                      >
-                        <div>
-                          <div className="font-medium text-[#121316]">
-                            #{response._id.slice(-6)}
-                          </div>
-                          {response.firstAnswer && (
-                            <div className="text-sm text-[#2B2F36]">
-                              {String(response.firstAnswer.value)}
-                            </div>
-                          )}
-                        </div>
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          response.status === "completed"
-                            ? "bg-[#A3E635] text-[#121316] hover:bg-[#A3E635]"
-                            : response.status === "in_progress"
-                              ? "bg-[#F59E0B] text-white hover:bg-[#F59E0B]"
-                              : "bg-[#FCA5A5] text-[#121316] hover:bg-[#FCA5A5]"
-                        }
-                      >
-                        {response.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {response.tags?.map((tag: any) => (
-                          <Badge key={tag} variant="secondary">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-[#2B2F36]">
-                        {getDeviceIcon(response.metadata?.browser)}
-                        <span className="text-sm capitalize">
-                          {response.metadata?.browser?.split(" ")[0] ||
-                            "Unknown"}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-[#2B2F36]">
-                      {formatDuration(response.startedAt, response.completedAt)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-sm text-[#2B2F36]">
-                        <Calendar className="w-4 h-4" />
-                        {formatDate(response.startedAt)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <Link
-                            href={`/dashboard/forms/${formId}/responses/${response._id}`}
-                          >
-                            <DropdownMenuItem className="group">
-                              <Eye className="w-4 h-4 mr-2 group-hover:text-white" />
-                              View Details
-                            </DropdownMenuItem>
-                          </Link>
-                          <DropdownMenuSub>
-                            <DropdownMenuSubTrigger className="group hover:text-white">
-                              <Tag className="w-4 h-4 mr-2 group-hover:text-white" />{" "}
-                              Add Tag
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent>
-                              <div className="p-2">
-                                <Input
-                                  placeholder="New tag..."
-                                  onKeyDown={async (e) => {
-                                    if (e.key === "Enter") {
-                                      await tagResponses({
-                                        responseIds: [response._id],
-                                        tags: [e.currentTarget.value],
-                                      });
-                                      toast.success("Tagged response");
-                                    }
-                                  }}
-                                />
-                              </div>
-                            </DropdownMenuSubContent>
-                          </DropdownMenuSub>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive group"
-                            onClick={() => handleBulkDelete()}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2 text-destructive group-hover:text-white" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                {allResponseIds === undefined || responses === undefined ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center">
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : filteredResponses.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center">
+                      <p className="text-[#2B2F36]">No responses found</p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredResponses.map((response: any) => (
+                    <TableRow
+                      key={response._id}
+                      className={`cursor-pointer hover:bg-[#F0F2F5] ${selectedResponses.includes(response._id) ? "bg-[#F0F2F5]" : ""}`}
+                    >
+                      <TableCell
+                        onClick={() => handleSelectResponse(response._id)}
+                      >
+                        <Checkbox
+                          checked={selectedResponses.includes(response._id)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Link
+                          href={`/dashboard/forms/${formId}/responses/${response._id}`}
+                        >
+                          <div>
+                            <div className="font-medium text-[#121316]">
+                              #{response._id.slice(-6)}
+                            </div>
+                            {response.firstAnswer && (
+                              <div className="text-sm text-[#2B2F36]">
+                                {String(response.firstAnswer.value)}
+                              </div>
+                            )}
+                          </div>
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            response.status === "completed"
+                              ? "bg-[#A3E635] text-[#121316] hover:bg-[#A3E635]"
+                              : response.status === "in_progress"
+                                ? "bg-[#F59E0B] text-white hover:bg-[#F59E0B]"
+                                : "bg-[#FCA5A5] text-[#121316] hover:bg-[#FCA5A5]"
+                          }
+                        >
+                          {response.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {response.tags?.map((tag: any) => (
+                            <Badge key={tag} variant="secondary">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 text-[#2B2F36]">
+                          {getDeviceIcon(response.metadata?.browser)}
+                          <span className="text-sm capitalize">
+                            {response.metadata?.browser?.split(" ")[0] ||
+                              "Unknown"}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-[#2B2F36]">
+                        {formatDuration(
+                          response.startedAt,
+                          response.completedAt,
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 text-sm text-[#2B2F36]">
+                          <Calendar className="w-4 h-4 text-[#f59e0b]" />
+                          {formatDate(response.startedAt)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <Link
+                              href={`/dashboard/forms/${formId}/responses/${response._id}`}
+                            >
+                              <DropdownMenuItem className="group">
+                                <Eye className="w-4 h-4 mr-2 group-hover:text-white" />
+                                View Details
+                              </DropdownMenuItem>
+                            </Link>
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger className="group hover:text-white">
+                                <Tag className="w-4 h-4 mr-2 group-hover:text-white" />{" "}
+                                Add Tag
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent>
+                                <div className="p-2">
+                                  <Input
+                                    placeholder="New tag..."
+                                    onKeyDown={async (e) => {
+                                      if (e.key === "Enter") {
+                                        await tagResponses({
+                                          responseIds: [response._id],
+                                          tags: [e.currentTarget.value],
+                                        });
+                                        toast.success("Tagged response");
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive group"
+                              onClick={() => handleBulkDelete()}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2 text-destructive group-hover:text-white" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
 
-            {filteredResponses.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-[#2B2F36]">No responses found</p>
+            {/* Numbered Pagination UI */}
+            {totalItems > 0 && (
+              <div className="flex items-center justify-between mt-4">
+                <div className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <div className="flex items-center gap-1">
+                    {getPageNumbers().map((page, i) => (
+                      page === "..." ? (
+                        <span key={`ellipsis-${i}`} className="px-2 text-muted-foreground">...</span>
+                      ) : (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(Number(page))}
+                          className={currentPage === page ? "bg-[#F56A4D] hover:bg-[#E55A3D]" : ""}
+                        >
+                          {page}
+                        </Button>
+                      )
+                    ))}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+
+                  <Select
+                    value={pageSize.toString()}
+                    onValueChange={(val) => {
+                      setPageSize(Number(val));
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-[100px] ml-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5 / page</SelectItem>
+                      <SelectItem value="10">10 / page</SelectItem>
+                      <SelectItem value="20">20 / page</SelectItem>
+                      <SelectItem value="50">50 / page</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )}
           </CardContent>

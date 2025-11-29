@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,9 +49,10 @@ export default function DashboardPage() {
 
   console.log("active ", activeWorkspace?._id);
 
-  const forms = useQuery(
+  const { results: forms, status } = usePaginatedQuery(
     api.forms.getFormsForWorkspace,
-    activeWorkspace?._id ? { workspaceId: activeWorkspace._id } : "skip",
+    { workspaceId: activeWorkspace?._id as Id<"workspaces"> },
+    { initialNumItems: 5 }
   );
   const dashboardStats = useQuery(
     api.forms.getDashboardStats,
@@ -182,7 +183,7 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {forms === undefined && (
+        {status === "LoadingFirstPage" && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 4 }).map((_, i) => (
               <FormCardSkeleton key={i} />
@@ -190,7 +191,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {forms && forms.length === 0 && (
+        {status !== "LoadingFirstPage" && forms && forms.length === 0 && (
           <div className="border-2 border-dashed border-border rounded-lg p-12 text-center">
             <h3 className="text-lg font-semibold">No forms yet</h3>
             <p className="text-sm text-muted-foreground mb-4">
@@ -204,7 +205,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {forms && forms.length > 0 && (
+        {status !== "LoadingFirstPage" && forms && forms.length > 0 && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {forms.slice(0, 2).map((form) => (
               <Card

@@ -1,4 +1,5 @@
 import { ConvexError, v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 import { internalQuery, mutation, query } from "./_generated/server";
 import { api } from "./_generated/api";
 import { assertAdmin, assertEditor, assertViewer } from "./auth_helpers";
@@ -10,32 +11,33 @@ export const getFormsForWorkspace = query({
     status: v.optional(
       v.union(v.literal("published"), v.literal("draft"), v.literal("closed")),
     ),
+    paginationOpts: paginationOptsValidator,
   },
-  handler: async (ctx, { workspaceId, searchQuery, status }) => {
+  handler: async (ctx, { workspaceId, searchQuery, status, paginationOpts }) => {
     await assertViewer(ctx, workspaceId);
 
-    let forms;
+    let formsQuery;
 
     if (searchQuery) {
-      forms = await ctx.db
+      formsQuery = ctx.db
         .query("forms")
         .withSearchIndex("by_title", (q) => q.search("title", searchQuery))
-        .filter((q) => q.eq(q.field("workspaceId"), workspaceId))
-        .collect();
+        .filter((q) => q.eq(q.field("workspaceId"), workspaceId));
     } else {
-      forms = await ctx.db
+      formsQuery = ctx.db
         .query("forms")
         .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-        .order("desc")
-        .collect();
+        .order("desc");
     }
 
     if (status) {
-      forms = forms.filter((form) => form.status === status);
+      formsQuery = formsQuery.filter((q) => q.eq(q.field("status"), status));
     }
 
-    const formsWithResponseCount = await Promise.all(
-      forms.map(async (form) => {
+    const forms = await formsQuery.paginate(paginationOpts);
+
+    const pageWithResponseCount = await Promise.all(
+      forms.page.map(async (form) => {
         const responses = await ctx.db
           .query("responses")
           .withIndex("by_form", (q) => q.eq("formId", form._id))
@@ -47,7 +49,10 @@ export const getFormsForWorkspace = query({
       }),
     );
 
-    return formsWithResponseCount;
+    return {
+      ...forms,
+      page: pageWithResponseCount,
+    };
   },
 });
 
@@ -69,22 +74,6 @@ export const getResponsesPageData = query({
       .order("asc")
       .collect();
 
-    const responses = await ctx.db
-      .query("responses")
-      .withIndex("by_form", (q) => q.eq("formId", form._id))
-      .order("desc")
-      .collect();
-
-    const responsesWithAnswers = await Promise.all(
-      responses.map(async (response) => {
-        const firstAnswer = await ctx.db
-          .query("answers")
-          .withIndex("by_response", (q) => q.eq("responseId", response._id))
-          .first();
-        return { ...response, firstAnswer: firstAnswer || null };
-      }),
-    );
-
     const analytics = await ctx.runQuery(api.responses.getFormAnalytics, {
       formId: args.formId,
     });
@@ -92,9 +81,58 @@ export const getResponsesPageData = query({
     return {
       form,
       questions,
-      responses: responsesWithAnswers,
       analytics,
     };
+  },
+});
+
+export const getResponseIds = query({
+  args: {
+    formId: v.id("forms"),
+    status: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const form = await ctx.db.get(args.formId);
+    if (!form) return [];
+    if (!form.workspaceId) return [];
+    await assertViewer(ctx, form.workspaceId);
+
+    let responsesQuery = ctx.db
+      .query("responses")
+      .withIndex("by_form", (q) => q.eq("formId", args.formId))
+      .order("desc");
+
+    if (args.status && args.status !== "all") {
+      responsesQuery = responsesQuery.filter((q) =>
+        q.eq(q.field("status"), args.status),
+      );
+    }
+
+    const responses = await responsesQuery.collect();
+    return responses.map((r) => r._id);
+  },
+});
+
+export const getResponsesByIds = query({
+  args: {
+    responseIds: v.array(v.id("responses")),
+  },
+  handler: async (ctx, args) => {
+    const responses = await Promise.all(
+      args.responseIds.map(async (id) => {
+        const response = await ctx.db.get(id);
+        if (!response) return null;
+        
+        const firstAnswer = await ctx.db
+          .query("answers")
+          .withIndex("by_response", (q) => q.eq("responseId", response._id))
+          .first();
+          
+        return { ...response, firstAnswer: firstAnswer || null };
+      }),
+    );
+    
+    return responses.filter((r) => r !== null);
   },
 });
 

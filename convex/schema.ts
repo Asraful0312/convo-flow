@@ -70,6 +70,14 @@ export default defineSchema({
     stripePriceId: v.optional(v.string()),
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
+    notifications: v.optional(
+      v.object({
+        emailOnResponse: v.optional(v.boolean()),
+        weeklySummary: v.optional(v.boolean()),
+        productUpdates: v.optional(v.boolean()),
+        marketingEmails: v.optional(v.boolean()),
+      }),
+    ),
   })
     .index("email", ["email"])
     .index("by_stripe_customer_id", ["stripeCustomerId"])
