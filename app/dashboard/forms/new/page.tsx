@@ -151,6 +151,8 @@ export default function NewFormPage() {
     }
   };
 
+  console.log("generatedForm", generatedForm);
+
   const handleRefine = async (refinement: string) => {
     if (!refinement.trim() || !generatedForm) return;
     setIsGenerating(true);

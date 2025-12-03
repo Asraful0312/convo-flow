@@ -101,6 +101,8 @@ export default defineSchema({
         v.object({
           primaryColor: v.optional(v.string()),
           secondaryColor: v.optional(v.string()),
+          backgroundColor: v.optional(v.string()),
+          font: v.optional(v.string()),
           logoUrl: v.optional(v.string()),
           fontFamily: v.optional(v.string()),
           customCss: v.optional(v.string()),

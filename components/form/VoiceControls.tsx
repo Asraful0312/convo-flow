@@ -25,6 +25,7 @@ export default function VoiceControls({
       disabled={disabled}
       className={`h-10 w-10 p-0 rounded-full transition-all ${isRecording ? "text-white" : "hover:bg-gray-100 hover:text-black"}`}
       style={isRecording ? { backgroundColor: primaryColor } : {}}
+      aria-label={isRecording ? "Stop recording" : "Start recording"}
     >
       {isRecording ? (
         <div className="relative">

@@ -18,7 +18,9 @@ import {
 } from "./ui/select";
 import { Switch } from "./ui/switch";
 import { Textarea } from "./ui/textarea";
-import { ImageChoiceOption } from "@/lib/types";
+import { ImageChoiceOption } from "@/lib/form-types";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { cn } from "@/lib/utils";
 
 const QUESTION_TYPE_MAP: Record<string, string> = {
   "Short Text": "text",
@@ -38,7 +40,7 @@ const QUESTION_TYPE_MAP: Record<string, string> = {
   "Image Choice": "image_choice",
   Dropdown: "dropdown",
   "Rating (1–5)": "rating",
-  "Scale (1–10)": "scale",
+  "Scale": "scale",
   "File Upload": "file",
 };
 
@@ -59,6 +61,8 @@ export default function SortableQuestion({
     transition,
     isDragging,
   } = useSortable({ id: question._id });
+
+  console.log("question", question);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -240,6 +244,113 @@ export default function SortableQuestion({
                   onBlur={() => onUpdate(question._id, { options: localOptions })}
                 />
               </div>
+            )}
+            {question.type === "scale" && (
+              <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Minimum Value</Label>
+                  <Input
+                    type="number"
+                    value={question.validation?.min ?? 1}
+                    onChange={(e) =>
+                      onUpdate(question._id, {
+                        validation: {
+                          ...question.validation,
+                          min: parseInt(e.target.value) || 0,
+                        },
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Maximum Value</Label>
+                  <Input
+                    type="number"
+                    value={question.validation?.max ?? 10}
+                    onChange={(e) =>
+                      onUpdate(question._id, {
+                        validation: {
+                          ...question.validation,
+                          max: parseInt(e.target.value) || 10,
+                        },
+                      })
+                    }
+                  />
+                </div>
+              </div>
+              
+              {/* Visual Preview of the Scale */}
+              <div className="mt-4 pt-4 border-t">
+                <Label className="text-xs text-muted-foreground mb-3 block">Preview</Label>
+                {(() => {
+                  const min = question.validation?.min ?? 1;
+                  const max = question.validation?.max ?? 10;
+                  const range = max - min + 1;
+
+                  if (range <= 10) {
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs text-muted-foreground px-2 font-medium">
+                          <span>{min} (Lowest)</span>
+                          <span>{max} (Highest)</span>
+                        </div>
+                        <div className="overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide">
+                          <RadioGroup
+                            disabled
+                            className="flex gap-2 sm:justify-between min-w-max sm:min-w-0"
+                          >
+                            {Array.from({ length: range }).map((_, i) => {
+                              const v = min + i;
+                              return (
+                                <div key={v} className="flex flex-col items-center gap-1">
+                                  <RadioGroupItem
+                                    value={v.toString()}
+                                    id={`preview-${question._id}-${v}`}
+                                    className="peer sr-only"
+                                  />
+                                  <Label
+                                    htmlFor={`preview-${question._id}-${v}`}
+                                    className={cn(
+                                      "w-10 h-10 rounded-xl flex items-center justify-center border-2 border-transparent font-medium text-sm",
+                                      "bg-muted text-muted-foreground opacity-50"
+                                    )}
+                                  >
+                                    {v}
+                                  </Label>
+                                </div>
+                              );
+                            })}
+                          </RadioGroup>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="px-2">
+                        <div className="flex justify-between text-xs text-muted-foreground mb-2 font-medium">
+                          <span>{min}</span>
+                          <span>{max}</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="range"
+                            min={min}
+                            max={max}
+                            step={1}
+                            disabled
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-not-allowed"
+                          />
+                          <div className="w-12 h-12 rounded-xl flex items-center justify-center font-bold shadow-md bg-muted text-muted-foreground">
+                            {min}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+              </>
             )}
           </div>
         </div>

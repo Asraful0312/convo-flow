@@ -81,7 +81,7 @@ const itemVariants = {
 };
 
 export default function AnalyticsPage() {
-  const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y">("7d");
+  const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y" | "all">("7d");
   const user = useQuery(api.auth.loggedInUser);
   const analytics = useQuery(api.analytics.getAnalytics, {
     timeRange,
@@ -106,9 +106,10 @@ export default function AnalyticsPage() {
     responseTrend,
     completionRates,
     deviceBreakdown,
-    geographicData,
-    aiInsights,
-  } = analytics;
+  } = analytics || {};
+
+  const geographicData = analytics?.geographicData || [];
+  const aiInsights = analytics?.aiInsights || [];
 
   const totalGeoResponses = geographicData.reduce(
     (acc, curr) => acc + curr.responses,
@@ -134,6 +135,7 @@ export default function AnalyticsPage() {
             <SelectItem value="30d">Last 30 days</SelectItem>
             <SelectItem value="90d">Last 90 days</SelectItem>
             <SelectItem value="1y">Last year</SelectItem>
+            <SelectItem value="all">All time</SelectItem>
           </SelectContent>
         </Select>
       </div>

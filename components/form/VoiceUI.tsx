@@ -35,24 +35,24 @@ export default function VoiceUI({
     if (isProcessing)
       return {
         icon: <Check className="w-5 h-5" />,
-        text: "Answer submitted...",
+        text: "Got it!",
       };
     if (isSpeaking)
       return {
         icon: <Bot className="w-5 h-5" />,
-        text: "Candid is speaking...",
+        text: "Speaking...",
       };
     if (isRecording)
       return {
         icon: <Volume2 className="w-5 h-5" />,
-        text: "Listening...",
+        text: "I'm listening...",
       };
     if (isTyping)
       return {
         icon: null,
         text: <TypingIndicator primaryColor={primaryColor} />,
       };
-    return { icon: null, text: "Tap the blob to speak" };
+    return { icon: null, text: "Tap to speak" };
   };
 
   const { icon, text } = getStatus();

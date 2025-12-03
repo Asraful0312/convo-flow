@@ -259,7 +259,8 @@ export const getFormAnalytics = query({
     ).length;
     const abandoned = responses.filter((r) => r.status === "abandoned").length;
 
-    const completionRate = total > 0 ? (completed / total) * 100 : 0;
+    const rawCompletionRate = total > 0 ? (completed / total) * 100 : 0;
+    const completionRate = Math.min(100, rawCompletionRate);
 
     // Calculate average completion time
     const completedResponses = responses.filter((r) => r.completedAt);

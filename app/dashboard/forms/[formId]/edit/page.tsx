@@ -44,6 +44,8 @@ import {
 import SortableQuestion from "@/components/sortable-questions";
 import { ConvexError } from "convex/values";
 import NotionMapping from "@/components/form/notion-mapping";
+import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useDebounce } from "use-debounce";
 
 export default function EditFormPage({
   params,
@@ -54,12 +56,34 @@ export default function EditFormPage({
   const form = useQuery(api.forms.getSingleForm, { formId: formId });
   const user = useQuery(api.auth.loggedInUser);
   const [isSaving, setIsSaving] = useState(false);
-  const [status, setStatus] = useState<"draft" | "published" | "closed">(
-    "draft",
-  );
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+
+  // Local Storage State for Backup
+  const [localState, setLocalState] = useLocalStorage(`candid-form-edit-${formId}`, {
+    title: "",
+    description: "",
+    status: "draft",
+    primaryColor: "#6366f1",
+    secondaryColor: "#2EB7A7",
+    backgroundColor: "#ffffff",
+    font: "Inter",
+    logoUrl: "",
+    emailOnResponse: false,
+    notificationEmail: "",
+    personality: "professional",
+    voiceEnabled: false,
+    allowSaveAndResume: false,
+    updatedAt: 0,
+  });
+
+  // Form State
+  const [status, setStatus] = useState<"draft" | "published" | "closed">("draft");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#6366f1");
+  const [secondaryColor, setSecondaryColor] = useState("#2EB7A7");
+  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
+  const [font, setFont] = useState("Inter");
   const [logoUrl, setLogoUrl] = useState("");
   const [emailOnResponse, setEmailOnResponse] = useState(false);
   const [notificationEmail, setNotificationEmail] = useState("");
@@ -69,7 +93,31 @@ export default function EditFormPage({
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [allowSaveAndResume, setAllowSaveAndResume] = useState(false);
 
+  // Debounced values for autosave
+  const [debouncedTitle] = useDebounce(title, 1000);
+  const [debouncedDescription] = useDebounce(description, 1000);
+  
+  // Memoize the settings object to prevent useDebounce from triggering on every render
+  const settingsObject = {
+    status,
+    primaryColor,
+    secondaryColor,
+    backgroundColor,
+    font,
+    logoUrl,
+    emailOnResponse,
+    notificationEmail,
+    personality,
+    voiceEnabled,
+    allowSaveAndResume
+  };
+  
+  const [debouncedSettings] = useDebounce(settingsObject, 1000, {
+    equalityFn: (prev, next) => JSON.stringify(prev) === JSON.stringify(next)
+  });
+
   const questionsContainerRef = useRef<HTMLDivElement>(null);
+  const isInitialMount = useRef(true);
 
   // Questions with sorting and optimistic state
   const rawQuestions =
@@ -89,18 +137,101 @@ export default function EditFormPage({
   const deleteQ = useMutation(api.questions.deleteQuestion);
   const reorderQ = useMutation(api.questions.reorderQuestions);
 
+  // Sync to Local Storage
+  useEffect(() => {
+    if (form) {
+      setLocalState({
+        title,
+        description,
+        status: status as any,
+        primaryColor,
+        secondaryColor,
+        backgroundColor,
+        font,
+        logoUrl,
+        emailOnResponse,
+        notificationEmail,
+        personality,
+        voiceEnabled,
+        allowSaveAndResume,
+        updatedAt: Date.now(),
+      });
+    }
+  }, [title, description, status, primaryColor, secondaryColor, backgroundColor, font, logoUrl, emailOnResponse, notificationEmail, personality, voiceEnabled, allowSaveAndResume, form]);
+
+  // Autosave Effect
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (!form) return;
+
+    const hasChanges = 
+      title !== (form.title ?? "") ||
+      description !== (form.description ?? "") ||
+      status !== (form.status ?? "draft") ||
+      primaryColor !== (form.settings?.branding?.primaryColor ?? "#6366f1") ||
+      secondaryColor !== (form.settings?.branding?.secondaryColor ?? "#2EB7A7") ||
+      backgroundColor !== (form.settings?.branding?.backgroundColor ?? "#ffffff") ||
+      font !== (form.settings?.branding?.font ?? "Inter") ||
+      logoUrl !== (form.settings?.branding?.logoUrl ?? "") ||
+      emailOnResponse !== (form.settings?.notifications?.emailOnResponse ?? false) ||
+      notificationEmail !== (form.settings?.notifications?.notificationEmail ?? "") ||
+      personality !== (form.aiConfig?.personality ?? "professional") ||
+      voiceEnabled !== (form.aiConfig?.enableVoice ?? false) ||
+      allowSaveAndResume !== (form.settings?.allowSaveAndResume ?? false);
+
+    if (hasChanges) {
+      handleSaveSettings(true);
+    }
+  }, [debouncedTitle, debouncedDescription, debouncedSettings]);
+
+  // Initialize from Form Data or Local Storage
   useEffect(() => {
     if (!form) return;
-    setTitle(form.title ?? "");
-    setDescription(form.description ?? "");
-    setStatus(form.status ?? "draft");
-    setPrimaryColor(form.settings?.branding?.primaryColor ?? "#6366f1");
-    setLogoUrl(form.settings?.branding?.logoUrl ?? "");
-    setEmailOnResponse(form.settings?.notifications?.emailOnResponse ?? false);
-    setNotificationEmail(form.settings?.notifications?.notificationEmail ?? "");
-    setPersonality(form.aiConfig?.personality ?? "professional");
-    setVoiceEnabled(form.aiConfig?.enableVoice ?? false);
-    setAllowSaveAndResume(form.settings?.allowSaveAndResume ?? false);
+
+    // Check if local storage has newer data
+    if (localState.updatedAt > (form.updatedAt || 0) && localState.title) {
+       toast("We found unsaved changes from a previous session.", {
+         action: {
+           label: "Restore",
+           onClick: () => {
+             setTitle(localState.title);
+             setDescription(localState.description);
+             setStatus(localState.status as any);
+             setPrimaryColor(localState.primaryColor);
+             setSecondaryColor(localState.secondaryColor);
+             setBackgroundColor(localState.backgroundColor);
+             setFont(localState.font);
+             setLogoUrl(localState.logoUrl);
+             setEmailOnResponse(localState.emailOnResponse);
+             setNotificationEmail(localState.notificationEmail);
+             setPersonality(localState.personality as any);
+             setVoiceEnabled(localState.voiceEnabled);
+             setAllowSaveAndResume(localState.allowSaveAndResume);
+             toast.success("Restored from local backup");
+           }
+         },
+         duration: 10000, // Give them time to see it
+       });
+    } else {
+      // Only sync from DB if we didn't restore (or if local isn't newer)
+      setTitle(form.title ?? "");
+      setDescription(form.description ?? "");
+      setStatus(form.status ?? "draft");
+      setPrimaryColor(form.settings?.branding?.primaryColor ?? "#6366f1");
+      setSecondaryColor(form.settings?.branding?.secondaryColor ?? "#2EB7A7");
+      setBackgroundColor(form.settings?.branding?.backgroundColor ?? "#ffffff");
+      setFont(form.settings?.branding?.font ?? "Inter");
+      setLogoUrl(form.settings?.branding?.logoUrl ?? "");
+      setEmailOnResponse(form.settings?.notifications?.emailOnResponse ?? false);
+      setNotificationEmail(form.settings?.notifications?.notificationEmail ?? "");
+      setPersonality(form.aiConfig?.personality ?? "professional");
+      setVoiceEnabled(form.aiConfig?.enableVoice ?? false);
+      setAllowSaveAndResume(form.settings?.allowSaveAndResume ?? false);
+    }
   }, [form]);
 
   useEffect(() => {
@@ -112,52 +243,37 @@ export default function EditFormPage({
     }
   }, [optimisticQuestions.length]);
 
-  const handleSaveSettings = async () => {
+  const handleSaveSettings = async (isAutosave = false) => {
     if (emailOnResponse && !notificationEmail.trim()) {
-      toast.error(
-        "A notification email must be provided if email on response is enabled.",
-      );
+      if (!isAutosave) toast.error("A notification email must be provided.");
       return;
     }
+    
     setIsSaving(true);
     try {
       const payload: any = {
         formId,
+        title,
+        description,
+        status,
+        emailOnResponse,
+        notificationEmail,
+        personality,
+        voiceEnabled,
+        allowSaveAndResume,
+        primaryColor,
+        secondaryColor,
+        backgroundColor,
+        font,
+        logoUrl
       };
 
-      if (title !== form?.title) payload.title = title;
-      if (description !== form?.description) payload.description = description;
-      if (status !== form?.status) payload.status = status;
-
-      if (emailOnResponse !== form?.settings?.notifications?.emailOnResponse)
-        payload.emailOnResponse = emailOnResponse;
-
-      if (
-        notificationEmail !== form?.settings?.notifications?.notificationEmail
-      )
-        payload.notificationEmail = notificationEmail;
-
-      if (personality !== form?.aiConfig?.personality)
-        payload.personality = personality;
-
-      if (voiceEnabled !== form?.aiConfig?.enableVoice)
-        payload.voiceEnabled = voiceEnabled;
-
-      if (allowSaveAndResume !== form?.settings?.allowSaveAndResume)
-        payload.allowSaveAndResume = allowSaveAndResume;
-
-      if (primaryColor !== form?.settings?.branding?.primaryColor)
-        payload.primaryColor = primaryColor;
-
-      if (logoUrl !== form?.settings?.branding?.logoUrl)
-        payload.logoUrl = logoUrl;
-
       await updateSettings(payload);
-      toast.success("Settings saved");
+      setLastSavedAt(new Date());
+      if (!isAutosave) toast.success("Settings saved");
     } catch (err) {
-      const errorMessage =
-        err instanceof ConvexError ? err.data : "Unexpected error occurred";
-      toast.error(errorMessage);
+      console.error(err);
+      if (!isAutosave) toast.error("Failed to save");
     } finally {
       setIsSaving(false);
     }
@@ -248,10 +364,21 @@ export default function EditFormPage({
               Preview
             </Button>
           </Link>
-          <Button
-            onClick={handleSaveSettings}
-            className="bg-[#F56A4D] hover:bg-[#F56A4D]/90 gap-2"
-          >
+          
+            <div className="flex items-center gap-2 text-sm text-muted-foreground mr-4">
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Saving...
+                </>
+              ) : lastSavedAt ? (
+                <span>Saved {lastSavedAt.toLocaleTimeString()}</span>
+              ) : null}
+            </div>
+            <Button
+              onClick={() => handleSaveSettings(false)}
+              className="bg-[#F56A4D] hover:bg-[#F56A4D]/90 gap-2"
+            >
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -474,6 +601,55 @@ export default function EditFormPage({
                 </div>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="secondary-color">Secondary Color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="secondary-color"
+                    type="color"
+                    value={secondaryColor}
+                    onChange={(e) => setSecondaryColor(e.target.value)}
+                    className="w-20 h-10"
+                  />
+                  <Input
+                    value={secondaryColor}
+                    onChange={(e) => setSecondaryColor(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="background-color">Background Color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="background-color"
+                    type="color"
+                    value={backgroundColor}
+                    onChange={(e) => setBackgroundColor(e.target.value)}
+                    className="w-20 h-10"
+                  />
+                  <Input
+                    value={backgroundColor}
+                    onChange={(e) => setBackgroundColor(e.target.value)}
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="font">Font Family</Label>
+                <Select value={font} onValueChange={setFont}>
+                  <SelectTrigger id="font">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Inter">Inter (Sans-serif)</SelectItem>
+                    <SelectItem value="Roboto">Roboto</SelectItem>
+                    <SelectItem value="Open Sans">Open Sans</SelectItem>
+                    <SelectItem value="Lato">Lato</SelectItem>
+                    <SelectItem value="Montserrat">Montserrat</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="logo">Logo URL</Label>
                 <Input
                   id="logo"
@@ -501,7 +677,7 @@ export default function EditFormPage({
       </Tabs>
       <div className="flex justify-end">
         <Button
-          onClick={handleSaveSettings}
+          onClick={() => handleSaveSettings(false)}
           className="bg-[#F56A4D] hover:bg-[#F56A4D]/90 gap-2"
         >
           {isSaving ? (

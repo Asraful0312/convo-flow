@@ -73,6 +73,52 @@ export default function FormSubmissionComponent({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoSubmit, setAutoSubmit] = useState(true);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+  const [pendingFile, setPendingFile] = useState<{
+    fileName: string;
+    fileSize: number;
+    storageId: string;
+  } | null>(null);
+  const [locationData, setLocationData] = useState<{
+    country?: string;
+    city?: string;
+    region?: string;
+  } | null>(null);
+
+  // Autosave hook
+  const useLocalStorage = (key: string, initialValue: any) => {
+    const [storedValue, setStoredValue] = useState(() => {
+      if (typeof window === "undefined") {
+        return initialValue;
+      }
+      try {
+        const item = window.localStorage.getItem(key);
+        return item ? JSON.parse(item) : initialValue;
+      } catch (error) {
+        console.log(error);
+        return initialValue;
+      }
+    });
+
+    const setValue = (value: any) => {
+      try {
+        const valueToStore =
+          value instanceof Function ? value(storedValue) : value;
+        setStoredValue(valueToStore);
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    return [storedValue, setValue];
+  };
+
+  const [savedState, setSavedState] = useLocalStorage(
+    `candid-form-${formId}`,
+    null,
+  );
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -88,6 +134,37 @@ export default function FormSubmissionComponent({
 
   const primaryColor = form?.settings.branding?.primaryColor || "#F56A4D";
   const secondaryColor = form?.settings.branding?.secondaryColor || "#2EB7A7";
+  const backgroundColor = form?.settings.branding?.backgroundColor || "#ffffff";
+  const font = form?.settings.branding?.font || "Inter";
+
+  console.log("THEME DEBUG:", { primaryColor, secondaryColor, backgroundColor, font, settings: form?.settings });
+
+  useEffect(() => {
+    if (primaryColor) {
+      document.documentElement.style.setProperty("--candid-coral", primaryColor);
+      document.documentElement.style.setProperty("--primary", primaryColor);
+      document.documentElement.style.setProperty("--color-primary", primaryColor);
+      document.documentElement.style.setProperty("--primary-foreground", "#ffffff");
+      document.documentElement.style.setProperty("--ring", primaryColor);
+      document.documentElement.style.setProperty("--color-ring", primaryColor);
+    }
+    if (secondaryColor) {
+      document.documentElement.style.setProperty("--secondary", secondaryColor);
+      document.documentElement.style.setProperty("--color-secondary", secondaryColor);
+    }
+    if (backgroundColor) {
+      document.documentElement.style.setProperty("--background", backgroundColor);
+      document.documentElement.style.setProperty("--color-background", backgroundColor);
+    }
+    if (font) {
+      document.documentElement.style.setProperty("--font-sans", font);
+      const link = document.createElement("link");
+      link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/ /g, "+")}:wght@400;500;700&display=swap`;
+      link.rel = "stylesheet";
+      document.head.appendChild(link);
+      document.body.style.fontFamily = `"${font}", sans-serif`;
+    }
+  }, [primaryColor, secondaryColor, backgroundColor, font]);
   const animationFrameRef = useRef<number | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -96,7 +173,127 @@ export default function FormSubmissionComponent({
   const askingRef = useRef(false);
 
   const messagesRef = useRef<Message[]>([]);
+  const handleSubmitAnswerRef = useRef<any>(null);
+
   const isResuming = useRef(false);
+
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    setIsOffline(!navigator.onLine);
+
+    // Fetch location
+    const fetchLocation = async () => {
+      try {
+        const res = await fetch("https://ipapi.co/json/");
+        const data = await res.json();
+        if (data.country_name) {
+          setLocationData({
+            country: data.country_name,
+            city: data.city,
+            region: data.region,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch location:", error);
+      }
+    };
+    fetchLocation();
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  // Backfill location if it arrives after response creation
+  useEffect(() => {
+    if (locationData && responseId) {
+      updateResponse({
+        responseId,
+        metadata: {
+          device: navigator.userAgent,
+          browser: navigator.userAgent,
+          os: navigator.platform,
+          location: locationData,
+        },
+      }).catch((e) => console.error("Failed to update location:", e));
+    }
+  }, [locationData, responseId]);
+
+  // Autosave effect
+  useEffect(() => {
+    if (!isCompleted && messages.length > 0 && responseId) {
+      setSavedState({
+        messages,
+        responseId,
+        currentQuestionIndex,
+        answers: getAllAnswers(messages),
+        timestamp: Date.now(),
+      });
+    }
+  }, [messages, responseId, currentQuestionIndex, isCompleted]);
+
+  const getAllAnswers = (currentMessages = messages) => {
+    const answers: Record<string, any> = {};
+    currentMessages.forEach((m) => {
+      if (m.role === "user" && m.questionId && m.value !== undefined) {
+        answers[m.questionId] = m.value;
+      }
+    });
+    return answers;
+  };
+
+  const evaluateCondition = (condition: any, answerValue: any) => {
+    if (answerValue === undefined || answerValue === null) return false;
+
+    switch (condition.operator) {
+      case "equals":
+        return answerValue == condition.value;
+      case "not_equals":
+        return answerValue != condition.value;
+      case "contains":
+        return (
+          typeof answerValue === "string" &&
+          answerValue.toLowerCase().includes(condition.value.toLowerCase())
+        );
+      case "greater_than":
+        return Number(answerValue) > Number(condition.value);
+      case "less_than":
+        return Number(answerValue) < Number(condition.value);
+      default:
+        return false;
+    }
+  };
+
+  const shouldShowQuestion = (
+    question: any,
+    allAnswers: Record<string, any>,
+  ) => {
+    if (!question.conditionalLogic || !question.conditionalLogic.enabled) {
+      return true;
+    }
+
+    const { conditions, action } = question.conditionalLogic;
+    if (!conditions || conditions.length === 0) return true;
+
+    // AND logic for now
+    const allConditionsMet = conditions.every((condition: any) => {
+      const answerValue = allAnswers[condition.questionId];
+      return evaluateCondition(condition, answerValue);
+    });
+
+    if (action === "hide" || action === "skip") {
+      return !allConditionsMet;
+    }
+    // action === "show"
+    return allConditionsMet;
+  };
 
   useEffect(() => {
     if (resumeData && questions && !isResuming.current) {
@@ -138,6 +335,15 @@ export default function FormSubmissionComponent({
         }
       }
 
+      // Logic check for resume
+      const currentAnswers = getAllAnswers(conversationMessages);
+      while (
+        nextQuestionIndex < questions.length &&
+        !shouldShowQuestion(questions[nextQuestionIndex], currentAnswers)
+      ) {
+        nextQuestionIndex++;
+      }
+
       if (nextQuestionIndex < questions.length) {
         setCurrentQuestionIndex(nextQuestionIndex);
         if (conversationMessages.length > 0) {
@@ -162,6 +368,7 @@ export default function FormSubmissionComponent({
           device: navigator.userAgent,
           browser: navigator.userAgent,
           os: navigator.platform,
+          location: locationData || undefined,
         },
       });
       setResponseId(newResponseId);
@@ -196,6 +403,45 @@ export default function FormSubmissionComponent({
       return;
     }
 
+    // Check for local save
+    if (savedState && savedState.messages && savedState.messages.length > 0) {
+      const shouldRestore = window.confirm(
+        "We found a saved session. Would you like to restore it?",
+      );
+      if (shouldRestore) {
+        setStarted(true);
+        setResponseId(savedState.responseId);
+        setMessages(savedState.messages);
+        messagesRef.current = savedState.messages;
+        setCurrentQuestionIndex(savedState.currentQuestionIndex);
+        if (savedState.answers) {
+          // Restore user name if available
+          const nameQ = questions.find((q: any) =>
+            q.text.toLowerCase().includes("name"),
+          );
+          if (nameQ && savedState.answers[nameQ._id]) {
+            setUserName(savedState.answers[nameQ._id]);
+          }
+        }
+        // Check if the last message was already asking this question
+        const lastMessage = savedState.messages[savedState.messages.length - 1];
+        const currentQuestion = questions[savedState.currentQuestionIndex];
+        
+        const alreadyAsked = 
+          lastMessage && 
+          lastMessage.role === "assistant" && 
+          lastMessage.questionId === currentQuestion._id;
+
+        if (!alreadyAsked) {
+          // Ask next question after a delay
+          setTimeout(() => {
+            askQuestion(savedState.currentQuestionIndex);
+          }, 500);
+        }
+        return;
+      }
+    }
+
     setStarted(true);
 
     const personality = form.aiConfig?.personality || "friendly";
@@ -211,8 +457,23 @@ export default function FormSubmissionComponent({
     setMessages([welcomeMessage]);
     messagesRef.current = [welcomeMessage];
 
-    setCurrentQuestionIndex(0);
-    askQuestion(0);
+    // Find first visible question
+    let firstIndex = 0;
+    const currentAnswers = getAllAnswers([welcomeMessage]);
+    while (
+      firstIndex < questions.length &&
+      !shouldShowQuestion(questions[firstIndex], currentAnswers)
+    ) {
+      firstIndex++;
+    }
+
+    if (firstIndex >= questions.length) {
+      completeForm();
+      return;
+    }
+
+    setCurrentQuestionIndex(firstIndex);
+    askQuestion(firstIndex);
   };
 
   useEffect(() => {
@@ -269,7 +530,9 @@ export default function FormSubmissionComponent({
                   !isProcessing &&
                   !isSpeakingRef.current
                 ) {
-                  handleSubmitAnswer(currentTranscript);
+                  if (handleSubmitAnswerRef.current) {
+                    handleSubmitAnswerRef.current(currentTranscript);
+                  }
                 }
               }, 1500);
             }
@@ -351,13 +614,25 @@ export default function FormSubmissionComponent({
 
   const getWelcomeMessage = (personality: string, formTitle: string) => {
     const messages: Record<string, string> = {
-      professional: `Good day. I'll guide you through the ${formTitle} form. Shall we begin?`,
-      friendly: `Hi! I'm here to help with the ${formTitle}. Ready to get started?`,
+      professional: `Hello. I will guide you through the ${formTitle}. Shall we begin?`,
+      friendly: `Hi there! I'm here to help you with the ${formTitle}. Ready to jump in?`,
       casual: `Hey! Let's breeze through this ${formTitle} together. You ready?`,
       formal: `Greetings. I will assist you in completing the ${formTitle}. May we proceed?`,
     };
     return messages[personality] || messages.friendly;
   };
+
+// ... (skip to completion messages)
+
+        const completionMessages: Record<string, string> = {
+          professional:
+            "Submission received. Thank you for your detailed responses.",
+          friendly:
+            "All done! You're a star. Thanks for your time!",
+          casual: "Done! Thanks for the chat. Catch you later!",
+          formal:
+            "Your submission has been successfully recorded. Thank you for your participation.",
+        };
 
   const isTextBasedQuestion = (type: string) => {
     const nonTextTypes = [
@@ -382,6 +657,7 @@ export default function FormSubmissionComponent({
 
     const question = questions[index];
     setMultipleChoiceAnswers([]);
+    setPendingFile(null);
     setIsTyping(true);
     setIsProcessing(false);
 
@@ -447,7 +723,7 @@ export default function FormSubmissionComponent({
 
       const { storageId } = await result.json();
 
-      await handleSubmitAnswer({
+      setPendingFile({
         storageId,
         fileName: file.name,
         fileSize: file.size,
@@ -457,6 +733,16 @@ export default function FormSubmissionComponent({
       toast.error("File upload failed. Please try again.");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setPendingFile(null);
+  };
+
+  const handleSubmitFile = () => {
+    if (pendingFile) {
+      handleSubmitAnswer(pendingFile);
     }
   };
 
@@ -598,14 +884,15 @@ export default function FormSubmissionComponent({
       const validation = await validateAnswer({
         question: currentQuestion.text,
         answer: answer,
-        personality: form?.aiConfig?.personality || "friendly",
+        rules: currentQuestion.validation,
       });
 
-      if (validation && !validation.isValid) {
+      if (!validation.isValid) {
+        setIsProcessing(false);
         const errorMessage: Message = {
-          id: `err-${Date.now()}`,
+          id: `error-${Date.now()}`,
           role: "assistant",
-          content: validation.reason,
+          content: validation.errorMessage || "Please provide a valid answer.",
           timestamp: Date.now(),
         };
         setMessages((prev) => {
@@ -613,134 +900,195 @@ export default function FormSubmissionComponent({
           messagesRef.current = newMessages;
           return newMessages;
         });
-        setIsProcessing(false);
-        inputRef.current?.focus();
+        speakText(errorMessage.content);
         return;
       }
     }
 
-    try {
-      let currentResponseId = responseId;
+    // Optimistic update
+    const userMessage: Message = {
+      id: `a-${currentQuestion._id}`,
+      role: "user",
+      content:
+        typeof answer === "string"
+          ? (answer === "" ? "Skipped" : answer)
+          : Array.isArray(answer)
+            ? answer.join(", ")
+            : typeof answer === "object" && "fileName" in answer
+              ? `Uploaded ${answer.fileName}`
+              : typeof answer === "object" && "imageUrl" in answer
+                ? `Selected ${answer.text}`
+                : JSON.stringify(answer),
+      timestamp: Date.now(),
+      questionId: currentQuestion._id,
+      value: answer,
+    };
 
-      if (!currentResponseId) {
+    const newMessages = [...messagesRef.current, userMessage];
+    setMessages(newMessages);
+    messagesRef.current = newMessages;
+    setInputValue("");
+
+    // Ensure we have a response ID
+    let currentResponseId = responseId;
+    if (!currentResponseId) {
+      try {
         const newResponseId = await createResponse({
           formId: formId as Id<"forms">,
           metadata: {
             device: navigator.userAgent,
             browser: navigator.userAgent,
             os: navigator.platform,
+            location: locationData || undefined,
           },
         });
         setResponseId(newResponseId);
         currentResponseId = newResponseId;
+      } catch (error) {
+        console.error("Failed to create response:", error);
+        toast.error("Failed to start response. Please try again.");
+        setIsProcessing(false);
+        return;
       }
+    }
 
-      if (!currentResponseId) {
-        throw new Error("Failed to create or find response ID");
-      }
-
-      let answerValue: any = answer;
-      let fileDetails: { fileName?: string; fileSize?: number } = {};
-      let displayContent: string;
-      let messageValue: any = undefined;
-
-      if (typeof answer === "object" && "storageId" in answer) {
-        answerValue = answer.storageId;
-        fileDetails = { fileName: answer.fileName, fileSize: answer.fileSize };
-        displayContent = answer.fileName;
-      } else if (currentQuestion.type === "image_choice") {
-        if (typeof answer === "string") {
-          const option = currentQuestion.options?.find(
-            (opt: any) => typeof opt === "object" && opt.text === answer,
-          );
-          answerValue = option || answer;
-          displayContent = answer;
-          messageValue = option;
-        } else if (
-          typeof answer === "object" &&
-          answer !== null &&
-          (answer as any).imageUrl
-        ) {
-          answerValue = answer;
-          displayContent = (answer as any).text;
-          messageValue = answer;
-        } else {
-          displayContent = "";
-        }
-      } else if (Array.isArray(answer)) {
-        displayContent = answer.join(", ");
-      } else if (answer === "") {
-        displayContent = "Skip this question";
-      } else {
-        displayContent = answer as any;
-      }
-
-      if (
-        currentQuestion.text.toLowerCase().includes("name") &&
-        !currentQuestion.text.toLowerCase().includes("company") &&
-        typeof answer === "string"
-      ) {
-        setUserName(answer);
-      }
-
-      await saveAnswer({
-        responseId: currentResponseId,
-        questionId: currentQuestion._id,
-        value: answerValue,
-        ...fileDetails,
-      });
-
-      if (currentQuestion.type !== "location" || isConfirmed) {
-        const answerMessage: Message = {
-          id: `a-${currentQuestion._id}`,
-          role: "user",
-          content: displayContent,
-          timestamp: Date.now(),
-          questionId: currentQuestion._id,
-          value: messageValue,
-        };
-        const newMessages = [...messagesRef.current, answerMessage];
-        setMessages(newMessages);
-        messagesRef.current = newMessages;
-      }
-
-      if (locationToConfirm) setLocationToConfirm(null);
-
-      const nextIndex = currentQuestionIndex + 1;
-      if (nextIndex >= questions.length) {
-        await completeForm();
-        setCurrentQuestionIndex(nextIndex);
-      } else {
-        setCurrentQuestionIndex(nextIndex);
-        if (!voiceEnabled) {
-          askQuestion(nextIndex, displayContent);
-        } else {
-          setTimeout(() => {
-            askQuestion(nextIndex, displayContent);
-          }, 500);
-        }
-      }
-    } catch (error) {
-      console.error("Error saving answer:", error);
+    if (!currentResponseId) {
+      console.error("No response ID available");
       setIsProcessing(false);
+      return;
+    }
+
+    // Save answer to DB
+    await saveAnswer({
+      responseId: currentResponseId,
+      questionId: currentQuestion._id,
+      value: answer,
+      fileUrl:
+        typeof answer === "object" && "storageId" in answer
+          ? answer.storageId
+          : undefined,
+      fileName:
+        typeof answer === "object" && "fileName" in answer
+          ? answer.fileName
+          : undefined,
+      fileSize:
+        typeof answer === "object" && "fileSize" in answer
+          ? answer.fileSize
+          : undefined,
+    });
+
+    // Save conversation
+    await saveConversation({
+      responseId: currentResponseId,
+      messages: newMessages.map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp,
+        questionId: m.questionId,
+        isAdaptive: m.isAdaptive,
+        value: m.value,
+      })),
+    });
+
+    if (
+      currentQuestion.text.toLowerCase().includes("name") &&
+      !currentQuestion.text.toLowerCase().includes("company") &&
+      typeof answer === "string"
+    ) {
+      setUserName(answer);
+    }
+
+    // Determine next step
+    const allAnswers = getAllAnswers(newMessages);
+    let nextIndex = currentQuestionIndex + 1;
+
+    while (
+      nextIndex < questions!.length &&
+      !shouldShowQuestion(questions![nextIndex], allAnswers)
+    ) {
+      nextIndex++;
+    }
+
+    if (nextIndex < questions!.length) {
+      setCurrentQuestionIndex(nextIndex);
+      
+      // Delay asking the next question slightly to allow state updates to settle
+      // and to give a natural pause
+      if (!voiceEnabled) {
+        askQuestion(nextIndex, userMessage.content);
+      } else {
+        setTimeout(() => {
+          askQuestion(nextIndex, userMessage.content);
+        }, 500);
+      }
+    } else {
+      completeForm(currentResponseId);
     }
   };
 
-  const completeForm = async () => {
-    if (!responseId) return;
+    useEffect(() => {
+    handleSubmitAnswerRef.current = handleSubmitAnswer;
+  }, [handleSubmitAnswer]);
+
+
+  const handleBack = () => {
+    // Find the previous question in the history
+    const assistantQuestions = messages.filter(
+      (m) => m.role === "assistant" && m.questionId
+    );
+
+    // We need at least 2 questions to go back (current + previous)
+    if (assistantQuestions.length < 2) return;
+
+    const previousQuestionMessage = assistantQuestions[assistantQuestions.length - 2];
+    const targetIndex = messages.findIndex(m => m.id === previousQuestionMessage.id);
+
+    if (targetIndex === -1) return;
+
+    // Rewind messages to include the previous question, but discard everything after it
+    const newMessages = messages.slice(0, targetIndex + 1);
+    setMessages(newMessages);
+    messagesRef.current = newMessages;
+
+    // Update current question index
+    const previousQuestionIndex = questions!.findIndex(
+      (q: any) => q._id === previousQuestionMessage.questionId
+    );
+
+    if (previousQuestionIndex !== -1) {
+      setCurrentQuestionIndex(previousQuestionIndex);
+      // We don't need to call askQuestion because the message is already there
+      // But we might want to re-focus or reset state
+      setIsTyping(false);
+      setIsProcessing(false);
+      
+      // Optionally speak the question again if voice is enabled
+      // speakText(previousQuestionMessage.content); 
+    }
+  };
+
+  const canGoBack = messages.filter((m) => m.role === "assistant" && m.questionId).length > 1;
+
+  const completeForm = async (idOverride?: Id<"responses">) => {
+    const finalResponseId = idOverride || responseId;
+    if (!finalResponseId) return;
 
     setIsTyping(true);
 
     try {
       await saveConversation({
-        responseId,
+        responseId: finalResponseId,
         messages: messagesRef.current,
       });
       await updateResponse({
-        responseId,
+        responseId: finalResponseId,
         status: "completed",
       });
       setIsCompleted(true);
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(`candid-form-${formId}`);
+      }
     } catch (error) {
       console.error("Error completing form:", error);
       setIsTyping(false);
@@ -844,9 +1192,9 @@ export default function FormSubmissionComponent({
         const personality = form?.aiConfig?.personality || "friendly";
         const completionMessages: Record<string, string> = {
           professional:
-            "Thank you for completing the form. Your responses have been recorded.",
+            "Submission received. Thank you for your detailed responses.",
           friendly:
-            "All set! Thanks for taking the time to fill this out. We'll be in touch soon!",
+            "All done! You're a star. Thanks for your time!",
           casual: "Done! Thanks for the chat. Catch you later!",
           formal:
             "Your submission has been successfully recorded. Thank you for your participation.",
@@ -964,12 +1312,20 @@ export default function FormSubmissionComponent({
   if (!started) return <WelcomeScreen form={form} onStart={handleStart} />;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div
+      className="min-h-screen flex flex-col transition-colors duration-300"
+      style={{ backgroundColor, fontFamily: font }}
+    >
       <SaveResumeModal
         isOpen={isSaveModalOpen}
         onClose={() => setIsSaveModalOpen(false)}
         onSave={handleSaveProgress}
       />
+      {isOffline && (
+        <div className="bg-yellow-500 text-white px-4 py-2 text-center text-sm font-medium">
+          You are currently offline. Your progress is saved locally and will sync when you reconnect.
+        </div>
+      )}
       <FormHeader
         form={form}
         currentQuestionIndex={currentQuestionIndex}
@@ -991,7 +1347,13 @@ export default function FormSubmissionComponent({
       </div>
 
       {!isCompleted && currentQuestion && !isTyping && !isProcessing && (
-        <div className="border-t bg-white/80 backdrop-blur-sm sticky bottom-0">
+        <div
+          className="border-t backdrop-blur-sm sticky bottom-0 transition-colors duration-300"
+          style={{
+            backgroundColor: backgroundColor ? `${backgroundColor}CC` : "rgba(255,255,255,0.8)", // Fallback to hex+alpha if possible, or just rely on valid hex
+            borderTopColor: "rgba(0,0,0,0.05)"
+          }}
+        >
           <div className="container mx-auto px-4 py-6 max-w-3xl">
             {locationToConfirm ? (
               <MapConfirmation
@@ -1041,6 +1403,11 @@ export default function FormSubmissionComponent({
                 primaryColor={primaryColor}
                 onFileChange={handleFileChange}
                 onKeyPress={handleKeyPress}
+                pendingFile={pendingFile}
+                onRemoveFile={handleRemoveFile}
+                onSubmitFile={handleSubmitFile}
+                onBack={handleBack}
+                canGoBack={canGoBack}
               />
             )}
           </div>

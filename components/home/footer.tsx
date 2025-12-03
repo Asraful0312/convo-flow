@@ -37,12 +37,12 @@ export const Footer = () => {
           <div className='flex flex-col gap-1 md:gap-4'>
           <h4 className='uppercase font-display text-md text-neutral/50 font-semibold'>Resources</h4>
           <div className="flex flex-wrap md:flex-col gap-2 text-sm text-neutral items-start ">
-            <Link className='text-neutral/50 whitespace-nowrap font-medium' href="/resources/freebies">Freebies & Audits</Link>
-            <Link className='text-neutral/50 whitespace-nowrap font-medium' href="/resources/tools">Tools</Link>
-            <Link className='text-neutral/50 whitespace-nowrap font-medium' href="/resources/behavior-principles">Psychology</Link>
-            <Link className='pointer-events-none text-neutral/50 whitespace-nowrap font-medium' href="/resources/blog">Blog <span className='inline-flex ml-1 py-0.5 px-3 bg-gray-50 text-xs rounded-xl -rotate-3'>soon</span> </Link>
-            <Link className='pointer-events-none text-neutral/50 whitespace-nowrap font-medium' href="/resources/components">Components <span className='inline-flex ml-1 py-0.5 px-3 bg-gray-50 text-xs rounded-xl -rotate-3'>soon</span> </Link>
-            <Link className='pointer-events-none text-neutral/50 whitespace-nowrap font-medium' href="/resources/playbooks">Playbooks <span className='inline-flex ml-1 py-0.5 px-3 bg-gray-50 text-xs rounded-xl rotate-3'>soon</span></Link>
+            <Link className='text-neutral/50 whitespace-nowrap font-medium' href="/">Freebies & Audits</Link>
+            <Link className='text-neutral/50 whitespace-nowrap font-medium' href="/tools">Tools</Link>
+            <Link className='text-neutral/50 whitespace-nowrap font-medium' href="/behavior-principles">Psychology</Link>
+            <Link className='pointer-events-none text-neutral/50 whitespace-nowrap font-medium' href="/blog">Blog <span className='inline-flex ml-1 py-0.5 px-3 bg-gray-50 text-xs rounded-xl -rotate-3'>soon</span> </Link>
+            <Link className='pointer-events-none text-neutral/50 whitespace-nowrap font-medium' href="/components">Components <span className='inline-flex ml-1 py-0.5 px-3 bg-gray-50 text-xs rounded-xl -rotate-3'>soon</span> </Link>
+            <Link className='pointer-events-none text-neutral/50 whitespace-nowrap font-medium' href="/playbooks">Playbooks <span className='inline-flex ml-1 py-0.5 px-3 bg-gray-50 text-xs rounded-xl rotate-3'>soon</span></Link>
           </div>
           </div>
 

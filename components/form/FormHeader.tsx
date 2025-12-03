@@ -27,12 +27,15 @@ export default function FormHeader({
   allowSaveAndResume,
   onSave,
 }: FormHeaderProps) {
+  const backgroundColor = form.settings.branding?.backgroundColor || "#ffffff";
   const primaryColor = form.settings.branding?.primaryColor || "#F56A4D";
-  const secondaryColor = form.settings.branding?.secondaryColor || "#2EB7A7";
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
-      <div className="absolute inset-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-black/5 dark:border-white/5 shadow-sm" />
+      <div 
+        className="absolute inset-0 backdrop-blur-md border-b border-border shadow-sm transition-colors duration-300"
+        style={{ backgroundColor: backgroundColor ? `${backgroundColor}CC` : "rgba(255,255,255,0.8)" }}
+      />
       <div className="container mx-auto px-4 h-16 flex items-center justify-between relative z-10">
         <div className="flex items-center gap-3 overflow-hidden">
           {form.settings.branding?.logoUrl ? (
@@ -74,14 +77,14 @@ export default function FormHeader({
               size="icon"
               onClick={onToggleVoice}
               className={cn(
-                "h-8 w-8 rounded-full transition-colors group",
-                voiceEnabled ?  "bg-primary/10" : "hover:bg-muted"
+                "h-8 w-8 rounded-full transition-colors ",
+                voiceEnabled ?  "bg-primary/10 hover:text-white group" : "hover:bg-muted"
               )}
             >
               {voiceEnabled ? (
                 <Volume2
-                  className="w-4 h-4 "
-                  style={{ color: primaryColor }}
+                  className="w-4 h-4 group-hover:text-white"
+                  
                 />
               ) : (
                 <VolumeX className="w-4 h-4 text-muted-foreground" />

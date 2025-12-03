@@ -21,6 +21,8 @@ export interface FormData {
       logoUrl?: string;
       primaryColor?: string;
       secondaryColor?: string;
+      backgroundColor?: string;
+      font?: string;
     };
     showProgressBar?: boolean;
   };
@@ -45,4 +47,13 @@ export interface Question {
   options?: (string | ImageChoiceOption)[];
   placeholder?: string;
   required?: boolean;
+  validation?: {
+    required?: boolean;
+    minLength?: number;
+    maxLength?: number;
+    min?: number;
+    max?: number;
+    pattern?: string;
+    errorMessage?: string;
+  };
 }

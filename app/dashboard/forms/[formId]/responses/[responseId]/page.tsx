@@ -266,7 +266,7 @@ export default function ResponseDetailPage({
                 messageContent = (
                   <Button
                     variant="link"
-                    onClick={() => handleFileDownload(answer.value)}
+                    onClick={() => handleFileDownload(answer.value.storageId)}
                     className="p-0 h-auto text-white"
                   >
                     {answer.fileName}

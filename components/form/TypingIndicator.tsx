@@ -16,17 +16,11 @@ export default function TypingIndicator({ primaryColor, logoUrl }: TypingIndicat
           <Sparkles className="w-5 h-5 text-white" />
         </div>
       )}
-      <div className="bg-white border border-gray-200 rounded-xl px-6 py-4 shadow-sm">
-        <div className="flex gap-1.5">
-          {[0, 150, 300].map((delay, i) => (
-            <motion.div
-              key={i}
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: primaryColor }}
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 0.6, repeat: Infinity, delay: delay / 1000, ease: "easeInOut" }}
-            />
-          ))}
+      <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
+        <div className="typing-pulse p-0">
+          <div className="dot" style={{ backgroundColor: primaryColor }} />
+          <div className="dot" style={{ backgroundColor: primaryColor }} />
+          <div className="dot" style={{ backgroundColor: primaryColor }} />
         </div>
       </div>
     </motion.div>

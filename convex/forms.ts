@@ -286,6 +286,7 @@ export const create = mutation({
             ),
           ),
         ),
+        validation: v.optional(v.any()),
       }),
     ),
     settings: v.object({
@@ -293,6 +294,8 @@ export const create = mutation({
         v.object({
           primaryColor: v.optional(v.string()),
           secondaryColor: v.optional(v.string()),
+          backgroundColor: v.optional(v.string()),
+          font: v.optional(v.string()),
           logoUrl: v.optional(v.string()),
           fontFamily: v.optional(v.string()),
           customCss: v.optional(v.string()),
@@ -342,6 +345,8 @@ export const create = mutation({
       }
     }
 
+    console.log("args qusetions", args.questions);
+
     const formId = await ctx.db.insert("forms", {
       workspaceId: args.workspaceId,
       creatorId: userId,
@@ -363,6 +368,7 @@ export const create = mutation({
         type: q.type as any,
         required: q.required,
         options: q.options,
+        validation: q.validation,
       });
     }
 
@@ -398,6 +404,7 @@ export const createFormFromUpload = mutation({
             ),
           ),
         ),
+        validation: v.optional(v.any()),
       }),
     ),
   },
@@ -425,6 +432,7 @@ export const createFormFromUpload = mutation({
         type: q.type as any,
         required: q.required,
         options: q.options,
+        validation: q.validation,
       });
     }
 
@@ -439,6 +447,7 @@ export const createFormFromUpload = mutation({
   },
 });
 
+// Update form settings
 export const updateSettings = mutation({
   args: {
     formId: v.id("forms"),
@@ -448,6 +457,9 @@ export const updateSettings = mutation({
       v.union(v.literal("draft"), v.literal("published"), v.literal("closed")),
     ),
     primaryColor: v.optional(v.string()),
+    secondaryColor: v.optional(v.string()),
+    backgroundColor: v.optional(v.string()),
+    font: v.optional(v.string()),
     logoUrl: v.optional(v.string()),
     // notifications
     emailOnResponse: v.optional(v.boolean()),
@@ -495,7 +507,12 @@ export const updateSettings = mutation({
         const hasCustomBranding =
           (args.logoUrl && args.logoUrl !== form.settings?.branding?.logoUrl) ||
           (args.primaryColor &&
-            args.primaryColor !== form.settings?.branding?.primaryColor);
+            args.primaryColor !== form.settings?.branding?.primaryColor) ||
+          (args.secondaryColor &&
+            args.secondaryColor !== form.settings?.branding?.secondaryColor) ||
+          (args.backgroundColor &&
+            args.backgroundColor !== form.settings?.branding?.backgroundColor) ||
+          (args.font && args.font !== form.settings?.branding?.font);
 
         if (args.primaryColor !== "#f56a4d" && hasCustomBranding) {
           throw new ConvexError(
@@ -543,10 +560,19 @@ export const updateSettings = mutation({
     const updatedSettings = { ...form.settings };
 
     // Update branding
-    if (args.primaryColor !== undefined || args.logoUrl !== undefined) {
+    if (
+      args.primaryColor !== undefined ||
+      args.secondaryColor !== undefined ||
+      args.backgroundColor !== undefined ||
+      args.font !== undefined ||
+      args.logoUrl !== undefined
+    ) {
       updatedSettings.branding = {
         ...(form.settings?.branding ?? {}),
         ...(args.primaryColor && { primaryColor: args.primaryColor }),
+        ...(args.secondaryColor && { secondaryColor: args.secondaryColor }),
+        ...(args.backgroundColor && { backgroundColor: args.backgroundColor }),
+        ...(args.font && { font: args.font }),
         ...(args.logoUrl && { logoUrl: args.logoUrl }),
       };
     }
@@ -728,8 +754,9 @@ export const getDashboardStats = query({
       ).length;
     }
 
-    const avgCompletionRate =
+    const rawAvgCompletionRate =
       totalResponses > 0 ? (totalCompletedResponses / totalResponses) * 100 : 0;
+    const avgCompletionRate = Math.min(100, rawAvgCompletionRate);
 
     return {
       totalForms: forms.length,

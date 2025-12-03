@@ -6,7 +6,7 @@ import { assertViewer } from "./auth_helpers";
 export const getAnalytics = query({
     args: {
         workspaceId: v.id("workspaces"),
-        timeRange: v.union(v.literal("7d"), v.literal("30d"), v.literal("90d"), v.literal("1y")),
+        timeRange: v.union(v.literal("7d"), v.literal("30d"), v.literal("90d"), v.literal("1y"), v.literal("all")),
     },
     handler: async (ctx, { workspaceId, timeRange }) => {
         await assertViewer(ctx, workspaceId);
@@ -19,6 +19,7 @@ export const getAnalytics = query({
             case "30d": startTime.setDate(now.getDate() - 30); break;
             case "90d": startTime.setDate(now.getDate() - 90); break;
             case "1y": startTime.setFullYear(now.getFullYear() - 1); break;
+            case "all": startTime = new Date(0); break;
         }
         const startTimeMs = startTime.getTime();
 
@@ -44,7 +45,8 @@ export const getAnalytics = query({
         // Key Metrics
         const totalResponses = allResponses.length;
         const completedResponses = allResponses.filter(r => r.status === "completed");
-        const avgCompletionRate = totalResponses > 0 ? (completedResponses.length / totalResponses) * 100 : 0;
+        const rawAvgCompletionRate = totalResponses > 0 ? (completedResponses.length / totalResponses) * 100 : 0;
+        const avgCompletionRate = Math.min(100, rawAvgCompletionRate);
         
         const completionTimes = completedResponses
             .map(r => r.completedAt! - r.startedAt)
@@ -68,7 +70,8 @@ export const getAnalytics = query({
         const completionRatesByForm = forms.map(form => {
             const responsesForForm = allResponses.filter(r => r.formId === form._id);
             const completed = responsesForForm.filter(r => r.status === "completed").length;
-            const rate = responsesForForm.length > 0 ? (completed / responsesForForm.length) * 100 : 0;
+            const rawRate = responsesForForm.length > 0 ? (completed / responsesForForm.length) * 100 : 0;
+            const rate = Math.min(100, rawRate);
             return { form: form.title, rate };
         });
 

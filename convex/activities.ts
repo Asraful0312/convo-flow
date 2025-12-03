@@ -2,16 +2,20 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { assertEditor } from "./auth_helpers";
 import { Id } from "./_generated/dataModel";
+import { paginationOptsValidator } from "convex/server";
 
 export const listForWorkspace = query({
-  args: { workspaceId: v.id("workspaces") },
-  handler: async (ctx, { workspaceId }) => {
+  args: { 
+    workspaceId: v.id("workspaces"),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, { workspaceId, paginationOpts }) => {
     await assertEditor(ctx, workspaceId);
     return await ctx.db
       .query("activities")
       .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
       .order("desc")
-      .take(20);
+      .paginate(paginationOpts);
   },
 });
 
@@ -28,7 +32,7 @@ export const logActivity = mutation({
       userId: args.userId,
       action: args.action,
       details: args.details,
-      createdAt: 0,
+      createdAt: Date.now(),
     });
   },
 });

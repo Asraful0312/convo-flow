@@ -33,7 +33,11 @@ You must generate a JSON object with the following structure:
       "text": "The question to ask the user.",
       "type": "question_type",
       "required": true/false,
-      "options": ["Option 1", "Option 2"] // Only for choice-based questions
+      "options": ["Option 1", "Option 2"], // Only for choice-based questions
+      "validation": { // Optional validation rules
+        "min": 1, // For scale/number
+        "max": 10 // For scale/number
+      }
     }
   ]
 }
@@ -52,11 +56,11 @@ CRITICAL INSTRUCTIONS:
     *   \`multiple_choice\`: For multiple-selection questions (checkboxes).
     *   \`dropdown\`: For single-selection from a dropdown list.
     *   \`rating\`: For a 1-5 star rating.
-    *   \`scale\`: For a 1-10 numerical scale.
+    *   \`scale\`: For a numerical scale (e.g., 1-10, 0-100). You MUST set \`validation.min\` and \`validation.max\` based on the user's request. If the user asks for "0 to 100", set min: 0, max: 100. Default is 1-10 only if unspecified.
     *   \`date\`: For a single date picker.
     *   \`date_range\`: For selecting a start and end date.
     *   \`time\`: For a time picker.
-    *   \`file\`: For file uploads.
+    *   \`file\`: For file uploads. CRITICAL: Use this type whenever the user asks for a resume, CV, document, or file attachment.
     *   \`location\`: For picking an address or location on a map.
     *   \`yes_no\`: For a binary yes/no question.
     *   \`image_choice\`: For selecting from a list of images.
@@ -90,9 +94,13 @@ Your JSON Output:
       "required": true
     },
     {
-      "text": "On a scale of 1 to 10, how would you rate our new product?",
+      "text": "On a scale of 0 to 100, how likely are you to recommend us?",
       "type": "scale",
-      "required": true
+      "required": true,
+      "validation": {
+        "min": 0,
+        "max": 100
+      }
     },
     {
       "text": "Do you have any other feedback for us?",
@@ -135,7 +143,11 @@ You must generate a JSON object with the following structure:
       "text": "The question to ask the user.",
       "type": "question_type",
       "required": true/false,
-      "options": ["Option 1", "Option 2"] // Only for choice-based questions
+      "options": ["Option 1", "Option 2"], // Only for choice-based questions
+      "validation": { // Optional validation rules
+        "min": 1, // For scale/number
+        "max": 10 // For scale/number
+      }
     }
   ]
 }
@@ -155,11 +167,11 @@ CRITICAL INSTRUCTIONS:
     *   \`multiple_choice\`: For multiple-selection questions (checkboxes).
     *   \`dropdown\`: For single-selection from a dropdown list.
     *   \`rating\`: For a 1-5 star rating.
-    *   \`scale\`: For a 1-10 numerical scale.
+    *   \`scale\`: For a numerical scale (e.g., 1-10, 0-100). You MUST set \`validation.min\` and \`validation.max\` based on the user's request. If the user asks for "0 to 100", set min: 0, max: 100. Default is 1-10 only if unspecified.
     *   \`date\`: For a single date picker.
     *   \`date_range\`: For selecting a start and end date.
     *   \`time\`: For a time picker.
-    *   \`file\`: For file uploads.
+    *   \`file\`: For file uploads. CRITICAL: Use this type whenever the user asks for a resume, CV, document, or file attachment.
     *   \`location\`: For picking an address or location on a map.
     *   \`yes_no\`: For a binary yes/no question.
     *   \`image_choice\`: For selecting from a list of images.
@@ -193,9 +205,13 @@ Your JSON Output:
       "required": true
     },
     {
-      "text": "On a scale of 1 to 10, how would you rate our new product?",
+      "text": "On a scale of 0 to 100, how likely are you to recommend us?",
       "type": "scale",
-      "required": true
+      "required": true,
+      "validation": {
+        "min": 0,
+        "max": 100
+      }
     },
     {
       "text": "Do you have any other feedback for us?",
@@ -306,16 +322,17 @@ export const validateAnswer = action({
   args: {
     question: v.string(),
     answer: v.string(),
-    personality: v.string(),
+    personality: v.optional(v.string()),
+    rules: v.optional(v.any()),
   },
-  handler: async (ctx, { question, answer, personality }) => {
+  handler: async (ctx, { question, answer, personality, rules }) => {
     const personalityPrompt =
       {
         professional: "You are a professional assistant.",
         friendly: "You are a friendly assistant.",
         casual: "You are a casual assistant.",
         formal: "You are a formal assistant.",
-      }[personality] || "You are a helpful assistant.";
+      }[personality || "friendly"] || "You are a helpful assistant.";
 
     const messages: any[] = [
       {
@@ -324,8 +341,10 @@ export const validateAnswer = action({
 
 The user has provided an answer to a question. Determine if the answer is valid and makes sense for the question.
 
+${rules ? `Specific validation rules to enforce: ${JSON.stringify(rules)}` : ""}
+
 - If the answer is valid, return: \`{"isValid": true}\`
-- If the answer is nonsensical, gibberish, clearly incorrect, or doesn't fit the question, return: \`{"isValid": false, "reason": "A polite, conversational, and helpful message explaining why the answer seems incorrect and asking for a better one."}\`
+- If the answer is nonsensical, gibberish, clearly incorrect, or doesn't fit the question (or violates the rules), return: \`{"isValid": false, "reason": "A polite, conversational, and helpful message explaining why the answer seems incorrect and asking for a better one."}\`
 
 Your goal is to gently guide the user to provide a correct answer while maintaining a positive and friendly conversation.
 

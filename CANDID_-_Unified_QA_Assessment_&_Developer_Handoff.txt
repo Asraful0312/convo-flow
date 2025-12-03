@@ -1,0 +1,292 @@
+CANDID - Unified QA Assessment &
+Developer Handoff
+Date: Dec 02, 2025 To: Development Team From: Manus AI
+1. Executive Summary
+This document provides a unified Quality Assurance (QA) assessment of the CANDID
+application, combining findings from both live interactive testing (by Manus AI) and large-
+scale simulated testing (by ChatGPT).
+The bottom line is this: The core technology is excellent, but critical architectural gaps
+and functional bugs are preventing it from being market-ready. The AI form generation
+and conversational UX are best-in-class. The immediate priority is to address the P0 and P1
+issues outlined below to ensure stability, reliability, and a complete feature set.
+Overall Grade: C+
+2. Prioritized Action Plan
+This is the master list of tasks. Address them in priority order (P0 → P1 → P2 → P3).
+P0: Critical (Fix Immediately - Showstoppers)
+These issues block core functionality, cause data loss, or prevent entire user segments from
+using the product. The application cannot launch until these are resolved.
+ID Bug / Feature Description Impact Source
+P0-01 No File Upload
+Support
+The AI does not
+generate file
+upload fields,
+and the chat UI
+has no
+mechanism to
+accept
+attachments.
+Blocks all use
+cases requiring
+resumes,
+creative briefs,
+or document
+submission
+(e.g., HR,
+consultancy).
+ChatGPT
+P0-02 Conversation
+Freeze
+Complex
+conditional
+logic (e.g.,
+nested if/then)
+causes the chat
+to freeze or
+Users cannot
+complete forms
+and lose all
+progress. High
+user frustration.
+ChatGPT
+loop
+indefinitely.
+P0-03 Data Loss in
+Long Sessions
+Forms with 20+
+questions or
+sessions with
+intermittent
+network
+connectivity do
+not autosave
+progress
+reliably.
+Users lose
+significant work
+and are unlikely
+to restart,
+destroying
+completion
+rates.
+ChatGPT
+P0-04 Incorrect
+Slider Range
+The AI correctly
+understands
+the need for a
+slider but
+defaults to a 1-
+10 scale,
+ignoring
+specified
+ranges (e.g., 50-
+500).
+Fails to collect
+accurate data
+for key
+questions like
+budget or guest
+count.
+Manus AI
+P0-05 Conditional
+Logic Failure
+In some live
+tests, even
+simple
+conditional
+logic failed to
+trigger the
+correct follow-
+up question.
+Core feature is
+unreliable,
+breaking the
+conversational
+flow.
+Consensus
+P1: High (Next Sprint - Core UX)
+These issues significantly degrade the user experience, impact data integrity, or present
+major accessibility barriers.
+ID Bug / Feature Description Impact Source
+P1-01 Session
+Timeout
+The app signs
+users out after
+~15 minutes of
+inactivity while
+editing, with no
+Users lose work
+and are forced
+to log back in,
+causing
+confusion and
+frustration.
+ChatGPT
+warning or
+draft recovery.
+P1-02 Weak
+Validation
+Numeric and
+date fields
+accept invalid
+inputs (e.g., text
+in a number
+field). Date
+pickers allow
+impossible
+dates.
+Leads to poor
+data quality
+and requires
+manual
+cleanup by the
+form owner.
+ChatGPT
+P1-03 Accessibility
+Gaps
+Poor color
+contrast,
+missing ARIA
+labels for
+screen readers,
+and no
+keyboard
+navigation in
+the chat UI.
+Excludes users
+with visual or
+motor
+impairments
+from using the
+product.
+ChatGPT
+P1-04 Brand
+Inconsistency
+The app uses a
+mix of the old
+purple
+"ConvoFlow"
+branding and
+the new coral
+CANDID
+branding.
+Looks
+unprofessional
+and unfinished,
+undermining
+brand trust.
+Consensus
+P1-05 No "Back"
+Button
+Users cannot go
+back to a
+previous
+question in the
+chat to correct
+an answer.
+A single mistake
+requires
+restarting the
+entire form.
+Manus AI
+P2: Medium (Following Sprint - Polish)
+These are noticeable bugs and usability issues that make the application feel unpolished.
+ID Bug / Feature Description Impact Source
+P2-01 Incorrect
+Timestamp
+The dashboard
+shows incorrect
+relative
+timestamps for
+form creation
+(e.g., "56 years
+ago").
+A visible,
+embarrassing
+bug that erodes
+user trust in the
+platform's
+reliability.
+Manus AI
+P2-02 Analytics
+Miscalculation
+The analytics
+dashboard
+sometimes
+miscalculates
+completion
+rates and
+shows
+percentages
+over 100%.
+Damages trust
+in the data and
+the value of the
+analytics
+feature.
+ChatGPT
+P2-03 Export
+Duplication
+Exported CSV
+files
+occasionally
+contain
+duplicated rows
+of response
+data.
+Data integrity
+issue that
+requires
+manual
+cleanup for
+users.
+ChatGPT
+P2-04 No Submit
+Confirmation
+The form
+submits
+immediately on
+the last
+question with
+no
+confirmation
+step.
+Can lead to
+accidental
+submissions
+before the user
+is ready.
+Manus AI
+P3: Low (Future Enhancements)
+These are feature requests and enhancements to improve the product long-term.
+ID Feature Description
+P3-01 Signature Microinteractions
+Implement the 4 signature
+animations (typing pulse,
+answer drop, etc.) to enhance
+the "taste" factor.
+P3-02 Full Copy & Voice Audit
+Rewrite all system copy to
+align with the CANDID brand
+voice and remove all
+"ConvoFlow" references.
+P3-03 Theme Customization
+Allow users to customize the
+chat interface colors and
+fonts to match their own
+brand.
+P3-04 Command Bar UI
+Plan for a future migration to
+a ⌘K-style interface for form
+creation to maximize the
+"effortless" feeling.
+3. Implementation Guidance
+• Focus on P0 first. The file upload and data loss issues are the highest priority.
+• Verify before building. Manually test to reproduce the bugs identified by ChatGPT (e.g.,
+conversation freeze, session timeout) to confirm they exist in the current build.
+• Refer to the Brand Book. All UI changes for P1-04 should strictly follow the CANDID
+brand guidelines.
+• Bundle similar tasks. Address all accessibility issues (P1-03) in a single, focused effort.
+This unified list represents a high-confidence, actionable roadmap. Executing on this plan
+will result in a stable, reliable, and market-ready product.

@@ -39,6 +39,7 @@ import { ConvexError } from "convex/values";
 import { Id } from "@/convex/_generated/dataModel";
 import ImageChoiceInput from "./form/ImageChoiceInput";
 import { ImageChoiceOption } from "@/lib/form-types";
+import { cn } from "@/lib/utils";
 
 interface FormPreviewProps {
   form: {
@@ -77,6 +78,8 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
     "",
   );
   const user = useQuery(api.auth.loggedInUser);
+
+  console.log("pewview form", form);
 
   const handleAddQuestion = (type: Question["type"]) => {
     setForm((prev) => {
@@ -260,6 +263,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
           type: q.type,
           required: q.required,
           options: q.options,
+          validation: q.validation,
         })),
         settings: {
           branding: { primaryColor, logoUrl: logoUrl || undefined },
@@ -607,38 +611,93 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                     )}
 
                     {question.type === "scale" && (
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>1</span>
-                          <span>10</span>
+                      <div className="space-y-4">
+                        <div className="space-y-3">
+                          {(() => {
+                            const min = question.validation?.min || 1;
+                            const max = question.validation?.max || 10;
+                            const range = max - min + 1;
+
+                            if (range <= 10) {
+                              return (
+                                <>
+                                  <div className="flex justify-between text-xs text-muted-foreground px-2 font-medium">
+                                    <span>
+                                      {min} (Lowest)
+                                    </span>
+                                    <span>
+                                      {max} (Highest)
+                                    </span>
+                                  </div>
+                                  <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 scrollbar-hide">
+                                    <RadioGroup
+                                      value={(answers[question.id] as string) || ""}
+                                      onValueChange={(v) =>
+                                        handleScaleChange(question.id, parseInt(v))
+                                      }
+                                      className="flex gap-2 sm:justify-between min-w-max sm:min-w-0"
+                                    >
+                                      {Array.from({ length: range }).map((_, i) => {
+                                        const v = min + i;
+                                        return (
+                                          <div
+                                            key={v}
+                                            className="flex flex-col items-center gap-1"
+                                          >
+                                            <RadioGroupItem
+                                              value={v.toString()}
+                                              id={`scale-${question.id}-${v}`}
+                                              className="peer sr-only"
+                                            />
+                                            <Label
+                                              htmlFor={`scale-${question.id}-${v}`}
+                                              className={cn(
+                                                "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center cursor-pointer transition-all border-2 border-transparent font-medium text-sm sm:text-base",
+                                                "bg-muted hover:bg-muted/80 text-muted-foreground",
+                                                (answers[question.id] as number) === v
+                                                  ? "bg-[#F56A4D] text-white shadow-md scale-110"
+                                                  : ""
+                                              )}
+                                            >
+                                              {v}
+                                            </Label>
+                                          </div>
+                                        );
+                                      })}
+                                    </RadioGroup>
+                                  </div>
+                                </>
+                              );
+                            } else {
+                              return (
+                                <div className="px-2">
+                                  <div className="flex justify-between text-xs text-muted-foreground mb-2 font-medium">
+                                    <span>{min}</span>
+                                    <span>{max}</span>
+                                  </div>
+                                  <div className="flex items-center gap-4">
+                                    <input
+                                      type="range"
+                                      min={min}
+                                      max={max}
+                                      step={1}
+                                      value={(answers[question.id] as number) || min}
+                                      onChange={(e) =>
+                                        handleScaleChange(question.id, parseInt(e.target.value))
+                                      }
+                                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#F56A4D]"
+                                    />
+                                    <div
+                                      className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white shadow-md bg-[#F56A4D]"
+                                    >
+                                      {(answers[question.id] as number) || min}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+                          })()}
                         </div>
-                        <RadioGroup
-                          value={(answers[question.id] as string) || ""}
-                          onValueChange={(v) =>
-                            handleScaleChange(question.id, parseInt(v))
-                          }
-                          className="flex justify-between"
-                        >
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((v) => (
-                            <div key={v} className="flex flex-col items-center">
-                              <RadioGroupItem
-                                value={v.toString()}
-                                id={`scale-${question.id}-${v}`}
-                                className="sr-only"
-                              />
-                              <Label
-                                htmlFor={`scale-${question.id}-${v}`}
-                                className={`w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all ${
-                                  (answers[question.id] as number) === v
-                                    ? "bg-[#F56A4D] text-white"
-                                    : "bg-muted hover:bg-muted/80"
-                                }`}
-                              >
-                                {v}
-                              </Label>
-                            </div>
-                          ))}
-                        </RadioGroup>
                       </div>
                     )}
 

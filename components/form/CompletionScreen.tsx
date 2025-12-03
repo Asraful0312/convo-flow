@@ -28,7 +28,7 @@ export default function CompletionScreen({
     >
       <div className="bg-white border border-gray-200 rounded-xl p-8 text-center space-y-4 max-w-md shadow-sm">
         <div
-          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
+          className="w-16 h-16 rounded-full flex items-center justify-center mx-auto completion-delight"
           style={{ backgroundColor: `${secondaryColor}20` }}
         >
           <Check className="w-8 h-8" style={{ color: secondaryColor }} />

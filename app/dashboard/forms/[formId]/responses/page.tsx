@@ -500,6 +500,9 @@ export default function ResponsesPage({
                     Device
                   </TableHead>
                   <TableHead className="text-[#121316] font-semibold">
+                    Location
+                  </TableHead>
+                  <TableHead className="text-[#121316] font-semibold">
                     Duration
                   </TableHead>
                   <TableHead className="text-[#121316] font-semibold">
@@ -581,6 +584,18 @@ export default function ResponsesPage({
                             {response.metadata?.browser?.split(" ")[0] ||
                               "Unknown"}
                           </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm text-[#2B2F36]">
+                          {response.metadata?.location?.country ? (
+                            <span>
+                              {response.metadata.location.city ? `${response.metadata.location.city}, ` : ""}
+                              {response.metadata.location.country}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-[#2B2F36]">
