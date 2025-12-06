@@ -115,6 +115,7 @@ export const updateResponse = mutation({
     themes: v.optional(v.array(v.string())),
     notes: v.optional(v.string()),
     actionableInsights: v.optional(v.array(v.string())),
+    metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
     const { responseId, ...updates } = args;

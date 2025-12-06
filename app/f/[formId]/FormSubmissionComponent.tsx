@@ -79,13 +79,7 @@ export default function FormSubmissionComponent({
     fileSize: number;
     storageId: string;
   } | null>(null);
-  const [locationData, setLocationData] = useState<{
-    country?: string;
-    city?: string;
-    region?: string;
-    city?: string;
-    region?: string;
-  } | null>(null);
+  const [locationData, setLocationData] = useState<null | any>(null);
   const [isReviewing, setIsReviewing] = useState(false);
 
   // Autosave hook
@@ -239,7 +233,7 @@ export default function FormSubmissionComponent({
           device: navigator.userAgent,
           browser: navigator.userAgent,
           os: navigator.platform,
-          location: locationData,
+          location: locationData as any,
         },
       }).catch((e) => console.error("Failed to update location:", e));
     }
