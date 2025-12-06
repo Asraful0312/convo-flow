@@ -20,8 +20,9 @@ export const exportResponses = action({
       throw new ConvexError("Form not found");
     }
 
+    const uniqueResponseIds = [...new Set(responseIds)];
     const responses = await Promise.all(
-        responseIds.map(responseId => ctx.runQuery(api.responses.getResponseWithAnswers, { responseId }))
+        uniqueResponseIds.map(responseId => ctx.runQuery(api.responses.getResponseWithAnswers, { responseId }))
     );
 
     const questions = form.questions.sort((a, b) => a.order - b.order);
@@ -46,6 +47,9 @@ export const exportResponses = action({
                        if (answer.value && typeof answer.value === 'string' && answer.fileSize) {
                           const url = await ctx.storage.getUrl(answer.value);
                           row.push(url ?? `Invalid storage ID: ${answer.value}`);
+                      } else if (answer.value && typeof answer.value === 'object' && 'storageId' in answer.value) {
+                          const url = await ctx.storage.getUrl((answer.value as any).storageId);
+                          row.push(url ?? `Invalid storage ID`);
                       } else {
                           row.push(String(answer.value));
                       }
@@ -80,6 +84,9 @@ export const exportResponses = action({
                          if (answer.value && typeof answer.value === 'string' && answer.fileSize) {
                             const url = await ctx.storage.getUrl(answer.value);
                             row.push(url ?? `Invalid storage ID: ${answer.value}`);
+                        } else if (answer.value && typeof answer.value === 'object' && 'storageId' in answer.value) {
+                            const url = await ctx.storage.getUrl((answer.value as any).storageId);
+                            row.push(url ?? `Invalid storage ID`);
                         } else {
                             row.push(String(answer.value));
                         }
@@ -148,6 +155,9 @@ export const exportResponses = action({
                          if (answer.value && typeof answer.value === 'string' && answer.fileName) {
                             const url = await ctx.storage.getUrl(answer.value);
                             answerText = url || `Invalid storage ID: ${answer.value}`;
+                        } else if (answer.value && typeof answer.value === 'object' && 'storageId' in answer.value) {
+                            const url = await ctx.storage.getUrl((answer.value as any).storageId);
+                            answerText = url || `Invalid storage ID`;
                         } else {
                             answerText = String(answer.value);
                         }
@@ -174,9 +184,16 @@ export const exportResponses = action({
             for (const q of questions) {
                 const answer = response.answers.find((a: any) => a.questionId === q._id);
                 if (answer) {
-                    if (q.type === "file" && answer.value && typeof answer.value === 'string' && answer.fileSize) {
-                        const url = await ctx.storage.getUrl(answer.value);
-                        answersMap[q.text] = url ?? `Invalid storage ID: ${answer.value}`;
+                    if (q.type === "file") {
+                        if (answer.value && typeof answer.value === 'string' && answer.fileSize) {
+                            const url = await ctx.storage.getUrl(answer.value);
+                            answersMap[q.text] = url ?? `Invalid storage ID: ${answer.value}`;
+                        } else if (answer.value && typeof answer.value === 'object' && 'storageId' in answer.value) {
+                            const url = await ctx.storage.getUrl((answer.value as any).storageId);
+                            answersMap[q.text] = url ?? `Invalid storage ID`;
+                        } else {
+                            answersMap[q.text] = answer.value;
+                        }
                     } else {
                         answersMap[q.text] = answer.value;
                     }

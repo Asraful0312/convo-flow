@@ -342,8 +342,8 @@ export default function EditFormPage({
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <Link href="/dashboard/forms">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -394,7 +394,7 @@ export default function EditFormPage({
         </div>
       </div>
       <Tabs defaultValue="questions" className="space-y-6">
-        <TabsList>
+        <TabsList className="flex-wrap shrink grow h-fit">
           <TabsTrigger value="questions">Questions</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="design">Design</TabsTrigger>
@@ -403,7 +403,7 @@ export default function EditFormPage({
         <TabsContent value="questions" className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
                   <CardTitle>Form Questions</CardTitle>
                   <CardDescription>

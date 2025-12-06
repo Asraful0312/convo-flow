@@ -83,7 +83,10 @@ export default function FormSubmissionComponent({
     country?: string;
     city?: string;
     region?: string;
+    city?: string;
+    region?: string;
   } | null>(null);
+  const [isReviewing, setIsReviewing] = useState(false);
 
   // Autosave hook
   const useLocalStorage = (key: string, initialValue: any) => {
@@ -164,6 +167,22 @@ export default function FormSubmissionComponent({
       document.head.appendChild(link);
       document.body.style.fontFamily = `"${font}", sans-serif`;
     }
+
+
+    return () => {
+      document.documentElement.style.removeProperty("--candid-coral");
+      document.documentElement.style.removeProperty("--primary");
+      document.documentElement.style.removeProperty("--color-primary");
+      document.documentElement.style.removeProperty("--primary-foreground");
+      document.documentElement.style.removeProperty("--ring");
+      document.documentElement.style.removeProperty("--color-ring");
+      document.documentElement.style.removeProperty("--secondary");
+      document.documentElement.style.removeProperty("--color-secondary");
+      document.documentElement.style.removeProperty("--background");
+      document.documentElement.style.removeProperty("--color-background");
+      document.documentElement.style.removeProperty("--font-sans");
+      document.body.style.fontFamily = "";
+    };
   }, [primaryColor, secondaryColor, backgroundColor, font]);
   const animationFrameRef = useRef<number | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
@@ -1023,7 +1042,7 @@ export default function FormSubmissionComponent({
         }, 500);
       }
     } else {
-      completeForm(currentResponseId);
+      setIsReviewing(true);
     }
   };
 
@@ -1066,6 +1085,37 @@ export default function FormSubmissionComponent({
       // Optionally speak the question again if voice is enabled
       // speakText(previousQuestionMessage.content); 
     }
+  };
+  
+  const handleBackToEdit = () => {
+    // 1. Find the last user message (the answer to the current question)
+    const lastUserMessageIndex = messages.findLastIndex(m => m.role === "user");
+    
+    if (lastUserMessageIndex !== -1) {
+      const lastMessage = messages[lastUserMessageIndex];
+      
+      // 2. Restore input value if it was text
+      if (typeof lastMessage.content === "string" && !lastMessage.content.startsWith("Uploaded") && !lastMessage.content.startsWith("Selected")) {
+        setInputValue(lastMessage.content);
+      }
+
+      // 3. Remove the last message (and any subsequent assistant messages if any, though there shouldn't be)
+      const newMessages = messages.slice(0, lastUserMessageIndex);
+      setMessages(newMessages);
+      messagesRef.current = newMessages;
+
+      // 4. Reset currentQuestionIndex to the question we are re-answering
+      const questionId = lastMessage.questionId;
+      const questionIndex = questions?.findIndex((q: any) => q._id === questionId);
+      if (questionIndex !== undefined && questionIndex !== -1) {
+        setCurrentQuestionIndex(questionIndex);
+      }
+    }
+
+    // 5. Exit review mode
+    setIsReviewing(false);
+    setIsProcessing(false);
+    setIsTyping(false);
   };
 
   const canGoBack = messages.filter((m) => m.role === "assistant" && m.questionId).length > 1;
@@ -1340,13 +1390,71 @@ export default function FormSubmissionComponent({
 
       <div className="flex-1 overflow-y-auto mt-20">
         <div className="container mx-auto px-4 py-8 max-w-3xl">
-          <ChatMessages messages={messages} form={form} isTyping={isTyping} />
-          {isCompleted && <CompletionScreen secondaryColor={secondaryColor} />}
-          <div ref={messagesEndRef} />
+          {isReviewing && !isCompleted ? (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl font-bold">Review Your Answers</h2>
+                <p className="text-muted-foreground">
+                  Please review your answers before submitting.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {questions?.map((question: any) => {
+                  const answer = getAllAnswers()[question._id];
+                  return (
+                    <div
+                      key={question._id}
+                      className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm"
+                    >
+                      <p className="font-medium mb-2">{question.text}</p>
+                      <div className="text-sm text-muted-foreground">
+                        {answer ? (
+                          typeof answer === "object" && "fileName" in answer ? (
+                            <div className="flex items-center gap-2">
+                              <span>📎 {answer.fileName}</span>
+                            </div>
+                          ) : typeof answer === "object" && "text" in answer ? (
+                            answer.text
+                          ) : (
+                            String(answer)
+                          )
+                        ) : (
+                          <span className="italic">Skipped</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button
+                  onClick={handleBackToEdit}
+                  className="flex-1 px-4 py-2 rounded-lg border hover:bg-accent transition-colors"
+                >
+                  Back to Edit
+                </button>
+                <button
+                  onClick={() => completeForm()}
+                  className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity font-medium"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  Submit Form
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <ChatMessages messages={messages} form={form} isTyping={isTyping} />
+              {isCompleted && <CompletionScreen secondaryColor={secondaryColor} />}
+              <div ref={messagesEndRef} />
+            </>
+          )}
         </div>
       </div>
 
-      {!isCompleted && currentQuestion && !isTyping && !isProcessing && (
+      {!isCompleted && !isReviewing && currentQuestion && !isTyping && !isProcessing && (
         <div
           className="border-t backdrop-blur-sm sticky bottom-0 transition-colors duration-300"
           style={{

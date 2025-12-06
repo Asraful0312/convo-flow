@@ -129,7 +129,7 @@ export default function SortableQuestion({
           </div>
           <div className="flex-1 space-y-4">
             <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 space-y-2">
+              <div className="flex-1 flex-wrap space-y-2">
                 <Label>Question</Label>
                 <Input
                   value={localText}
@@ -152,7 +152,7 @@ export default function SortableQuestion({
                 <Trash2 className="w-4 h-4" />
               </Button>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-2 gap-4 grid-cols-1">
               <div className="space-y-2">
                 <Label>Question Type</Label>
                 <Select
@@ -179,7 +179,7 @@ export default function SortableQuestion({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center justify-end gap-2 pt-8">
+              <div className="flex items-center justify-start  gap-2 sm:pt-8">
                 <Label htmlFor={`required-${question._id}`}>Required</Label>
                 <Switch
                   id={`required-${question._id}`}
@@ -194,7 +194,7 @@ export default function SortableQuestion({
               <div className="space-y-3">
                 <Label>Image Options</Label>
                 {(localOptions as ImageChoiceOption[]).map((opt, i) => (
-                  <div key={i} className="flex items-center gap-2">
+                  <div key={i} className="flex items-center gap-2 flex-wrap">
                     <Input
                       value={opt.text}
                       onChange={(e) =>
@@ -247,7 +247,7 @@ export default function SortableQuestion({
             )}
             {question.type === "scale" && (
               <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Minimum Value</Label>
                   <Input
