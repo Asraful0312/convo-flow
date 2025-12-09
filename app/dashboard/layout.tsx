@@ -15,14 +15,17 @@ import {
   Webhook,
   CreditCard,
   Users,
+  Loader2,
 } from "lucide-react";
 import CandidLogo from "@/components/shared/candid-logo";
 import UserMenu from "@/components/shared/user-menu";
 import WorkspaceSwitcher from "@/components/shared/workspace-switcher";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
-import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 const links = [
   {
@@ -80,6 +83,33 @@ export default function DashboardLayout({
   const [open, setOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const path = usePathname();
+  const router = useRouter();
+  const user = useQuery(api.auth.loggedInUser);
+
+  // Check if we're on the workspace creation page (don't redirect from there)
+  const isWorkspaceCreationPage = path === "/dashboard/workspaces/new";
+
+  // Redirect users without workspaces to create one
+  useEffect(() => {
+    if (isWorkspaceCreationPage) return; // Don't redirect from workspace creation page
+    if (user === undefined) return; // Still loading
+    if (user === null) {
+      router.push("/auth/signin");
+      return;
+    }
+    if (!user.workspaces || user.workspaces.length === 0 || !user.activeWorkspaceId) {
+      router.push("/dashboard/workspaces/new");
+    }
+  }, [user, router, isWorkspaceCreationPage]);
+
+  // Show loading state while checking user/workspace
+  if (!isWorkspaceCreationPage && (user === undefined || (user && (!user.workspaces || user.workspaces.length === 0 || !user.activeWorkspaceId)))) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

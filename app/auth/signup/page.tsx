@@ -34,12 +34,8 @@ export default function SignUpPage() {
       toast.success("Account created successfully");
 
       setSubmitting(false);
-      // Pass the name as a query parameter if it's a signup
-      if (name) {
-        router.push(`/?name=${encodeURIComponent(name)}&newUser=true`);
-      } else {
-        router.push("/dashboard");
-      }
+      // New users need to create a workspace first
+      router.push("/dashboard/workspaces/new");
     } catch (error: any) {
       const errorMessage =
         error instanceof ConvexError
@@ -56,7 +52,7 @@ export default function SignUpPage() {
     setSubmitting(true);
     try {
       await signIn("google");
-      router.push("/dashboard");
+      // Note: OAuth redirects are handled by the provider, this may not execute
     } catch (error: any) {
       const errorMessage =
         error instanceof ConvexError
@@ -72,7 +68,7 @@ export default function SignUpPage() {
     setSubmitting(true);
     try {
       await signIn("github");
-      router.push("/dashboard");
+      // Note: OAuth redirects are handled by the provider, this may not execute
     } catch (error: any) {
       const errorMessage =
         error instanceof ConvexError

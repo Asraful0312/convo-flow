@@ -51,7 +51,9 @@ export default function DashboardPage() {
 
   const { results: forms, status } = usePaginatedQuery(
     api.forms.getFormsForWorkspace,
-    { workspaceId: activeWorkspace?._id as Id<"workspaces"> },
+    activeWorkspace?._id
+      ? { workspaceId: activeWorkspace._id }
+      : "skip",
     { initialNumItems: 5 }
   );
   const dashboardStats = useQuery(
@@ -66,10 +68,10 @@ export default function DashboardPage() {
       router.push("/auth/signin"); // Not logged in
       return;
     }
-    if (user?.workspaces?.length === 0 || !activeWorkspace) {
+    if (!user.workspaces || user.workspaces.length === 0 || !activeWorkspace) {
       router.push("/dashboard/workspaces/new");
     }
-  }, [user, router]);
+  }, [user, router, activeWorkspace]);
 
   const stats =
     dashboardStats === undefined
@@ -104,13 +106,14 @@ export default function DashboardPage() {
     await deleteForm({ formId });
   };
 
-  if (
-    user === undefined ||
-    (user &&
-      user?.workspaces &&
-      user?.workspaces?.length > 0 &&
-      !activeWorkspace)
-  ) {
+  // Only show loading when:
+  // 1. User data is still loading (undefined)
+  // 2. User has workspaces but activeWorkspace hasn't been populated yet
+  const isLoading = user === undefined || 
+    (user && user.workspaces && user.workspaces.length > 0 && !activeWorkspace);
+
+  // Show loading state while redirecting or loading data
+  if (isLoading) {
     return (
       <div className="w-full h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />

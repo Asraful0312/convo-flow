@@ -3,7 +3,8 @@
 import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Copy,
   ExternalLink,
@@ -52,6 +53,19 @@ export default function FormsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isLoading, setIsLoading] = useState(false);
   const user = useQuery(api.auth.loggedInUser);
+  const router = useRouter();
+
+  // Redirect to workspace creation if user has no workspaces
+  useEffect(() => {
+    if (user === undefined) return; // Still loading
+    if (user === null) {
+      router.push("/auth/signin");
+      return;
+    }
+    if (!user.workspaces || user.workspaces.length === 0 || !user.activeWorkspaceId) {
+      router.push("/dashboard/workspaces/new");
+    }
+  }, [user, router]);
 
   const {
     results: forms,
@@ -59,11 +73,13 @@ export default function FormsPage() {
     loadMore,
   } = usePaginatedQuery(
     api.forms.getFormsForWorkspace,
-    {
-      searchQuery: searchQuery,
-      status: filterStatus === "all" ? undefined : filterStatus,
-      workspaceId: user?.activeWorkspaceId as Id<"workspaces">,
-    },
+    user?.activeWorkspaceId
+      ? {
+          searchQuery: searchQuery,
+          status: filterStatus === "all" ? undefined : filterStatus,
+          workspaceId: user.activeWorkspaceId,
+        }
+      : "skip",
     { initialNumItems: 12 },
   );
   const deleteForm = useMutation(api.forms.deleteForm);
