@@ -8,6 +8,23 @@ import {
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError } from "convex/values";
 
+// Helper to check if user is a viewer in their active workspace
+async function assertNotViewer(ctx: any, userId: any) {
+  const user = await ctx.db.get(userId);
+  if (!user?.activeWorkspaceId) return; // No workspace, allow
+  
+  const member = await ctx.db
+    .query("workspaceMembers")
+    .withIndex("by_workspace_and_user", (q: any) =>
+      q.eq("workspaceId", user.activeWorkspaceId).eq("userId", userId)
+    )
+    .first();
+  
+  if (member?.role === "viewer") {
+    throw new ConvexError("Viewers cannot modify integrations. Please contact your workspace admin.");
+  }
+}
+
 export const getIntegrations = query({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -40,6 +57,8 @@ export const addIntegration = mutation({
     if (!userId) {
       throw new ConvexError("Not authenticated");
     }
+
+    await assertNotViewer(ctx, userId);
 
     const user = await ctx.db.get(userId);
     if (!user) {
@@ -83,6 +102,8 @@ export const updateIntegrationConfig = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new ConvexError("Not authenticated");
 
+    await assertNotViewer(ctx, userId);
+
     const integration = await ctx.db.get(integrationId);
     if (!integration || integration.userId !== userId) {
       throw new ConvexError(
@@ -102,6 +123,8 @@ export const deleteIntegration = mutation({
     if (!userId) {
       throw new ConvexError("Not authenticated");
     }
+
+    await assertNotViewer(ctx, userId);
 
     const integration = await ctx.db.get(integrationId);
     if (!integration || integration.userId !== userId) {

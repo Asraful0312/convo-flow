@@ -10,6 +10,23 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError } from "convex/values";
 import { api, internal } from "./_generated/api";
 
+// Helper to check if user is a viewer in their active workspace
+async function assertNotViewer(ctx: any, userId: any) {
+  const user = await ctx.db.get(userId);
+  if (!user?.activeWorkspaceId) return; // No workspace, allow
+  
+  const member = await ctx.db
+    .query("workspaceMembers")
+    .withIndex("by_workspace_and_user", (q: any) =>
+      q.eq("workspaceId", user.activeWorkspaceId).eq("userId", userId)
+    )
+    .first();
+  
+  if (member?.role === "viewer") {
+    throw new ConvexError("Viewers cannot modify webhooks. Please contact your workspace admin.");
+  }
+}
+
 export const get = query({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -34,6 +51,8 @@ export const add = mutation({
     if (!userId) {
       throw new ConvexError("Not authenticated");
     }
+
+    await assertNotViewer(ctx, userId);
 
     try {
       const parsedUrl = new URL(url);
@@ -62,6 +81,8 @@ export const remove = mutation({
     if (!userId) {
       throw new ConvexError("Not authenticated");
     }
+
+    await assertNotViewer(ctx, userId);
 
     const webhook = await ctx.db.get(webhookId);
     if (!webhook || webhook.userId !== userId) {

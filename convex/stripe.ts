@@ -17,6 +17,22 @@ const priceIds = {
   business: process.env.STRIPE_BUSINESS_PRICE_ID!,
 };
 
+// Helper to check if user is a viewer in their active workspace
+async function assertNotViewerForBilling(ctx: any, userId: any) {
+  const user = await ctx.runQuery(internal.users.getUserById, { userId });
+  if (!user?.activeWorkspaceId) return; // No workspace, allow
+  
+  // We need to check workspace membership - run internal query
+  const member = await ctx.runQuery(internal.serverQuery.getMember, {
+    workspaceId: user.activeWorkspaceId,
+    userId: userId,
+  });
+  
+  if (member?.role === "viewer") {
+    throw new ConvexError("Viewers cannot access billing settings. Please contact your workspace admin.");
+  }
+}
+
 export const createCheckoutSession = action({
   args: {
     tier: v.union(v.literal("pro"), v.literal("business")),
@@ -26,6 +42,8 @@ export const createCheckoutSession = action({
     if (!userId) {
       throw new ConvexError("You must be logged in to subscribe.");
     }
+
+    await assertNotViewerForBilling(ctx, userId);
 
     const user = await ctx.runQuery(internal.users.getUserById, { userId });
     if (!user) {
@@ -66,6 +84,8 @@ export const getPortalUrl = action({
         if (!userId) {
             throw new ConvexError("You must be logged in to manage your subscription.");
         }
+
+        await assertNotViewerForBilling(ctx, userId);
 
         const user = await ctx.runQuery(internal.users.getUserById, { userId });
         if (!user || !user.stripeCustomerId) {

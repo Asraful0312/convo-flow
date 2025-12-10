@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAction, useMutation, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, Loader2, Wand2, MessageSquare, Save, ArrowUp, Send, Eye, LayoutTemplate } from "lucide-react";
 import { FormPreview } from "@/components/form-preview";
-import type { Question } from "@/lib/types";
-import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
-import { TextDotsLoader } from "@/components/ui/loader";
 import Loader from "@/components/loader-grid";
-import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { TextDotsLoader } from "@/components/ui/loader";
+import { Textarea } from "@/components/ui/textarea";
+import { api } from "@/convex/_generated/api";
+import { useAutoResizeTextarea } from "@/hooks/use-auto-resize-textarea";
+import type { Question } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useAction, useQuery } from "convex/react";
+import { motion } from "framer-motion";
+import { ArrowUp, Eye, Loader2, MessageSquare, Sparkles, Wand2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type GeneratedForm = {
   title: string;
@@ -52,12 +52,26 @@ export default function NewFormPage() {
   >([]);
   const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
 
+  const user = useQuery(api.auth.loggedInUser);
+  const userRole = useQuery(
+    api.users.getRole,
+    user?.activeWorkspaceId ? { workspaceId: user.activeWorkspaceId } : "skip"
+  );
+
   const generateFormAction = useAction(api.ai.generateForm);
-  const createFormMutation = useMutation(api.forms.create);
   const { textareaRef, adjustHeight } = useAutoResizeTextarea({
     minHeight: 60,
     maxHeight: 200,
   });
+
+  // Redirect viewers - they cannot create forms
+  useEffect(() => {
+    if (userRole === "viewer") {
+      router.push("/dashboard/forms");
+    }
+  }, [userRole, router]);
+
+  console.log("user role", userRole)
 
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined;
@@ -151,7 +165,6 @@ export default function NewFormPage() {
     }
   };
 
-  console.log("generatedForm", generatedForm);
 
   const handleRefine = async (refinement: string) => {
     if (!refinement.trim() || !generatedForm) return;

@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   internalMutation,
   internalQuery,
@@ -169,6 +169,20 @@ export const updateNotificationPreferences = mutation({
     const user = await ctx.db.get(userId);
     if (!user) {
       throw new Error("User not found");
+    }
+
+    // Check if user is a viewer in their active workspace
+    if (user.activeWorkspaceId) {
+      const member = await ctx.db
+        .query("workspaceMembers")
+        .withIndex("by_workspace_and_user", (q) =>
+          q.eq("workspaceId", user.activeWorkspaceId!).eq("userId", userId)
+        )
+        .first();
+      
+      if (member?.role === "viewer") {
+        throw new ConvexError("Viewers cannot modify notification settings. Please contact your workspace admin.");
+      }
     }
 
     await ctx.db.patch(userId, {

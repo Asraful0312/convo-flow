@@ -514,12 +514,6 @@ export const updateSettings = mutation({
             args.backgroundColor !== form.settings?.branding?.backgroundColor) ||
           (args.font && args.font !== form.settings?.branding?.font);
 
-        if (args.primaryColor !== "#f56a4d" && hasCustomBranding) {
-          throw new ConvexError(
-            "Custom branding is not available on the free plan.",
-          );
-        }
-
         // Voice restriction
         if (args.voiceEnabled === true) {
           throw new ConvexError(

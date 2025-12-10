@@ -4,9 +4,10 @@ import { useAction, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { SubscriptionTier } from "@/lib/types";
 import { Building2, Check, Sparkles, Users, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 const plans = [
   {
@@ -98,11 +99,23 @@ const plans = [
 ]
 
 export default function PricingPage() {
+  const router = useRouter();
   const user = useQuery(api.auth.loggedInUser)
+  const userRole = useQuery(
+    api.users.getRole,
+    user?.activeWorkspaceId ? { workspaceId: user.activeWorkspaceId } : "skip"
+  );
   const createCheckoutSession = useAction(api.stripe.createCheckoutSession);
   const getPortalUrl = useAction(api.stripe.getPortalUrl);
   const [isLoading, setIsLoading] = useState<string | null>(null)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
+
+  // Redirect viewers - they cannot access billing/pricing
+  useEffect(() => {
+    if (userRole === "viewer") {
+      router.push("/dashboard");
+    }
+  }, [userRole, router]);
 
   const handleSubscribe = async (tier: SubscriptionTier) => {
     if (tier === "enterprise" || tier === "free") {

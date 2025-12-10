@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,10 +54,22 @@ export default function EditFormPage({
   params: { formId: Id<"forms"> };
 }) {
   const { formId } = use<any>(params as any);
+  const router = useRouter();
   const form = useQuery(api.forms.getSingleForm, { formId: formId });
   const user = useQuery(api.auth.loggedInUser);
+  const userRole = useQuery(
+    api.users.getRole,
+    form?.workspaceId ? { workspaceId: form.workspaceId } : "skip"
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+
+  // Redirect viewers - they cannot edit forms
+  useEffect(() => {
+    if (userRole === "viewer") {
+      router.push(`/dashboard`);
+    }
+  }, [userRole, formId, router]);
 
   // Local Storage State for Backup
   const [localState, setLocalState] = useLocalStorage(`candid-form-edit-${formId}`, {
@@ -192,8 +205,8 @@ export default function EditFormPage({
   useEffect(() => {
     if (!form) return;
 
-    // Check if local storage has newer data
-    if (localState.updatedAt > (form.updatedAt || 0) && localState.title) {
+    // Check if local storage has newer data (only for editors/admins)
+    if (localState.updatedAt > (form.updatedAt || 0) && localState.title && userRole !== "viewer") {
        toast("We found unsaved changes from a previous session.", {
          action: {
            label: "Restore",
@@ -675,24 +688,6 @@ export default function EditFormPage({
           </Card>
         </TabsContent>
       </Tabs>
-      <div className="flex justify-end">
-        <Button
-          onClick={() => handleSaveSettings(false)}
-          className="bg-[#F56A4D] hover:bg-[#F56A4D]/90 gap-2"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              Save Changes
-            </>
-          )}
-        </Button>
-      </div>
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import IntegrationCard from "../integrations/IntegrationCard";
 import useIntegrations from "@/hooks/useIntegrations";
 import { HighlightedTitle } from "@/components/HighlightedTitle";
-import { Preloaded } from "convex/react";
+import { Preloaded, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import {
   Select,
@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, Lock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import Link from "next/link";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -38,6 +39,9 @@ type Props = {
 };
 
 export default function IntegrationsTab({ preloadedIntegrations }: Props) {
+  const user = useQuery(api.auth.loggedInUser);
+  const isFreePlan = !user?.subscriptionTier || user.subscriptionTier === "free";
+
   const {
     integrations,
     handleConnectClick,
@@ -66,7 +70,35 @@ export default function IntegrationsTab({ preloadedIntegrations }: Props) {
 
   return (
     <div className="space-y-6 w-full">
-      <Card>
+      {/* Free Plan Restriction Banner */}
+      {isFreePlan && (
+        <div className="bg-linear-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-5">
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 rounded-lg bg-amber-100 dark:bg-amber-900/50">
+              <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-amber-900 dark:text-amber-100">
+                Integrations require a Pro plan or higher
+              </h3>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                Upgrade your plan to connect your favorite tools and automate your workflow.
+              </p>
+              <Link href="/dashboard/pricing">
+                <Button 
+                  size="sm" 
+                  className="mt-3 bg-linear-to-r from-[#F56A4D] to-[#f97316] hover:from-[#F56A4D]/90 hover:to-[#f97316]/90 text-white gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Upgrade to Pro
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Card className={isFreePlan ? "opacity-60 pointer-events-none" : ""}>
         <CardHeader>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
             <div>
