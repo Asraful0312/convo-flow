@@ -77,7 +77,7 @@ export const Footer = () => {
       <div className="mt-3 pb-5 px-4 md:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-sm text-neutral">
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-8 items-start sm:items-center">
           <p className="whitespace-nowrap">
-            ©{currentYear} Wishly. All rights reserved.
+            ©{currentYear} CANDID. All rights reserved.
           </p>
           <div className="flex flex-row gap-4">
             <Link href="/legal/privacy-policy">Privacy Policy</Link>

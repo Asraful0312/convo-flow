@@ -35,7 +35,8 @@ export default function SignUpPage() {
 
       setSubmitting(false);
       // New users need to create a workspace first
-      router.push("/dashboard/workspaces/new");
+      // Pass name in URL so NameChangeProvider can update it
+      router.push(`/dashboard/workspaces/new?name=${encodeURIComponent(name)}&newUser=true`);
     } catch (error: any) {
       const errorMessage =
         error instanceof ConvexError

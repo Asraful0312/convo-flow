@@ -310,7 +310,7 @@ The goal is a smooth, engaging conversation that gets the form filled out effici
     ];
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       messages,
     });
 
@@ -378,7 +378,7 @@ Answer: "${answer}"`,
     ];
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       messages,
       response_format: { type: "json_object" },
     });
@@ -429,7 +429,7 @@ Example JSON output:
 If you cannot generate meaningful insights, return an empty JSON object.`;
 
     const aiResponse = await openai.chat.completions.create({
-      model: "gpt-5-nano",
+      model: "gpt-4o-mini",
       messages: [{ role: "system", content: prompt }],
       response_format: { type: "json_object" },
     });
