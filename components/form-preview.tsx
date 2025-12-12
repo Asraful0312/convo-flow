@@ -20,6 +20,8 @@ import {
   ChevronDownIcon,
   Plus,
   Trash2,
+  Lock,
+  Sparkles,
 } from "lucide-react";
 import {
   Select,
@@ -78,6 +80,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
     "",
   );
   const user = useQuery(api.auth.loggedInUser);
+  const isFreePlan = user?.subscriptionTier === "free" || !user?.subscriptionTier;
 
   console.log("pewview form", form);
 
@@ -120,7 +123,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
   const router = useRouter();
 
   const [primaryColor, setPrimaryColor] = useState(
-    form.settings?.branding?.primaryColor ?? "#6366f1",
+    form.settings?.branding?.primaryColor ?? "#f56a4d",
   );
   const [logoUrl, setLogoUrl] = useState(
     form.settings?.branding?.logoUrl ?? "",
@@ -266,13 +269,15 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
           validation: q.validation,
         })),
         settings: {
-          branding: { primaryColor, logoUrl: logoUrl || undefined },
+          // Only include branding for Pro+ users
+          branding: isFreePlan ? {} : { primaryColor, logoUrl: logoUrl || undefined },
           notifications: {
             emailOnResponse,
             notificationEmail: notificationEmail || undefined,
           },
         },
-        aiConfig: { personality, enableVoice: voiceEnabled },
+        // Only include voice for Pro+ users
+        aiConfig: { personality, enableVoice: isFreePlan ? false : voiceEnabled },
         workspaceId: user?.activeWorkspaceId as Id<"workspaces">,
       });
       router.push(`/dashboard/forms/${formId}/edit`);
@@ -1030,8 +1035,21 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="font-medium">Branding</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium flex items-center gap-2">
+                      Branding
+                      {isFreePlan && <Lock className="w-4 h-4 text-muted-foreground" />}
+                    </h3>
+                    {isFreePlan && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-linear-to-r from-amber-100 to-orange-100 text-amber-700 text-xs font-medium">
+                        <Sparkles className="w-3 h-3" /> Pro
+                      </span>
+                    )}
+                  </div>
+                  {isFreePlan && (
+                    <p className="text-sm text-muted-foreground">Upgrade to Pro to customize colors and add your logo.</p>
+                  )}
+                  <div className={cn("grid grid-cols-2 gap-4", isFreePlan && "opacity-50 pointer-events-none")}>
                     <div className="space-y-2">
                       <Label>Primary Color</Label>
                       <div className="flex gap-2">
@@ -1040,11 +1058,13 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                           value={primaryColor}
                           onChange={(e) => setPrimaryColor(e.target.value)}
                           className="w-16 h-10"
+                          disabled={isFreePlan}
                         />
                         <Input
                           value={primaryColor}
                           onChange={(e) => setPrimaryColor(e.target.value)}
                           className="flex-1"
+                          disabled={isFreePlan}
                         />
                       </div>
                     </div>
@@ -1054,6 +1074,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         value={logoUrl}
                         onChange={(e) => setLogoUrl(e.target.value)}
                         placeholder="https://example.com/logo.png"
+                        disabled={isFreePlan}
                       />
                     </div>
                   </div>
@@ -1100,10 +1121,23 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                     </Select>
                   </div>
                   <div className="flex items-center justify-between">
-                    <Label>Voice Input</Label>
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <Label>Voice Input</Label>
+                        {isFreePlan && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-linear-to-r from-amber-100 to-orange-100 text-amber-700 text-xs font-medium">
+                            <Sparkles className="w-3 h-3" /> Pro
+                          </span>
+                        )}
+                      </div>
+                      {isFreePlan && (
+                        <p className="text-sm text-muted-foreground">Upgrade to Pro to enable voice input</p>
+                      )}
+                    </div>
                     <Switch
                       checked={voiceEnabled}
                       onCheckedChange={setVoiceEnabled}
+                      disabled={isFreePlan}
                     />
                   </div>
                 </div>

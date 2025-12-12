@@ -77,7 +77,7 @@ export default function EditFormPage({
     title: "",
     description: "",
     status: "draft",
-    primaryColor: "#6366f1",
+    primaryColor: "#f56a4d",
     secondaryColor: "#2EB7A7",
     backgroundColor: "#ffffff",
     font: "Inter",
@@ -94,7 +94,7 @@ export default function EditFormPage({
   const [status, setStatus] = useState<"draft" | "published" | "closed">("draft");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [primaryColor, setPrimaryColor] = useState("#6366f1");
+  const [primaryColor, setPrimaryColor] = useState("#f56a4d");
   const [secondaryColor, setSecondaryColor] = useState("#2EB7A7");
   const [backgroundColor, setBackgroundColor] = useState("#ffffff");
   const [font, setFont] = useState("Inter");
@@ -151,26 +151,28 @@ export default function EditFormPage({
   const deleteQ = useMutation(api.questions.deleteQuestion);
   const reorderQ = useMutation(api.questions.reorderQuestions);
 
-  // Sync to Local Storage
+  // Sync to Local Storage - only after initial DB sync
   useEffect(() => {
-    if (form) {
-      setLocalState({
-        title,
-        description,
-        status: status as any,
-        primaryColor,
-        secondaryColor,
-        backgroundColor,
-        font,
-        logoUrl,
-        emailOnResponse,
-        notificationEmail,
-        personality,
-        voiceEnabled,
-        allowSaveAndResume,
-        updatedAt: Date.now(),
-      });
-    }
+    // Don't save to localStorage on initial mount or before form loads
+    // This prevents saving empty title/description before DB data initializes
+    if (isInitialMount.current || !form || !title) return;
+    
+    setLocalState({
+      title,
+      description,
+      status: status as any,
+      primaryColor,
+      secondaryColor,
+      backgroundColor,
+      font,
+      logoUrl,
+      emailOnResponse,
+      notificationEmail,
+      personality,
+      voiceEnabled,
+      allowSaveAndResume,
+      updatedAt: Date.now(),
+    });
   }, [title, description, status, primaryColor, secondaryColor, backgroundColor, font, logoUrl, emailOnResponse, notificationEmail, personality, voiceEnabled, allowSaveAndResume, form]);
 
   // Autosave Effect
@@ -186,7 +188,7 @@ export default function EditFormPage({
       title !== (form.title ?? "") ||
       description !== (form.description ?? "") ||
       status !== (form.status ?? "draft") ||
-      primaryColor !== (form.settings?.branding?.primaryColor ?? "#6366f1") ||
+      primaryColor !== (form.settings?.branding?.primaryColor ?? "#f56a4d") ||
       secondaryColor !== (form.settings?.branding?.secondaryColor ?? "#2EB7A7") ||
       backgroundColor !== (form.settings?.branding?.backgroundColor ?? "#ffffff") ||
       font !== (form.settings?.branding?.font ?? "Inter") ||
@@ -235,7 +237,7 @@ export default function EditFormPage({
       setTitle(form.title ?? "");
       setDescription(form.description ?? "");
       setStatus(form.status ?? "draft");
-      setPrimaryColor(form.settings?.branding?.primaryColor ?? "#6366f1");
+      setPrimaryColor(form.settings?.branding?.primaryColor ?? "#f56a4d");
       setSecondaryColor(form.settings?.branding?.secondaryColor ?? "#2EB7A7");
       setBackgroundColor(form.settings?.branding?.backgroundColor ?? "#ffffff");
       setFont(form.settings?.branding?.font ?? "Inter");
@@ -565,7 +567,7 @@ export default function EditFormPage({
                     <div className="flex items-center gap-2">
                       <Label>Voice Input</Label>
                       {isFreePlan && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 text-xs font-medium">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-linear-to-r from-amber-100 to-orange-100 text-amber-700 text-xs font-medium">
                           <Sparkles className="w-3 h-3" /> Pro
                         </span>
                       )}
@@ -602,7 +604,7 @@ export default function EditFormPage({
         </TabsContent>
         <TabsContent value="design" className="space-y-4">
           {isFreePlan && (
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200">
               <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
                 <Lock className="w-5 h-5 text-amber-600" />
               </div>
@@ -611,7 +613,7 @@ export default function EditFormPage({
                 <p className="text-sm text-amber-700">Upgrade to customize colors, fonts, and add your logo.</p>
               </div>
               <Link href="/dashboard/pricing">
-                <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+                <Button size="sm" className="bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
                   <Sparkles className="w-4 h-4 mr-1" /> Upgrade
                 </Button>
               </Link>
