@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save, Eye, Plus, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Eye, Plus, Loader2, Lock, Sparkles } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -61,6 +61,7 @@ export default function EditFormPage({
     api.users.getRole,
     form?.workspaceId ? { workspaceId: form.workspaceId } : "skip"
   );
+  const isFreePlan = user?.subscriptionTier === "free" || !user?.subscriptionTier;
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
@@ -284,9 +285,10 @@ export default function EditFormPage({
       await updateSettings(payload);
       setLastSavedAt(new Date());
       if (!isAutosave) toast.success("Settings saved");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      if (!isAutosave) toast.error("Failed to save");
+      const errorMessage = err instanceof ConvexError ? err.data : "Failed to save";
+      if (!isAutosave) toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -560,14 +562,22 @@ export default function EditFormPage({
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Voice Input</Label>
+                    <div className="flex items-center gap-2">
+                      <Label>Voice Input</Label>
+                      {isFreePlan && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 text-xs font-medium">
+                          <Sparkles className="w-3 h-3" /> Pro
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">
-                      Allow users to speak their answers
+                      {isFreePlan ? "Upgrade to Pro to enable voice input" : "Allow users to speak their answers"}
                     </p>
                   </div>
                   <Switch
                     checked={voiceEnabled}
                     onCheckedChange={setVoiceEnabled}
+                    disabled={isFreePlan}
                   />
                 </div>
               </div>
@@ -591,9 +601,28 @@ export default function EditFormPage({
           </Card>
         </TabsContent>
         <TabsContent value="design" className="space-y-4">
-          <Card>
+          {isFreePlan && (
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100">
+                <Lock className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium text-amber-800">Custom Branding requires Pro</p>
+                <p className="text-sm text-amber-700">Upgrade to customize colors, fonts, and add your logo.</p>
+              </div>
+              <Link href="/dashboard/pricing">
+                <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+                  <Sparkles className="w-4 h-4 mr-1" /> Upgrade
+                </Button>
+              </Link>
+            </div>
+          )}
+          <Card className={isFreePlan ? "opacity-60 pointer-events-none" : ""}>
             <CardHeader>
-              <CardTitle>Form Design</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                Form Design
+                {isFreePlan && <Lock className="w-4 h-4 text-muted-foreground" />}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
