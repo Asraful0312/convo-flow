@@ -1,7 +1,7 @@
 import { v, ConvexError } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { api, internal } from "./_generated/api";
-import { assertEditor } from "./auth_helpers";
+import { assertEditor, assertViewer } from "./auth_helpers";
 
 // Get all responses for a form
 export const getFormResponses = query({
@@ -10,6 +10,12 @@ export const getFormResponses = query({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Verify workspace access
+    const form = await ctx.db.get(args.formId);
+    if (!form) throw new ConvexError("Form not found");
+    if (!form.workspaceId) throw new ConvexError("Workspace not found");
+    await assertViewer(ctx, form.workspaceId);
+
     const query = ctx.db
       .query("responses")
       .withIndex("by_form", (q) => q.eq("formId", args.formId));
@@ -228,6 +234,15 @@ export const deleteManyResponses = mutation({
 export const tagResponses = mutation({
   args: { responseIds: v.array(v.id("responses")), tags: v.array(v.string()) },
   handler: async (ctx, args) => {
+    if (args.responseIds.length === 0) return;
+    
+    // Verify workspace access using first response
+    const firstResponse = await ctx.db.get(args.responseIds[0]);
+    if (!firstResponse) throw new ConvexError("Response not found");
+    const form = await ctx.db.get(firstResponse.formId);
+    if (!form?.workspaceId) throw new ConvexError("Form not found");
+    await assertEditor(ctx, form.workspaceId);
+
     for (const responseId of args.responseIds) {
       const existing = await ctx.db.get(responseId);
       const existingTags = existing?.tags || [];
@@ -240,6 +255,13 @@ export const tagResponses = mutation({
 export const addNoteToResponse = mutation({
   args: { responseId: v.id("responses"), note: v.string() },
   handler: async (ctx, args) => {
+    // Verify workspace access
+    const response = await ctx.db.get(args.responseId);
+    if (!response) throw new ConvexError("Response not found");
+    const form = await ctx.db.get(response.formId);
+    if (!form?.workspaceId) throw new ConvexError("Form not found");
+    await assertEditor(ctx, form.workspaceId);
+
     await ctx.db.patch(args.responseId, { notes: args.note });
   },
 });

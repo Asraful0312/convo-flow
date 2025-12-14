@@ -519,11 +519,59 @@ export default function FormSubmissionComponent({
             }
           }
 
+          // Format voice transcript based on question type
+          const formatVoiceTranscript = (text: string, questionType?: string): string => {
+            if (!text) return text;
+            
+            // For email questions: remove spaces, lowercase, common voice replacements
+            if (questionType === "email") {
+              return text
+                .toLowerCase()
+                .replace(/\s+/g, "") // Remove all spaces
+                .replace(/\bat\b/gi, "@") // "at" -> @
+                .replace(/\bdot\b/gi, ".") // "dot" -> .
+                .replace(/\bunderscore\b/gi, "_") // "underscore" -> _
+                .replace(/\bdash\b/gi, "-") // "dash" -> -
+                .replace(/gmail\.com/gi, "gmail.com") // Fix common domains
+                .replace(/yahoo\.com/gi, "yahoo.com")
+                .replace(/hotmail\.com/gi, "hotmail.com")
+                .replace(/outlook\.com/gi, "outlook.com");
+            }
+            
+            // For URL questions: remove spaces, add common replacements
+            if (questionType === "url") {
+              return text
+                .toLowerCase()
+                .replace(/\s+/g, "") // Remove all spaces
+                .replace(/\bdot\b/gi, ".") // "dot" -> .
+                .replace(/\bslash\b/gi, "/") // "slash" -> /
+                .replace(/\bdash\b/gi, "-"); // "dash" -> -
+            }
+            
+            // For phone questions: keep only numbers and common phone chars
+            if (questionType === "phone") {
+              return text.replace(/[^\d\s\-\+\(\)]/g, "");
+            }
+            
+            return text;
+          };
+
+          const currentQuestionType = questions?.[currentQuestionIndex]?.type;
+          
           // Update UI with interim transcript for live feedback
-          setInputValue(finalTranscriptRef.current + interimTranscript);
+          const displayText = formatVoiceTranscript(
+            finalTranscriptRef.current + interimTranscript,
+            currentQuestionType
+          );
+          setInputValue(displayText);
 
           if (finalTranscriptPart) {
-            finalTranscriptRef.current += finalTranscriptPart;
+            // Format and store the final transcript
+            const formattedFinal = formatVoiceTranscript(finalTranscriptPart, currentQuestionType);
+            finalTranscriptRef.current = formatVoiceTranscript(
+              finalTranscriptRef.current + formattedFinal,
+              currentQuestionType
+            );
             setInputValue(finalTranscriptRef.current);
 
             // Only auto-submit if conditions are met
@@ -683,17 +731,24 @@ export default function FormSubmissionComponent({
         content: m.content,
       }));
 
-      const conversationalText = await getConversationalQuestion({
-        question: question.text,
-        history: historyForAI as any,
-        personality: form?.aiConfig?.personality || "friendly",
-        userName: userName || undefined,
-        previousAnswer,
-      });
+      try {
+        const conversationalText = await getConversationalQuestion({
+          question: question.text,
+          history: historyForAI as any,
+          personality: form?.aiConfig?.personality || "friendly",
+          userName: userName || undefined,
+          previousAnswer,
+          responseId: responseId || undefined,
+        });
 
-      if (conversationalText) {
-        questionText = conversationalText;
-        isAdaptive = conversationalText !== question.text;
+        if (conversationalText) {
+          questionText = conversationalText;
+          isAdaptive = conversationalText !== question.text;
+        }
+      } catch (error: any) {
+        // On rate limit or error, just use the original question text
+        // Log but don't show error - the form can still work with original text
+        console.error("Error getting conversational question:", error);
       }
 
       const questionMessage: Message = {
@@ -894,18 +949,42 @@ export default function FormSubmissionComponent({
         currentQuestion.type,
       )
     ) {
-      const validation = await validateAnswer({
-        question: currentQuestion.text,
-        answer: answer,
-        rules: currentQuestion.validation,
-      });
+      try {
+        const validation = await validateAnswer({
+          question: currentQuestion.text,
+          answer: answer,
+          rules: currentQuestion.validation,
+          responseId: responseId || undefined,
+        });
 
-      if (!validation.isValid) {
+        if (!validation.isValid) {
+          setIsProcessing(false);
+          // Use AI's conversational 'reason' field, with a friendly fallback
+          const errorMessage: Message = {
+            id: `error-${Date.now()}`,
+            role: "assistant",
+            content: validation.reason || "Hmm, that doesn't seem quite right. Could you try answering that again?",
+            timestamp: Date.now(),
+          };
+          setMessages((prev) => {
+            const newMessages = [...prev, errorMessage];
+            messagesRef.current = newMessages;
+            return newMessages;
+          });
+          // Note: speakText is called automatically by the useEffect that watches messages
+          return;
+        }
+      } catch (error: any) {
         setIsProcessing(false);
+        // Handle rate limit or other errors with a friendly message
+        const errorContent = error?.data?.includes?.("Too many requests") || error?.message?.includes?.("rate limit")
+          ? "I'm getting a lot of requests right now! Please wait a moment and try again. 😊"
+          : "Oops, something went wrong on my end. Let me try that again in a moment.";
+        
         const errorMessage: Message = {
           id: `error-${Date.now()}`,
           role: "assistant",
-          content: validation.errorMessage || "Please provide a valid answer.",
+          content: errorContent,
           timestamp: Date.now(),
         };
         setMessages((prev) => {
@@ -913,7 +992,7 @@ export default function FormSubmissionComponent({
           messagesRef.current = newMessages;
           return newMessages;
         });
-        speakText(errorMessage.content);
+        // Note: speakText is called automatically by the useEffect that watches messages
         return;
       }
     }
@@ -1189,7 +1268,7 @@ export default function FormSubmissionComponent({
             },
             body: JSON.stringify({
               text,
-              model_id: "eleven_monolingual_v1",
+              model_id: "eleven_turbo_v2", // Updated: eleven_monolingual_v1 deprecated on free tier
               voice_settings: {
                 stability: 0.5,
                 similarity_boost: 0.5,

@@ -1,7 +1,9 @@
 import { action, internalAction } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { api } from "./_generated/api";
 import OpenAI from "openai";
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { rateLimiter } from "./rateLimits";
 
 const openai = new OpenAI();
 
@@ -18,6 +20,15 @@ export const generateForm = action({
     ),
   },
   handler: async (ctx, { prompt, conversationHistory }) => {
+    // Rate limit per user
+    const userId = await getAuthUserId(ctx);
+    if (userId) {
+      const { ok, retryAfter } = await rateLimiter.limit(ctx, "generateForm", { key: userId });
+      if (!ok) {
+        throw new ConvexError(`Rate limit exceeded. Please try again in ${Math.ceil(retryAfter / 1000)} seconds.`);
+      }
+    }
+
     const userMessage = `Generate a form based on this prompt: ${prompt}`;
     const messages: any[] = [
       {
@@ -226,6 +237,15 @@ export const generateFormFromText = action({
     prompt: v.string(),
   },
   handler: async (ctx, { prompt }) => {
+    // Rate limit per user
+    const userId = await getAuthUserId(ctx);
+    if (userId) {
+      const { ok, retryAfter } = await rateLimiter.limit(ctx, "generateFormFromText", { key: userId });
+      if (!ok) {
+        throw new ConvexError(`Rate limit exceeded. Please try again in ${Math.ceil(retryAfter / 1000)} seconds.`);
+      }
+    }
+
     const userMessage = `Generate a form based on the following text extracted from a document:\n\n${prompt}`;
     const messages: any[] = [
       {
@@ -261,11 +281,20 @@ export const getConversationalQuestion = action({
     personality: v.optional(v.string()),
     userName: v.optional(v.string()),
     previousAnswer: v.optional(v.string()),
+    responseId: v.optional(v.id("responses")), // For rate limiting
   },
   handler: async (
     ctx,
-    { question, history, personality, userName, previousAnswer },
+    { question, history, personality, userName, previousAnswer, responseId },
   ) => {
+    // Rate limit by response session to prevent abuse
+    if (responseId) {
+      const { ok, retryAfter } = await rateLimiter.limit(ctx, "getConversationalQuestion", { key: responseId });
+      if (!ok) {
+        throw new ConvexError(`Too many requests. Please wait ${Math.ceil(retryAfter / 1000)} seconds.`);
+      }
+    }
+
     const personalityPrompt =
       {
         professional:
@@ -324,8 +353,17 @@ export const validateAnswer = action({
     answer: v.string(),
     personality: v.optional(v.string()),
     rules: v.optional(v.any()),
+    responseId: v.optional(v.id("responses")), // For rate limiting
   },
-  handler: async (ctx, { question, answer, personality, rules }) => {
+  handler: async (ctx, { question, answer, personality, rules, responseId }) => {
+    // Rate limit by response session to prevent abuse
+    if (responseId) {
+      const { ok, retryAfter } = await rateLimiter.limit(ctx, "validateAnswer", { key: responseId });
+      if (!ok) {
+        throw new ConvexError(`Too many requests. Please wait ${Math.ceil(retryAfter / 1000)} seconds.`);
+      }
+    }
+
     const personalityPrompt =
       {
         professional: "You are a professional assistant.",

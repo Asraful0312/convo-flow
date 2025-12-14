@@ -26,6 +26,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 const links = [
   {
@@ -185,13 +186,15 @@ export default function DashboardLayout({
 
             <div className="flex flex-1 h-full">
               <div className="p-2 md:p-6 rounded-tl-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex flex-col gap-2 flex-1 w-full h-full overflow-y-auto">
-                {children}
+                <ErrorBoundary>
+                  {children}
+                </ErrorBoundary>
               </div>
             </div>
           </div>
         </div>
       ) : (
-        <main>{children}</main>
+        <main><ErrorBoundary>{children}</ErrorBoundary></main>
       )}
     </div>
   );

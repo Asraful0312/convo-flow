@@ -71,8 +71,6 @@ export default function NewFormPage() {
     }
   }, [userRole, router]);
 
-  console.log("user role", userRole)
-
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined;
     if (isGenerating) {

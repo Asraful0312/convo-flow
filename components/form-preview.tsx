@@ -82,7 +82,6 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
   const user = useQuery(api.auth.loggedInUser);
   const isFreePlan = user?.subscriptionTier === "free" || !user?.subscriptionTier;
 
-  console.log("pewview form", form);
 
   const handleAddQuestion = (type: Question["type"]) => {
     setForm((prev) => {

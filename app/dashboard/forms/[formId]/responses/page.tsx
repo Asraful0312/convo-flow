@@ -74,6 +74,11 @@ export default function ResponsesPage({
   const tagResponses = useMutation(api.responses.tagResponses);
   const exportAction = useAction(api.exports.exportResponses);
 
+    const userRole = useQuery(
+      api.users.getRole,
+      data?.form?.workspaceId ? { workspaceId: data.form.workspaceId } : "skip"
+    );
+
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<
     "all" | "completed" | "in_progress" | "abandoned"
@@ -82,6 +87,9 @@ export default function ResponsesPage({
     [],
   );
   const [isExporting, setIsExporting] = useState(false);
+
+  console.log("userRole", userRole);
+  console.log("DATA", data);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -626,8 +634,12 @@ export default function ResponsesPage({
                                 View Details
                               </DropdownMenuItem>
                             </Link>
+                            {
+                              userRole !== "viewer" && (
+                                
                             <DropdownMenuSub>
-                              <DropdownMenuSubTrigger className="group hover:text-white">
+                              <DropdownMenuSubTrigger
+                            className="group hover:text-white">
                                 <Tag className="w-4 h-4 mr-2 group-hover:text-white" />{" "}
                                 Add Tag
                               </DropdownMenuSubTrigger>
@@ -648,6 +660,8 @@ export default function ResponsesPage({
                                 </div>
                               </DropdownMenuSubContent>
                             </DropdownMenuSub>
+                              )
+                            }
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-destructive group"
