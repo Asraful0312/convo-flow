@@ -371,3 +371,7 @@ html {
     transform: translateY(0);
   }
 }
+
+button {
+  cursor: pointer !important;
+}

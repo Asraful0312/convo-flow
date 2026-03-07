@@ -1,10 +1,15 @@
 "use node";
-import { internalAction } from "./_generated/server";
 import { v } from "convex/values";
 import { Resend } from "resend";
+import { internalAction } from "./_generated/server";
 
 const resendApiKey = process.env.AUTH_RESEND_KEY;
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
+
+const FROM =
+  process.env.NODE_ENV === "prod"
+    ? "no-reply@imagetotextnow.xyz"
+    : "onboarding@resend.dev";
 
 export const sendInviteEmail = internalAction({
   args: {
@@ -23,7 +28,7 @@ export const sendInviteEmail = internalAction({
 
     try {
       await resend.emails.send({
-        from: "no-reply@imagetotextnow.xyz",
+        from: FROM,
         to: [email],
         subject: `You're invited to join ${workspaceName} on Candid`,
         html: `
@@ -67,7 +72,7 @@ export const sendResumeLink = internalAction({
 
     try {
       await resend.emails.send({
-        from: "no-reply@imagetotextnow.xyz",
+        from: FROM,
         to: [email],
         subject: `Continue your form: ${formTitle}`,
         html: `
@@ -108,7 +113,7 @@ export const sendCompletionEmail = internalAction({
 
     try {
       await resend.emails.send({
-        from: "no-reply@imagetotextnow.xyz",
+        from: FROM,
         to,
         subject,
         html,
