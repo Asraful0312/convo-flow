@@ -1,8 +1,6 @@
 "use client";
 
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -10,9 +8,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { api } from "@/convex/_generated/api";
 import { Doc } from "@/convex/_generated/dataModel";
+import { useMutation } from "convex/react";
+import { toast } from "sonner";
 
 type Member = Doc<"workspaceMembers">;
 
@@ -49,7 +48,9 @@ export function MemberActions({ member, isOwner, currentUserRole }: Props) {
   }
 
   if (isOwner) {
-    return <div className="text-right text-sm text-muted-foreground pr-4">Owner</div>;
+    return (
+      <div className="text-right text-sm text-muted-foreground pr-4">Owner</div>
+    );
   }
 
   return (
@@ -64,7 +65,12 @@ export function MemberActions({ member, isOwner, currentUserRole }: Props) {
           <SelectItem value="viewer">Viewer</SelectItem>
         </SelectContent>
       </Select>
-      <Button variant="ghost" size="sm" onClick={handleRemove} className="text-destructive hover:text-destructive">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleRemove}
+        className="text-destructive hover:text-destructive"
+      >
         Remove
       </Button>
     </div>

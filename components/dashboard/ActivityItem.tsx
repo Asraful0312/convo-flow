@@ -1,12 +1,12 @@
 import { Doc } from "@/convex/_generated/dataModel";
 import { formatDistanceToNow } from "date-fns";
 import {
-  FileText,
-  UserPlus,
-  LogIn,
   Edit3,
-  UserMinus,
+  FileText,
+  LogIn,
   Settings,
+  UserMinus,
+  UserPlus,
 } from "lucide-react";
 
 type Props = {
@@ -61,7 +61,7 @@ function renderDetails(activity: Props["activity"]) {
       {action === "member.join" && <>joined the workspace.</>}
       {action === "member.updateRole" && (
         <>
-          changed a member's role to{" "}
+          changed a member&apos;s role to{" "}
           <span className="font-semibold break-all">{details.newRole}</span>.
         </>
       )}

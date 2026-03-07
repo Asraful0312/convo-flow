@@ -1,32 +1,31 @@
 "use client";
-import type React from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import {
-  LayoutDashboard,
-  FileText,
-  BarChart3,
-  Settings,
-  Plus,
-  Menu,
-  UserCog,
-  Bell,
-  Zap,
-  Webhook,
-  CreditCard,
-  Users,
-  Loader2,
-} from "lucide-react";
+import { ErrorBoundary } from "@/components/error-boundary";
 import CandidLogo from "@/components/shared/candid-logo";
 import UserMenu from "@/components/shared/user-menu";
 import WorkspaceSwitcher from "@/components/shared/workspace-switcher";
-import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
-import { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useQuery } from "convex/react";
+import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { api } from "@/convex/_generated/api";
-import { ErrorBoundary } from "@/components/error-boundary";
+import { useQuery } from "convex/react";
+import {
+  BarChart3,
+  Bell,
+  CreditCard,
+  FileText,
+  LayoutDashboard,
+  Loader2,
+  Menu,
+  Plus,
+  UserCog,
+  Users,
+  Webhook,
+  Zap,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import type React from "react";
+import { useEffect, useState } from "react";
 
 const links = [
   {
@@ -98,13 +97,24 @@ export default function DashboardLayout({
       router.push("/auth/signin");
       return;
     }
-    if (!user.workspaces || user.workspaces.length === 0 || !user.activeWorkspaceId) {
+    if (
+      !user.workspaces ||
+      user.workspaces.length === 0 ||
+      !user.activeWorkspaceId
+    ) {
       router.push("/dashboard/workspaces/new");
     }
   }, [user, router, isWorkspaceCreationPage]);
 
   // Show loading state while checking user/workspace
-  if (!isWorkspaceCreationPage && (user === undefined || (user && (!user.workspaces || user.workspaces.length === 0 || !user.activeWorkspaceId)))) {
+  if (
+    !isWorkspaceCreationPage &&
+    (user === undefined ||
+      (user &&
+        (!user.workspaces ||
+          user.workspaces.length === 0 ||
+          !user.activeWorkspaceId)))
+  ) {
     return (
       <div className="w-full h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -186,15 +196,15 @@ export default function DashboardLayout({
 
             <div className="flex flex-1 h-full">
               <div className="p-2 md:p-6 rounded-tl-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex flex-col gap-2 flex-1 w-full h-full overflow-y-auto">
-                <ErrorBoundary>
-                  {children}
-                </ErrorBoundary>
+                <ErrorBoundary>{children}</ErrorBoundary>
               </div>
             </div>
           </div>
         </div>
       ) : (
-        <main><ErrorBoundary>{children}</ErrorBoundary></main>
+        <main>
+          <ErrorBoundary>{children}</ErrorBoundary>
+        </main>
       )}
     </div>
   );

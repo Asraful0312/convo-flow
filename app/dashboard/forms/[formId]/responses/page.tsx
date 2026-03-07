@@ -1,13 +1,7 @@
-"use client"
+"use client";
 
-import { useState, useMemo, use } from "react";
-import Link from "next/link";
-import { useQuery, useMutation, useAction } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
   CardContent,
@@ -15,25 +9,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
   DropdownMenuSub,
-  DropdownMenuSubTrigger,
   DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -42,23 +29,35 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { useAction, useMutation, useQuery } from "convex/react";
+import {
   ArrowLeft,
-  Download,
-  Search,
-  MoreVertical,
-  Eye,
-  Trash2,
   Calendar,
-  Monitor,
-  Smartphone,
-  Tablet,
-  Loader2,
-  Tag,
-  Plus,
-  Lock,
   ChevronLeft,
   ChevronRight,
+  Download,
+  Eye,
+  Loader2,
+  Lock,
+  Monitor,
+  MoreVertical,
+  Search,
+  Smartphone,
+  Tablet,
+  Tag,
+  Trash2,
 } from "lucide-react";
+import Link from "next/link";
+import { use, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 export default function ResponsesPage({
@@ -74,10 +73,10 @@ export default function ResponsesPage({
   const tagResponses = useMutation(api.responses.tagResponses);
   const exportAction = useAction(api.exports.exportResponses);
 
-    const userRole = useQuery(
-      api.users.getRole,
-      data?.form?.workspaceId ? { workspaceId: data.form.workspaceId } : "skip"
-    );
+  const userRole = useQuery(
+    api.users.getRole,
+    data?.form?.workspaceId ? { workspaceId: data.form.workspaceId } : "skip",
+  );
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<
@@ -196,7 +195,8 @@ export default function ResponsesPage({
     const lowerDevice = device.toLowerCase();
     if (lowerDevice.includes("mobile"))
       return <Smartphone className="w-4 h-4" />;
-    if (lowerDevice.includes("tablet")) return <Tablet className="w-4 h-4 text-[#2eb7a7]" />;
+    if (lowerDevice.includes("tablet"))
+      return <Tablet className="w-4 h-4 text-[#2eb7a7]" />;
     return <Monitor className="w-4 h-4 text-primary" />;
   };
 
@@ -226,9 +226,25 @@ export default function ResponsesPage({
       if (currentPage <= 4) {
         pages.push(1, 2, 3, 4, 5, "...", totalPages);
       } else if (currentPage >= totalPages - 3) {
-        pages.push(1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+        pages.push(
+          1,
+          "...",
+          totalPages - 4,
+          totalPages - 3,
+          totalPages - 2,
+          totalPages - 1,
+          totalPages,
+        );
       } else {
-        pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+        pages.push(
+          1,
+          "...",
+          currentPage - 1,
+          currentPage,
+          currentPage + 1,
+          "...",
+          totalPages,
+        );
       }
     }
     return pages;
@@ -598,7 +614,9 @@ export default function ResponsesPage({
                         <div className="text-sm text-[#2B2F36]">
                           {response.metadata?.location?.country ? (
                             <span>
-                              {response.metadata.location.city ? `${response.metadata.location.city}, ` : ""}
+                              {response.metadata.location.city
+                                ? `${response.metadata.location.city}, `
+                                : ""}
                               {response.metadata.location.country}
                             </span>
                           ) : (
@@ -634,34 +652,30 @@ export default function ResponsesPage({
                                 View Details
                               </DropdownMenuItem>
                             </Link>
-                            {
-                              userRole !== "viewer" && (
-                                
-                            <DropdownMenuSub>
-                              <DropdownMenuSubTrigger
-                            className="group hover:text-white">
-                                <Tag className="w-4 h-4 mr-2 group-hover:text-white" />{" "}
-                                Add Tag
-                              </DropdownMenuSubTrigger>
-                              <DropdownMenuSubContent>
-                                <div className="p-2">
-                                  <Input
-                                    placeholder="New tag..."
-                                    onKeyDown={async (e) => {
-                                      if (e.key === "Enter") {
-                                        await tagResponses({
-                                          responseIds: [response._id],
-                                          tags: [e.currentTarget.value],
-                                        });
-                                        toast.success("Tagged response");
-                                      }
-                                    }}
-                                  />
-                                </div>
-                              </DropdownMenuSubContent>
-                            </DropdownMenuSub>
-                              )
-                            }
+                            {userRole !== "viewer" && (
+                              <DropdownMenuSub>
+                                <DropdownMenuSubTrigger className="group hover:text-white">
+                                  <Tag className="w-4 h-4 mr-2 group-hover:text-white" />{" "}
+                                  Add Tag
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                  <div className="p-2">
+                                    <Input
+                                      placeholder="New tag..."
+                                      onKeyDown={async (e) => {
+                                        if (e.key === "Enter") {
+                                          await tagResponses({
+                                            responseIds: [response._id],
+                                            tags: [e.currentTarget.value],
+                                          });
+                                          toast.success("Tagged response");
+                                        }
+                                      }}
+                                    />
+                                  </div>
+                                </DropdownMenuSubContent>
+                              </DropdownMenuSub>
+                            )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-destructive group"
@@ -694,29 +708,40 @@ export default function ResponsesPage({
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
-                  
+
                   <div className="flex items-center gap-1">
-                    {getPageNumbers().map((page, i) => (
+                    {getPageNumbers().map((page, i) =>
                       page === "..." ? (
-                        <span key={`ellipsis-${i}`} className="px-2 text-muted-foreground">...</span>
+                        <span
+                          key={`ellipsis-${i}`}
+                          className="px-2 text-muted-foreground"
+                        >
+                          ...
+                        </span>
                       ) : (
                         <Button
                           key={page}
                           variant={currentPage === page ? "default" : "outline"}
                           size="sm"
                           onClick={() => setCurrentPage(Number(page))}
-                          className={currentPage === page ? "bg-[#F56A4D] hover:bg-[#E55A3D]" : ""}
+                          className={
+                            currentPage === page
+                              ? "bg-[#F56A4D] hover:bg-[#E55A3D]"
+                              : ""
+                          }
                         >
                           {page}
                         </Button>
-                      )
-                    ))}
+                      ),
+                    )}
                   </div>
 
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
                     disabled={currentPage === totalPages}
                   >
                     <ChevronRight className="h-4 w-4" />

@@ -1,4 +1,4 @@
-import { ArrowUpRightIcon, Folder, FormInput } from "lucide-react";
+import { ArrowUpRightIcon, FormInput } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {

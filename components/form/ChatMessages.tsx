@@ -1,6 +1,7 @@
 import { FormData, Message } from "@/lib/form-types";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
+import Image from "next/image";
 import TypingIndicator from "./TypingIndicator";
 
 interface ChatMessagesProps {
@@ -33,10 +34,12 @@ export default function ChatMessages({
             {message.role === "assistant" && (
               <>
                 {form.settings.branding?.logoUrl ? (
-                  <img
+                  <Image
                     src={form.settings.branding.logoUrl}
                     alt="Logo"
                     className="w-8 h-8 rounded-lg"
+                    width={32}
+                    height={32}
                   />
                 ) : (
                   <div

@@ -1,7 +1,7 @@
+import confetti from "canvas-confetti";
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { useEffect } from "react";
-import confetti from "canvas-confetti";
 
 interface CompletionScreenProps {
   secondaryColor: string;
@@ -35,7 +35,7 @@ export default function CompletionScreen({
         </div>
         <h3 className="text-2xl font-bold text-gray-900">All done!</h3>
         <p className="text-gray-600">
-          Thanks for completing the form. We'll be in touch soon.
+          Thanks for completing the form. We&apos;ll be in touch soon.
         </p>
       </div>
     </motion.div>

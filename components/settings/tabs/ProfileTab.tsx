@@ -1,5 +1,9 @@
 "use client";
 
+import ProfileSection from "@/components/settings/profile-section";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -7,16 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Shield, User, LogOut, Copy } from "lucide-react";
-import { useAuthActions } from "@convex-dev/auth/react";
-import ProfileSection from "@/components/settings/profile-section";
-import { motion } from "framer-motion";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { HighlightedTitle } from "@/components/HighlightedTitle";
-import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Badge } from "@/components/ui/badge";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useQuery } from "convex/react";
+import { motion } from "framer-motion";
+import { Copy, LogOut, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 const containerVariants = {

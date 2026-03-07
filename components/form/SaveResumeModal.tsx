@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 interface SaveResumeModalProps {
@@ -55,8 +55,8 @@ export default function SaveResumeModal({
         <DialogHeader>
           <DialogTitle>Save your progress</DialogTitle>
           <DialogDescription>
-            Enter your email below and we'll send you a link to resume this form
-            later from where you left off.
+            Enter your email below and we&apos;ll send you a link to resume this
+            form later from where you left off.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">

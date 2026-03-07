@@ -1,8 +1,9 @@
-"use client"
+"use client";
 import { Button } from "@/components/ui/button";
 import { FormData } from "@/lib/form-types";
-import { Sparkles, Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Sparkles, Volume2, VolumeX } from "lucide-react";
+import Image from "next/image";
 
 interface FormHeaderProps {
   form: FormData;
@@ -18,7 +19,6 @@ interface FormHeaderProps {
 
 export default function FormHeader({
   form,
-  currentQuestionIndex,
   totalQuestions,
   progress,
   voiceEnabled,
@@ -32,17 +32,23 @@ export default function FormHeader({
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
-      <div 
+      <div
         className="absolute inset-0 backdrop-blur-md border-b border-border shadow-sm transition-colors duration-300"
-        style={{ backgroundColor: backgroundColor ? `${backgroundColor}CC` : "rgba(255,255,255,0.8)" }}
+        style={{
+          backgroundColor: backgroundColor
+            ? `${backgroundColor}CC`
+            : "rgba(255,255,255,0.8)",
+        }}
       />
       <div className="container mx-auto px-4 h-16 flex items-center justify-between relative z-10">
         <div className="flex items-center gap-3 overflow-hidden">
           {form.settings.branding?.logoUrl ? (
-            <img
+            <Image
               src={form.settings.branding.logoUrl}
               alt="Logo"
               className="w-8 h-8 rounded-lg object-cover shadow-sm shrink-0"
+              width={32}
+              height={32}
             />
           ) : (
             <div
@@ -61,16 +67,16 @@ export default function FormHeader({
 
         <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           {allowSaveAndResume && !isCompleted && (
-            <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={onSave}
-                className="hidden sm:flex text-muted-foreground hover:text-foreground"
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onSave}
+              className="hidden sm:flex text-muted-foreground hover:text-foreground"
             >
               Save & resume
             </Button>
           )}
-          
+
           {form.aiConfig?.enableVoice && (
             <Button
               variant="ghost"
@@ -78,14 +84,13 @@ export default function FormHeader({
               onClick={onToggleVoice}
               className={cn(
                 "h-8 w-8 rounded-full transition-colors ",
-                voiceEnabled ?  "bg-primary/10 hover:text-white group" : "hover:bg-muted"
+                voiceEnabled
+                  ? "bg-primary/10 hover:text-white group"
+                  : "hover:bg-muted",
               )}
             >
               {voiceEnabled ? (
-                <Volume2
-                  className="w-4 h-4 group-hover:text-white"
-                  
-                />
+                <Volume2 className="w-4 h-4 group-hover:text-white" />
               ) : (
                 <VolumeX className="w-4 h-4 text-muted-foreground" />
               )}

@@ -1,19 +1,18 @@
 "use client";
 
-import React from "react";
+import { api } from "@/convex/_generated/api";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu";
+import { useQuery } from "convex/react";
+import { CreditCard, LogOut, Settings2, User } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { CreditCard, LogOut, Settings2, User } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu";
 
 const UserMenu = () => {
   const user = useQuery(api.auth.loggedInUser);
@@ -21,7 +20,7 @@ const UserMenu = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <img
+        <Image
           className="size-8 shrink-0 rounded-full"
           width={32}
           height={32}

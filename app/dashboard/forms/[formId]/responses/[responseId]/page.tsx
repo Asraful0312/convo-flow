@@ -1,10 +1,6 @@
 "use client";
 
-import { notFound, useRouter } from "next/navigation";
-import Link from "next/link";
-import { useQuery, useMutation, useAction } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,24 +9,28 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  ArrowLeft,
-  Download,
-  Trash2,
-  Clock,
-  Monitor,
-  Loader2,
-  MoreVertical,
-} from "lucide-react";
-import { toast } from "sonner";
-import { use, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { useAction, useMutation, useQuery } from "convex/react";
+import {
+  ArrowLeft,
+  Clock,
+  Download,
+  Loader2,
+  Monitor,
+  Trash2,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { notFound, useRouter } from "next/navigation";
+import { use, useState } from "react";
+import { toast } from "sonner";
 
 export default function ResponseDetailPage({
   params,
@@ -102,6 +102,7 @@ export default function ResponseDetailPage({
       }
     } catch (error) {
       toast.error("Failed to get download link");
+      console.error(error);
     }
   };
 
@@ -143,7 +144,9 @@ export default function ResponseDetailPage({
               <Button variant="outline" className="gap-2 bg-transparent">
                 <Download className="w-4 h-4" />
                 Export
-                {isExporting && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
+                {isExporting && (
+                  <Loader2 className="w-4 h-4 animate-spin ml-2" />
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -283,16 +286,19 @@ export default function ResponseDetailPage({
                     v = JSON.parse(v);
                   } catch (e) {
                     // Not a JSON string, treat as plain text
+                    console.error(e);
                   }
                 }
 
                 if (typeof v === "object" && v !== null && v.imageUrl) {
                   messageContent = (
                     <div className="flex items-center gap-3 text-white">
-                      <img
+                      <Image
                         src={v.imageUrl}
                         alt={v.text || "Image choice"}
                         className="w-16 h-16 rounded-md object-cover"
+                        width={64}
+                        height={64}
                       />
                       <span>{v.text}</span>
                     </div>

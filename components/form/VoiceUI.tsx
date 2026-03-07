@@ -1,10 +1,10 @@
 "use client";
 
-import { Mic, Send, Bot, Volume2, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Bot, Check, Send, Volume2 } from "lucide-react";
+import styled from "styled-components";
 import { Button } from "../ui/button";
 import TypingIndicator from "./TypingIndicator";
-import { cn } from "@/lib/utils";
-import styled from "styled-components";
 
 interface VoiceUIProps {
   isRecording: boolean;

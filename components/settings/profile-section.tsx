@@ -3,8 +3,12 @@
 import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
+import { motion } from "framer-motion";
+import { Shield, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { PasswordResetInitiator } from "../PasswordResetInitiator";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
@@ -12,13 +16,8 @@ import {
   CardHeader,
   CardTitle,
 } from "../ui/card";
-import { Shield, User } from "lucide-react";
-import { Label } from "../ui/label";
 import { Input } from "../ui/input";
-import { Button } from "../ui/button";
-import { PasswordResetInitiator } from "../PasswordResetInitiator";
-import { motion } from "framer-motion";
-import { HighlightedTitle } from "@/components/HighlightedTitle";
+import { Label } from "../ui/label";
 
 const itemVariants = {
   hidden: { opacity: 0, y: 8 },
@@ -125,7 +124,8 @@ export default function ProfileSection() {
               <Shield className="w-8 h-8 text-[#F56A4D]" />
             </div>
             <p className="text-sm text-muted-foreground max-w-xs">
-              We'll send a secure reset link to <strong>{user?.email}</strong>
+              We&apos;ll send a secure reset link to{" "}
+              <strong>{user?.email}</strong>
             </p>
             <PasswordResetInitiator email={user?.email ?? ""} />
           </CardContent>

@@ -2,79 +2,12 @@
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { PLANS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import NumberFlow from "@number-flow/react";
 import { motion } from "framer-motion";
 import { Check, Star } from "lucide-react";
 import Link from "next/link";
-import { useState, useRef } from "react";
-
-interface PricingPlan {
-  name: string;
-  price: string;
-  yearlyPrice: string;
-  period: string;
-  features: string[];
-  description: string;
-  buttonText: string;
-  href: string;
-  isPopular: boolean;
-}
-
-export const plans: PricingPlan[] = [
-  {
-    name: "Free",
-    price: "0",
-    yearlyPrice: "0",
-    period: "month",
-    description: "Perfect for trying out ConvoFlow",
-    features: [
-      "3 active forms",
-      "100 responses/month",
-      "Basic analytics",
-      "Email notifications",
-    ],
-    buttonText: "Get Started",
-    href: "/auth/signup",
-    isPopular: false,
-  },
-  {
-    name: "Pro",
-    price: "19",
-    yearlyPrice: "190", // optional 10x for yearly example
-    period: "month",
-    description: "For small businesses and solopreneurs",
-    features: [
-      "Unlimited forms",
-      "1,000 responses/month",
-      "Advanced analytics & AI insights",
-      "Custom branding",
-      "Voice input/output",
-      "Priority support",
-    ],
-    buttonText: "Start Free Trial",
-    href: "/auth/signup",
-    isPopular: true,
-  },
-  {
-    name: "Business",
-    price: "49",
-    yearlyPrice: "490",
-    period: "month",
-    description: "For growing teams",
-    features: [
-      "Everything in Pro",
-      "10,000 responses/month",
-      "Team collaboration",
-      "Advanced integrations",
-      "Custom domain",
-      "White-label option",
-    ],
-    buttonText: "Get Started",
-    href: "/auth/signup",
-    isPopular: false,
-  },
-];
 
 export function Pricing({
   title = "Our Pricing",
@@ -92,7 +25,7 @@ export function Pricing({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 sm:2 gap-4">
-        {plans.map((plan, index) => (
+        {PLANS.map((plan, index) => (
           <motion.div
             key={index}
             initial={{ y: 50, opacity: 1 }}

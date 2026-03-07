@@ -1,6 +1,6 @@
 "use client";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import NotionMapping from "@/components/form/notion-mapping";
+import SortableQuestion from "@/components/sortable-questions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,10 +11,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save, Eye, Plus, Loader2, Lock, Sparkles } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -22,19 +18,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useMutation, useQuery } from "convex/react";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { use, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 import {
-  DndContext,
   closestCenter,
+  DndContext,
+  DragEndEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -42,10 +39,21 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import SortableQuestion from "@/components/sortable-questions";
+import { useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
-import NotionMapping from "@/components/form/notion-mapping";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import {
+  ArrowLeft,
+  Eye,
+  Loader2,
+  Lock,
+  Plus,
+  Save,
+  Sparkles,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { use, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useDebounce } from "use-debounce";
 
 export default function EditFormPage({
@@ -59,9 +67,10 @@ export default function EditFormPage({
   const user = useQuery(api.auth.loggedInUser);
   const userRole = useQuery(
     api.users.getRole,
-    form?.workspaceId ? { workspaceId: form.workspaceId } : "skip"
+    form?.workspaceId ? { workspaceId: form.workspaceId } : "skip",
   );
-  const isFreePlan = user?.subscriptionTier === "free" || !user?.subscriptionTier;
+  const isFreePlan =
+    user?.subscriptionTier === "free" || !user?.subscriptionTier;
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
@@ -73,25 +82,30 @@ export default function EditFormPage({
   }, [userRole, formId, router]);
 
   // Local Storage State for Backup
-  const [localState, setLocalState] = useLocalStorage(`candid-form-edit-${formId}`, {
-    title: "",
-    description: "",
-    status: "draft",
-    primaryColor: "#f56a4d",
-    secondaryColor: "#2EB7A7",
-    backgroundColor: "#ffffff",
-    font: "Inter",
-    logoUrl: "",
-    emailOnResponse: false,
-    notificationEmail: "",
-    personality: "professional",
-    voiceEnabled: false,
-    allowSaveAndResume: false,
-    updatedAt: 0,
-  });
+  const [localState, setLocalState] = useLocalStorage(
+    `candid-form-edit-${formId}`,
+    {
+      title: "",
+      description: "",
+      status: "draft",
+      primaryColor: "#f56a4d",
+      secondaryColor: "#2EB7A7",
+      backgroundColor: "#ffffff",
+      font: "Inter",
+      logoUrl: "",
+      emailOnResponse: false,
+      notificationEmail: "",
+      personality: "professional",
+      voiceEnabled: false,
+      allowSaveAndResume: false,
+      updatedAt: 0,
+    },
+  );
 
   // Form State
-  const [status, setStatus] = useState<"draft" | "published" | "closed">("draft");
+  const [status, setStatus] = useState<"draft" | "published" | "closed">(
+    "draft",
+  );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#f56a4d");
@@ -110,7 +124,7 @@ export default function EditFormPage({
   // Debounced values for autosave
   const [debouncedTitle] = useDebounce(title, 1000);
   const [debouncedDescription] = useDebounce(description, 1000);
-  
+
   // Memoize the settings object to prevent useDebounce from triggering on every render
   const settingsObject = {
     status,
@@ -123,11 +137,11 @@ export default function EditFormPage({
     notificationEmail,
     personality,
     voiceEnabled,
-    allowSaveAndResume
+    allowSaveAndResume,
   };
-  
+
   const [debouncedSettings] = useDebounce(settingsObject, 1000, {
-    equalityFn: (prev, next) => JSON.stringify(prev) === JSON.stringify(next)
+    equalityFn: (prev, next) => JSON.stringify(prev) === JSON.stringify(next),
   });
 
   const questionsContainerRef = useRef<HTMLDivElement>(null);
@@ -156,7 +170,7 @@ export default function EditFormPage({
     // Don't save to localStorage on initial mount or before form loads
     // This prevents saving empty title/description before DB data initializes
     if (isInitialMount.current || !form || !title) return;
-    
+
     setLocalState({
       title,
       description,
@@ -173,7 +187,22 @@ export default function EditFormPage({
       allowSaveAndResume,
       updatedAt: Date.now(),
     });
-  }, [title, description, status, primaryColor, secondaryColor, backgroundColor, font, logoUrl, emailOnResponse, notificationEmail, personality, voiceEnabled, allowSaveAndResume, form]);
+  }, [
+    title,
+    description,
+    status,
+    primaryColor,
+    secondaryColor,
+    backgroundColor,
+    font,
+    logoUrl,
+    emailOnResponse,
+    notificationEmail,
+    personality,
+    voiceEnabled,
+    allowSaveAndResume,
+    form,
+  ]);
 
   // Autosave Effect
   useEffect(() => {
@@ -184,17 +213,21 @@ export default function EditFormPage({
 
     if (!form) return;
 
-    const hasChanges = 
+    const hasChanges =
       title !== (form.title ?? "") ||
       description !== (form.description ?? "") ||
       status !== (form.status ?? "draft") ||
       primaryColor !== (form.settings?.branding?.primaryColor ?? "#f56a4d") ||
-      secondaryColor !== (form.settings?.branding?.secondaryColor ?? "#2EB7A7") ||
-      backgroundColor !== (form.settings?.branding?.backgroundColor ?? "#ffffff") ||
+      secondaryColor !==
+        (form.settings?.branding?.secondaryColor ?? "#2EB7A7") ||
+      backgroundColor !==
+        (form.settings?.branding?.backgroundColor ?? "#ffffff") ||
       font !== (form.settings?.branding?.font ?? "Inter") ||
       logoUrl !== (form.settings?.branding?.logoUrl ?? "") ||
-      emailOnResponse !== (form.settings?.notifications?.emailOnResponse ?? false) ||
-      notificationEmail !== (form.settings?.notifications?.notificationEmail ?? "") ||
+      emailOnResponse !==
+        (form.settings?.notifications?.emailOnResponse ?? false) ||
+      notificationEmail !==
+        (form.settings?.notifications?.notificationEmail ?? "") ||
       personality !== (form.aiConfig?.personality ?? "professional") ||
       voiceEnabled !== (form.aiConfig?.enableVoice ?? false) ||
       allowSaveAndResume !== (form.settings?.allowSaveAndResume ?? false);
@@ -209,29 +242,33 @@ export default function EditFormPage({
     if (!form) return;
 
     // Check if local storage has newer data (only for editors/admins)
-    if (localState.updatedAt > (form.updatedAt || 0) && localState.title && userRole !== "viewer") {
-       toast("We found unsaved changes from a previous session.", {
-         action: {
-           label: "Restore",
-           onClick: () => {
-             setTitle(localState.title);
-             setDescription(localState.description);
-             setStatus(localState.status as any);
-             setPrimaryColor(localState.primaryColor);
-             setSecondaryColor(localState.secondaryColor);
-             setBackgroundColor(localState.backgroundColor);
-             setFont(localState.font);
-             setLogoUrl(localState.logoUrl);
-             setEmailOnResponse(localState.emailOnResponse);
-             setNotificationEmail(localState.notificationEmail);
-             setPersonality(localState.personality as any);
-             setVoiceEnabled(localState.voiceEnabled);
-             setAllowSaveAndResume(localState.allowSaveAndResume);
-             toast.success("Restored from local backup");
-           }
-         },
-         duration: 10000, // Give them time to see it
-       });
+    if (
+      localState.updatedAt > (form.updatedAt || 0) &&
+      localState.title &&
+      userRole !== "viewer"
+    ) {
+      toast("We found unsaved changes from a previous session.", {
+        action: {
+          label: "Restore",
+          onClick: () => {
+            setTitle(localState.title);
+            setDescription(localState.description);
+            setStatus(localState.status as any);
+            setPrimaryColor(localState.primaryColor);
+            setSecondaryColor(localState.secondaryColor);
+            setBackgroundColor(localState.backgroundColor);
+            setFont(localState.font);
+            setLogoUrl(localState.logoUrl);
+            setEmailOnResponse(localState.emailOnResponse);
+            setNotificationEmail(localState.notificationEmail);
+            setPersonality(localState.personality as any);
+            setVoiceEnabled(localState.voiceEnabled);
+            setAllowSaveAndResume(localState.allowSaveAndResume);
+            toast.success("Restored from local backup");
+          },
+        },
+        duration: 10000, // Give them time to see it
+      });
     } else {
       // Only sync from DB if we didn't restore (or if local isn't newer)
       setTitle(form.title ?? "");
@@ -242,8 +279,12 @@ export default function EditFormPage({
       setBackgroundColor(form.settings?.branding?.backgroundColor ?? "#ffffff");
       setFont(form.settings?.branding?.font ?? "Inter");
       setLogoUrl(form.settings?.branding?.logoUrl ?? "");
-      setEmailOnResponse(form.settings?.notifications?.emailOnResponse ?? false);
-      setNotificationEmail(form.settings?.notifications?.notificationEmail ?? "");
+      setEmailOnResponse(
+        form.settings?.notifications?.emailOnResponse ?? false,
+      );
+      setNotificationEmail(
+        form.settings?.notifications?.notificationEmail ?? "",
+      );
       setPersonality(form.aiConfig?.personality ?? "professional");
       setVoiceEnabled(form.aiConfig?.enableVoice ?? false);
       setAllowSaveAndResume(form.settings?.allowSaveAndResume ?? false);
@@ -264,7 +305,7 @@ export default function EditFormPage({
       if (!isAutosave) toast.error("A notification email must be provided.");
       return;
     }
-    
+
     setIsSaving(true);
     try {
       const payload: any = {
@@ -281,7 +322,7 @@ export default function EditFormPage({
         secondaryColor,
         backgroundColor,
         font,
-        logoUrl
+        logoUrl,
       };
 
       await updateSettings(payload);
@@ -289,7 +330,8 @@ export default function EditFormPage({
       if (!isAutosave) toast.success("Settings saved");
     } catch (err: any) {
       console.error(err);
-      const errorMessage = err instanceof ConvexError ? err.data : "Failed to save";
+      const errorMessage =
+        err instanceof ConvexError ? err.data : "Failed to save";
       if (!isAutosave) toast.error(errorMessage);
     } finally {
       setIsSaving(false);
@@ -381,21 +423,21 @@ export default function EditFormPage({
               Preview
             </Button>
           </Link>
-          
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mr-4">
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Saving...
-                </>
-              ) : lastSavedAt ? (
-                <span>Saved {lastSavedAt.toLocaleTimeString()}</span>
-              ) : null}
-            </div>
-            <Button
-              onClick={() => handleSaveSettings(false)}
-              className="bg-[#F56A4D] hover:bg-[#F56A4D]/90 gap-2"
-            >
+
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mr-4">
+            {isSaving ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Saving...
+              </>
+            ) : lastSavedAt ? (
+              <span>Saved {lastSavedAt.toLocaleTimeString()}</span>
+            ) : null}
+          </div>
+          <Button
+            onClick={() => handleSaveSettings(false)}
+            className="bg-[#F56A4D] hover:bg-[#F56A4D]/90 gap-2"
+          >
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -514,23 +556,44 @@ export default function EditFormPage({
                     onCheckedChange={setEmailOnResponse}
                   />
                 </div>
-                
+
                 {/* Global Notification Warning */}
-                {emailOnResponse && user?.notifications?.emailOnResponse === false && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-md p-3 flex gap-3">
-                    <div className="text-amber-600 mt-0.5">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                        <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                      </svg>
+                {emailOnResponse &&
+                  user?.notifications?.emailOnResponse === false && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-md p-3 flex gap-3">
+                      <div className="text-amber-600 mt-0.5">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          className="w-5 h-5"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                      <div className="text-sm text-amber-800">
+                        <p className="font-medium">
+                          Notifications are globally disabled
+                        </p>
+                        <p className="mt-1">
+                          You have disabled &quot;New Responses&quot; emails in
+                          your{" "}
+                          <Link
+                            href="/dashboard/settings?selected=notifications"
+                            className="underline hover:text-amber-900"
+                          >
+                            account settings
+                          </Link>
+                          . You won&apos;t receive emails even if this is
+                          enabled.
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-sm text-amber-800">
-                      <p className="font-medium">Notifications are globally disabled</p>
-                      <p className="mt-1">
-                        You have disabled "New Responses" emails in your <Link href="/dashboard/settings?selected=notifications" className="underline hover:text-amber-900">account settings</Link>. You won't receive emails even if this is enabled.
-                      </p>
-                    </div>
-                  </div>
-                )}
+                  )}
 
                 <div className="space-y-2">
                   <Label htmlFor="notification-email">Notification Email</Label>
@@ -573,7 +636,9 @@ export default function EditFormPage({
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {isFreePlan ? "Upgrade to Pro to enable voice input" : "Allow users to speak their answers"}
+                      {isFreePlan
+                        ? "Upgrade to Pro to enable voice input"
+                        : "Allow users to speak their answers"}
                     </p>
                   </div>
                   <Switch
@@ -609,11 +674,18 @@ export default function EditFormPage({
                 <Lock className="w-5 h-5 text-amber-600" />
               </div>
               <div className="flex-1">
-                <p className="font-medium text-amber-800">Custom Branding requires Pro</p>
-                <p className="text-sm text-amber-700">Upgrade to customize colors, fonts, and add your logo.</p>
+                <p className="font-medium text-amber-800">
+                  Custom Branding requires Pro
+                </p>
+                <p className="text-sm text-amber-700">
+                  Upgrade to customize colors, fonts, and add your logo.
+                </p>
               </div>
               <Link href="/dashboard/pricing">
-                <Button size="sm" className="bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white">
+                <Button
+                  size="sm"
+                  className="bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+                >
                   <Sparkles className="w-4 h-4 mr-1" /> Upgrade
                 </Button>
               </Link>
@@ -623,7 +695,9 @@ export default function EditFormPage({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 Form Design
-                {isFreePlan && <Lock className="w-4 h-4 text-muted-foreground" />}
+                {isFreePlan && (
+                  <Lock className="w-4 h-4 text-muted-foreground" />
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">

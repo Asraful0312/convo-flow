@@ -1,11 +1,16 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -13,7 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ImageChoiceOption, Question } from "@/lib/form-types";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import {
   CalendarIcon,
   Loader2,
@@ -22,18 +30,9 @@ import {
   Star,
   Upload,
 } from "lucide-react";
-import VoiceControls from "./VoiceControls";
 import { useRef, useState } from "react";
-import { Question, ImageChoiceOption } from "@/lib/form-types";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import ImageChoiceInput from "./ImageChoiceInput";
+import VoiceControls from "./VoiceControls";
 
 interface QuestionInputProps {
   question: Question;
@@ -106,7 +105,7 @@ export default function QuestionInput({
   const validateInput = (value: any): string | null => {
     // If empty and not required, it's valid (unless specific type logic says otherwise)
     if (!value && !question.required) return null;
-    
+
     // If empty and required
     if (!value && question.required) return "This field is required";
 
@@ -126,27 +125,35 @@ export default function QuestionInput({
     if (question.type === "number") {
       const num = Number(value);
       if (isNaN(num)) return "Please enter a valid number";
-      if (question.validation?.min !== undefined && num < question.validation.min) {
+      if (
+        question.validation?.min !== undefined &&
+        num < question.validation.min
+      ) {
         return `Value must be at least ${question.validation.min}`;
       }
-      if (question.validation?.max !== undefined && num > question.validation.max) {
+      if (
+        question.validation?.max !== undefined &&
+        num > question.validation.max
+      ) {
         return `Value must be at most ${question.validation.max}`;
       }
     }
-    
+
     if (question.type === "phone") {
-        // Basic phone validation (allow +, -, space, (), digits)
-        const phoneRegex = /^[\d\+\-\(\)\s]{7,}$/;
-        if (!phoneRegex.test(value)) return "Please enter a valid phone number";
+      // Basic phone validation (allow +, -, space, (), digits)
+      const phoneRegex = /^[\d\+\-\(\)\s]{7,}$/;
+      if (!phoneRegex.test(value)) return "Please enter a valid phone number";
     }
 
     if (question.validation?.pattern) {
-        try {
-            const regex = new RegExp(question.validation.pattern);
-            if (!regex.test(value)) return question.validation.errorMessage || "Invalid format";
-        } catch (e) {
-            // Ignore invalid regex in schema
-        }
+      try {
+        const regex = new RegExp(question.validation.pattern);
+        if (!regex.test(value))
+          return question.validation.errorMessage || "Invalid format";
+      } catch (e) {
+        console.error(e);
+        // Ignore invalid regex in schema
+      }
     }
 
     return null;
@@ -165,32 +172,28 @@ export default function QuestionInput({
     onSubmit(answer);
   };
 
-  const BackButton = () => {
-    if (!canGoBack || !onBack) return null;
-    
-    return (
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onBack}
-        disabled={isProcessing || isTyping}
-        className="text-muted-foreground hover:text-foreground -ml-2"
-        aria-label="Go back to previous question"
-      >
-        ← Back
-      </Button>
-    );
-  };
-
   return (
     <>
-      <div className="mb-2">
-        <BackButton />
-      </div>
-      
+      {canGoBack && onBack && (
+        <div className="mb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            disabled={isProcessing || isTyping}
+            className="text-muted-foreground hover:text-foreground -ml-2"
+            aria-label="Go back to previous question"
+          >
+            ← Back
+          </Button>
+        </div>
+      )}
+
       {question.type === "choice" && question.options ? (
         <div className="space-y-3" role="radiogroup" aria-label={question.text}>
-          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">Select an option:</p>
+          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">
+            Select an option:
+          </p>
           <RadioGroup
             onValueChange={(value) => handleSubmit(value)}
             disabled={isProcessing || isTyping}
@@ -229,7 +232,9 @@ export default function QuestionInput({
         </div>
       ) : question.type === "image_choice" && question.options ? (
         <div className="space-y-3" role="radiogroup" aria-label={question.text}>
-          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">Choose an option:</p>
+          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">
+            Choose an option:
+          </p>
           <ImageChoiceInput
             disabled={isProcessing || isTyping}
             options={question.options as ImageChoiceOption[]}
@@ -240,12 +245,14 @@ export default function QuestionInput({
         </div>
       ) : question.type === "dropdown" && question.options ? (
         <div className="space-y-3">
-          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">Select an option:</p>
+          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">
+            Select an option:
+          </p>
           <Select
             onValueChange={(value) => handleSubmit(value)}
             disabled={isProcessing || isTyping}
           >
-            <SelectTrigger 
+            <SelectTrigger
               className="h-14 bg-white rounded-xl w-full"
               aria-label={question.text}
             >
@@ -262,7 +269,9 @@ export default function QuestionInput({
         </div>
       ) : question.type === "multiple_choice" && question.options ? (
         <div className="space-y-4" role="group" aria-label={question.text}>
-          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">Select all that apply:</p>
+          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">
+            Select all that apply:
+          </p>
           <div className="grid sm:grid-cols-2 gap-3">
             {question.options.map((option, index) => (
               <div
@@ -306,7 +315,9 @@ export default function QuestionInput({
         </div>
       ) : question.type === "rating" ? (
         <div className="space-y-3" role="group" aria-label={question.text}>
-          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">{question.text}</p>
+          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">
+            {question.text}
+          </p>
           <div className="flex gap-2 justify-center">
             {Array.from({ length: 5 }).map((_, index) => (
               <Button
@@ -324,7 +335,10 @@ export default function QuestionInput({
         </div>
       ) : question.type === "scale" ? (
         <div className="space-y-4" role="group" aria-label={question.text}>
-          <p className="text-sm text-muted-foreground mb-3 font-medium" aria-hidden="true">
+          <p
+            className="text-sm text-muted-foreground mb-3 font-medium"
+            aria-hidden="true"
+          >
             {question.text}
           </p>
           <div className="space-y-3">
@@ -336,13 +350,12 @@ export default function QuestionInput({
               if (range <= 10) {
                 return (
                   <>
-                    <div className="flex justify-between text-xs text-muted-foreground px-2 font-medium" aria-hidden="true">
-                      <span>
-                        {min} (Lowest)
-                      </span>
-                      <span>
-                        {max} (Highest)
-                      </span>
+                    <div
+                      className="flex justify-between text-xs text-muted-foreground px-2 font-medium"
+                      aria-hidden="true"
+                    >
+                      <span>{min} (Lowest)</span>
+                      <span>{max} (Highest)</span>
                     </div>
                     <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 scrollbar-hide">
                       <RadioGroup
@@ -388,7 +401,10 @@ export default function QuestionInput({
               } else {
                 return (
                   <div className="px-2">
-                    <div className="flex justify-between text-xs text-muted-foreground mb-2 font-medium" aria-hidden="true">
+                    <div
+                      className="flex justify-between text-xs text-muted-foreground mb-2 font-medium"
+                      aria-hidden="true"
+                    >
                       <span>{min}</span>
                       <span>{max}</span>
                     </div>
@@ -422,7 +438,9 @@ export default function QuestionInput({
                     </div>
                     <div className="mt-4 flex justify-end">
                       <Button
-                        onClick={() => handleSubmit(inputValue || min.toString())}
+                        onClick={() =>
+                          handleSubmit(inputValue || min.toString())
+                        }
                         disabled={isProcessing || isTyping}
                         className="text-white"
                         style={{ backgroundColor: primaryColor }}
@@ -438,7 +456,9 @@ export default function QuestionInput({
         </div>
       ) : question.type === "likert" && question.options ? (
         <div className="space-y-3" role="group" aria-label={question.text}>
-          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">{question.text}</p>
+          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">
+            {question.text}
+          </p>
           <div className="flex flex-wrap gap-2 justify-center">
             {question.options.map((option: any, index) => (
               <Button
@@ -456,51 +476,53 @@ export default function QuestionInput({
         </div>
       ) : question.type === "file" ? (
         <div className="space-y-3 bg-white">
-          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">Upload a file:</p>
-          
+          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">
+            Upload a file:
+          </p>
+
           {pendingFile ? (
-             <div className="mt-4 rounded-md border border-gray-200 p-4 bg-gray-50">
-               <div className="flex items-center justify-between">
-                 <div className="flex items-center space-x-3">
-                   <div className="h-10 w-10 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
-                     <Upload className="h-5 w-5 text-primary" />
-                   </div>
-                   <div>
-                     <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
-                       {pendingFile.fileName}
-                     </p>
-                     <p className="text-xs text-gray-500">
-                       {(pendingFile.fileSize / 1024).toFixed(1)} KB
-                     </p>
-                   </div>
-                 </div>
-                 <Button
-                   variant="ghost"
-                   size="sm"
-                   onClick={onRemoveFile}
-                   className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                   aria-label={`Remove ${pendingFile.fileName}`}
-                 >
-                   Remove
-                 </Button>
-               </div>
-               
-               <div className="mt-4 flex justify-end">
-                 <Button
-                   onClick={onSubmitFile}
-                   disabled={isProcessing}
-                   className="w-full sm:w-auto text-white"
-                   style={{ backgroundColor: primaryColor }}
-                 >
-                   {isProcessing ? (
-                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                   ) : (
-                     <Send className="w-4 h-4 mr-2" />
-                   )}
-                   Submit File
-                 </Button>
-               </div>
-             </div>
+            <div className="mt-4 rounded-md border border-gray-200 p-4 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="h-10 w-10 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Upload className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
+                      {pendingFile.fileName}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {(pendingFile.fileSize / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onRemoveFile}
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  aria-label={`Remove ${pendingFile.fileName}`}
+                >
+                  Remove
+                </Button>
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                <Button
+                  onClick={onSubmitFile}
+                  disabled={isProcessing}
+                  className="w-full sm:w-auto text-white"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  {isProcessing ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-2" />
+                  )}
+                  Submit File
+                </Button>
+              </div>
+            </div>
           ) : (
             <>
               <div className="relative mt-4 flex justify-center space-x-4 rounded-md border border-dashed border-input px-6 py-10 bg-gray-100 hover:bg-gray-50 transition-colors">
@@ -527,7 +549,10 @@ export default function QuestionInput({
               </div>
 
               {isUploading && (
-                <div className="flex items-center gap-2 text-sm text-gray-500 mt-2" role="status">
+                <div
+                  className="flex items-center gap-2 text-sm text-gray-500 mt-2"
+                  role="status"
+                >
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Uploading...
                 </div>
@@ -537,7 +562,9 @@ export default function QuestionInput({
         </div>
       ) : question.type === "yes_no" ? (
         <div className="space-y-3" role="group" aria-label={question.text}>
-          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">{question.text}</p>
+          <p className="text-sm text-gray-600 mb-3" aria-hidden="true">
+            {question.text}
+          </p>
           <div className="flex gap-3 justify-center">
             <Button
               variant="outline"
@@ -727,9 +754,9 @@ export default function QuestionInput({
       )}
 
       {error && (
-        <p 
+        <p
           id={errorId}
-          role="alert" 
+          role="alert"
           className="text-sm text-red-500 mt-2 animate-in fade-in slide-in-from-top-1"
         >
           {error}

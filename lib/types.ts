@@ -89,6 +89,8 @@ export interface ValidationRule {
   type: "required" | "min" | "max" | "pattern" | "email";
   value?: string | number;
   message?: string;
+  min?: number;
+  max?: number;
 }
 
 export interface ConditionalLogic {

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { FormData } from "@/lib/form-types";
 import { Sparkles } from "lucide-react";
+import Image from "next/image";
 
 interface WelcomeScreenProps {
   form: FormData;
@@ -14,10 +15,12 @@ export default function WelcomeScreen({ form, onStart }: WelcomeScreenProps) {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-center p-4">
       <div className="flex items-center gap-3 mb-4">
         {form.settings.branding?.logoUrl ? (
-          <img
+          <Image
             src={form.settings.branding.logoUrl}
             alt="Logo"
             className="w-12 h-12 rounded-lg"
+            width={48}
+            height={48}
           />
         ) : (
           <div

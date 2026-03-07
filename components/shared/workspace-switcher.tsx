@@ -1,21 +1,21 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuGroup,
-  DropdownMenuSeparator,
+  DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { ChevronsUpDown, Check, PlusCircle } from "lucide-react";
+import { api } from "@/convex/_generated/api";
+import { cn } from "@/lib/utils";
+import { useMutation, useQuery } from "convex/react";
+import { Check, ChevronsUpDown, PlusCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 export default function WorkspaceSwitcher({
   className,
@@ -37,6 +37,7 @@ export default function WorkspaceSwitcher({
     } catch (err) {
       toast.dismiss();
       toast.error("Failed to switch workspace.");
+      console.error(err);
     }
   };
 
@@ -55,10 +56,10 @@ export default function WorkspaceSwitcher({
       <DropdownMenuContent className="w-48">
         <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
         <DropdownMenuGroup>
-          {user.workspaces.map((workspace) => (
+          {user.workspaces.map((workspace, idx) => (
             <DropdownMenuItem
-              key={workspace?._id}
-              onClick={() => handleSwitch(workspace?._id)}
+              key={workspace?._id || idx}
+              onClick={() => handleSwitch(workspace?._id || `${idx}`)}
               className="justify-between"
             >
               <span className="truncate">{workspace?.name}</span>

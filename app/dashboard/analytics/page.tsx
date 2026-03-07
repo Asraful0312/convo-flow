@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -9,6 +8,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -16,43 +20,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Clock,
+  Globe,
+  MessageSquare,
+  MousePointerClick,
+  Smartphone,
+  Sparkles,
   TrendingUp,
   Users,
-  MessageSquare,
-  Clock,
-  Sparkles,
-  Smartphone,
-  Globe,
-  ArrowUpRight,
-  MousePointerClick,
 } from "lucide-react";
+import { useState } from "react";
 import {
-  Line,
-  LineChart,
-  Bar,
-  BarChart,
-  Pie,
-  PieChart,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
   Area,
   AreaChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
 } from "recharts";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
 
-import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Loader2 } from "lucide-react";
 import { Id } from "@/convex/_generated/dataModel";
+import { useQuery } from "convex/react";
 import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
 const iconMap = {
   positive: TrendingUp,
@@ -81,7 +75,9 @@ const itemVariants = {
 };
 
 export default function AnalyticsPage() {
-  const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y" | "all">("7d");
+  const [timeRange, setTimeRange] = useState<
+    "7d" | "30d" | "90d" | "1y" | "all"
+  >("7d");
   const user = useQuery(api.auth.loggedInUser);
   const analytics = useQuery(api.analytics.getAnalytics, {
     timeRange,
@@ -101,19 +97,14 @@ export default function AnalyticsPage() {
     );
   }
 
-  const {
-    keyMetrics,
-    responseTrend,
-    completionRates,
-    deviceBreakdown,
-  } = analytics || {};
+  const { keyMetrics, responseTrend, deviceBreakdown } = analytics || {};
 
   const geographicData = analytics?.geographicData || [];
   const aiInsights = analytics?.aiInsights || [];
 
   const totalGeoResponses = geographicData.reduce(
     (acc, curr) => acc + curr.responses,
-    0
+    0,
   );
 
   return (
@@ -121,7 +112,9 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Analytics Dashboard
+          </h1>
           <p className="text-muted-foreground">
             Real-time insights and performance metrics
           </p>
@@ -232,7 +225,10 @@ export default function AnalyticsPage() {
         </motion.div>
 
         {/* Main Chart Area - Spans 2 cols on LG, 3 on XL */}
-        <motion.div variants={itemVariants} className="md:col-span-2 lg:col-span-3 row-span-2">
+        <motion.div
+          variants={itemVariants}
+          className="md:col-span-2 lg:col-span-3 row-span-2"
+        >
           <Card className="h-full border-0 shadow-sm">
             <CardHeader>
               <CardTitle>Response Trends</CardTitle>
@@ -253,20 +249,38 @@ export default function AnalyticsPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={responseTrend}>
                     <defs>
-                      <linearGradient id="colorResponses" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      <linearGradient
+                        id="colorResponses"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="#6366f1"
+                          stopOpacity={0.3}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#6366f1"
+                          stopOpacity={0}
+                        />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                    <XAxis 
-                      dataKey="date" 
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="#e5e7eb"
+                    />
+                    <XAxis
+                      dataKey="date"
                       axisLine={false}
                       tickLine={false}
                       tickMargin={10}
                       fontSize={12}
                     />
-                    <YAxis 
+                    <YAxis
                       axisLine={false}
                       tickLine={false}
                       tickMargin={10}
@@ -289,7 +303,10 @@ export default function AnalyticsPage() {
         </motion.div>
 
         {/* Device Breakdown - Spans 1 col */}
-        <motion.div variants={itemVariants} className="md:col-span-1 lg:col-span-1 row-span-2">
+        <motion.div
+          variants={itemVariants}
+          className="md:col-span-1 lg:col-span-1 row-span-2"
+        >
           <Card className="h-full border-0 shadow-sm flex flex-col">
             <CardHeader>
               <CardTitle>Devices</CardTitle>
@@ -330,7 +347,10 @@ export default function AnalyticsPage() {
               </ChartContainer>
               <div className="mt-6 space-y-3">
                 {deviceBreakdown.map((device) => (
-                  <div key={device.name} className="flex items-center justify-between text-sm">
+                  <div
+                    key={device.name}
+                    className="flex items-center justify-between text-sm"
+                  >
                     <div className="flex items-center gap-2">
                       <div
                         className="w-2.5 h-2.5 rounded-full"
@@ -341,7 +361,9 @@ export default function AnalyticsPage() {
                       />
                       <span>{device.name}</span>
                     </div>
-                    <span className="font-medium">{device.value.toFixed(0)}%</span>
+                    <span className="font-medium">
+                      {device.value.toFixed(0)}%
+                    </span>
                   </div>
                 ))}
               </div>
@@ -391,7 +413,9 @@ export default function AnalyticsPage() {
                         />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-sm mb-0.5">{insight.title}</h4>
+                        <h4 className="font-semibold text-sm mb-0.5">
+                          {insight.title}
+                        </h4>
                         <p className="text-xs text-muted-foreground leading-relaxed">
                           {insight.description}
                         </p>
@@ -409,7 +433,9 @@ export default function AnalyticsPage() {
           <Card className="h-full border-0 shadow-sm">
             <CardHeader>
               <CardTitle>Top Locations</CardTitle>
-              <CardDescription>Where your users are coming from</CardDescription>
+              <CardDescription>
+                Where your users are coming from
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">

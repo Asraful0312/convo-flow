@@ -1,17 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { ConvexError } from "convex/values";
+import CandidLogo from "@/components/shared/candid-logo";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { api } from "@/convex/_generated/api";
+import { useMutation } from "convex/react";
+import { ConvexError } from "convex/values";
 import { Loader2 } from "lucide-react";
-import CandidLogo from "@/components/shared/candid-logo";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export default function CreateWorkspacePage() {
   const [workspaceName, setWorkspaceName] = useState("");
@@ -42,10 +48,12 @@ export default function CreateWorkspacePage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-            <CandidLogo />
-          <h1 className="text-3xl font-bold mt-4 mb-2">Create Your Workspace</h1>
+          <CandidLogo />
+          <h1 className="text-3xl font-bold mt-4 mb-2">
+            Create Your Workspace
+          </h1>
           <p className="text-muted-foreground">
-            A workspace is where you'll create and manage your forms.
+            A workspace is where you&apos;ll create and manage your forms.
           </p>
         </div>
         <Card>
@@ -65,7 +73,11 @@ export default function CreateWorkspacePage() {
                   required
                 />
               </div>
-              <Button type="submit" disabled={isCreating} className="w-full bg-[#F56A4D] hover:bg-[#F56A4D]">
+              <Button
+                type="submit"
+                disabled={isCreating}
+                className="w-full bg-[#F56A4D] hover:bg-[#F56A4D]"
+              >
                 {isCreating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

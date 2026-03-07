@@ -1,15 +1,17 @@
-"use client"
-import { useState } from "react";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+"use client";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ChevronDown } from "lucide-react";
-
+import { useState } from "react";
 
 export default function DatePickerInput({
   onSubmit,
   isProcessing,
-  primaryColor,
 }: {
   onSubmit: (value: string) => void;
   isProcessing: boolean;

@@ -1,28 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Card } from "@/components/ui/card";
-import {
-  Eye,
-  Code,
-  Settings,
-  Save,
-  Loader2,
-  Star,
-  UploadCloud,
-  ChevronDownIcon,
-  Plus,
-  Trash2,
-  Lock,
-  Sparkles,
-} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -31,17 +14,34 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "./ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { ImageChoiceOption } from "@/lib/form-types";
 import type { Question } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { useMutation, useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
+import {
+  ChevronDownIcon,
+  Code,
+  Eye,
+  Loader2,
+  Lock,
+  Plus,
+  Save,
+  Settings,
+  Sparkles,
+  Star,
+  Trash2,
+  UploadCloud,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import ImageChoiceInput from "./form/ImageChoiceInput";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { toast } from "sonner";
-import { ConvexError } from "convex/values";
-import { Id } from "@/convex/_generated/dataModel";
-import ImageChoiceInput from "./form/ImageChoiceInput";
-import { ImageChoiceOption } from "@/lib/form-types";
-import { cn } from "@/lib/utils";
+import { Textarea } from "./ui/textarea";
 
 interface FormPreviewProps {
   form: {
@@ -80,8 +80,8 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
     "",
   );
   const user = useQuery(api.auth.loggedInUser);
-  const isFreePlan = user?.subscriptionTier === "free" || !user?.subscriptionTier;
-
+  const isFreePlan =
+    user?.subscriptionTier === "free" || !user?.subscriptionTier;
 
   const handleAddQuestion = (type: Question["type"]) => {
     setForm((prev) => {
@@ -260,7 +260,7 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
       const formId = await saveForm({
         title: form.title,
         description: form.description,
-        questions: form.questions.map(({ id, ...q }) => ({
+        questions: form.questions.map(({ ...q }) => ({
           text: q.text,
           type: q.type,
           required: q.required,
@@ -269,14 +269,19 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
         })),
         settings: {
           // Only include branding for Pro+ users
-          branding: isFreePlan ? {} : { primaryColor, logoUrl: logoUrl || undefined },
+          branding: isFreePlan
+            ? {}
+            : { primaryColor, logoUrl: logoUrl || undefined },
           notifications: {
             emailOnResponse,
             notificationEmail: notificationEmail || undefined,
           },
         },
         // Only include voice for Pro+ users
-        aiConfig: { personality, enableVoice: isFreePlan ? false : voiceEnabled },
+        aiConfig: {
+          personality,
+          enableVoice: isFreePlan ? false : voiceEnabled,
+        },
         workspaceId: user?.activeWorkspaceId as Id<"workspaces">,
       });
       router.push(`/dashboard/forms/${formId}/edit`);
@@ -618,56 +623,61 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                       <div className="space-y-4">
                         <div className="space-y-3">
                           {(() => {
-                            const min = question.validation?.min || 1;
-                            const max = question.validation?.max || 10;
+                            const min = question?.validation?.min || 1;
+                            const max = question?.validation?.max || 10;
                             const range = max - min + 1;
 
                             if (range <= 10) {
                               return (
                                 <>
                                   <div className="flex justify-between text-xs text-muted-foreground px-2 font-medium">
-                                    <span>
-                                      {min} (Lowest)
-                                    </span>
-                                    <span>
-                                      {max} (Highest)
-                                    </span>
+                                    <span>{min} (Lowest)</span>
+                                    <span>{max} (Highest)</span>
                                   </div>
                                   <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 scrollbar-hide">
                                     <RadioGroup
-                                      value={(answers[question.id] as string) || ""}
+                                      value={
+                                        (answers[question.id] as string) || ""
+                                      }
                                       onValueChange={(v) =>
-                                        handleScaleChange(question.id, parseInt(v))
+                                        handleScaleChange(
+                                          question.id,
+                                          parseInt(v),
+                                        )
                                       }
                                       className="flex gap-2 sm:justify-between min-w-max sm:min-w-0"
                                     >
-                                      {Array.from({ length: range }).map((_, i) => {
-                                        const v = min + i;
-                                        return (
-                                          <div
-                                            key={v}
-                                            className="flex flex-col items-center gap-1"
-                                          >
-                                            <RadioGroupItem
-                                              value={v.toString()}
-                                              id={`scale-${question.id}-${v}`}
-                                              className="peer sr-only"
-                                            />
-                                            <Label
-                                              htmlFor={`scale-${question.id}-${v}`}
-                                              className={cn(
-                                                "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center cursor-pointer transition-all border-2 border-transparent font-medium text-sm sm:text-base",
-                                                "bg-muted hover:bg-muted/80 text-muted-foreground",
-                                                (answers[question.id] as number) === v
-                                                  ? "bg-[#F56A4D] text-white shadow-md scale-110"
-                                                  : ""
-                                              )}
+                                      {Array.from({ length: range }).map(
+                                        (_, i) => {
+                                          const v = min + i;
+                                          return (
+                                            <div
+                                              key={v}
+                                              className="flex flex-col items-center gap-1"
                                             >
-                                              {v}
-                                            </Label>
-                                          </div>
-                                        );
-                                      })}
+                                              <RadioGroupItem
+                                                value={v.toString()}
+                                                id={`scale-${question.id}-${v}`}
+                                                className="peer sr-only"
+                                              />
+                                              <Label
+                                                htmlFor={`scale-${question.id}-${v}`}
+                                                className={cn(
+                                                  "w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center cursor-pointer transition-all border-2 border-transparent font-medium text-sm sm:text-base",
+                                                  "bg-muted hover:bg-muted/80 text-muted-foreground",
+                                                  (answers[
+                                                    question.id
+                                                  ] as number) === v
+                                                    ? "bg-[#F56A4D] text-white shadow-md scale-110"
+                                                    : "",
+                                                )}
+                                              >
+                                                {v}
+                                              </Label>
+                                            </div>
+                                          );
+                                        },
+                                      )}
                                     </RadioGroup>
                                   </div>
                                 </>
@@ -685,15 +695,18 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                                       min={min}
                                       max={max}
                                       step={1}
-                                      value={(answers[question.id] as number) || min}
+                                      value={
+                                        (answers[question.id] as number) || min
+                                      }
                                       onChange={(e) =>
-                                        handleScaleChange(question.id, parseInt(e.target.value))
+                                        handleScaleChange(
+                                          question.id,
+                                          parseInt(e.target.value),
+                                        )
                                       }
                                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#F56A4D]"
                                     />
-                                    <div
-                                      className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white shadow-md bg-[#F56A4D]"
-                                    >
+                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white shadow-md bg-[#F56A4D]">
                                       {(answers[question.id] as number) || min}
                                     </div>
                                   </div>
@@ -833,7 +846,10 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         <Label>Image Options</Label>
                         {(question.options as ImageChoiceOption[]).map(
                           (opt, i) => (
-                            <div key={i} className="flex items-center flex-wrap gap-2">
+                            <div
+                              key={i}
+                              className="flex items-center flex-wrap gap-2"
+                            >
                               <Input
                                 value={opt.text}
                                 onChange={(e) =>
@@ -1037,7 +1053,9 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium flex items-center gap-2">
                       Branding
-                      {isFreePlan && <Lock className="w-4 h-4 text-muted-foreground" />}
+                      {isFreePlan && (
+                        <Lock className="w-4 h-4 text-muted-foreground" />
+                      )}
                     </h3>
                     {isFreePlan && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-linear-to-r from-amber-100 to-orange-100 text-amber-700 text-xs font-medium">
@@ -1046,9 +1064,16 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                     )}
                   </div>
                   {isFreePlan && (
-                    <p className="text-sm text-muted-foreground">Upgrade to Pro to customize colors and add your logo.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Upgrade to Pro to customize colors and add your logo.
+                    </p>
                   )}
-                  <div className={cn("grid grid-cols-2 gap-4", isFreePlan && "opacity-50 pointer-events-none")}>
+                  <div
+                    className={cn(
+                      "grid grid-cols-2 gap-4",
+                      isFreePlan && "opacity-50 pointer-events-none",
+                    )}
+                  >
                     <div className="space-y-2">
                       <Label>Primary Color</Label>
                       <div className="flex gap-2">
@@ -1130,7 +1155,9 @@ export function FormPreview({ form, setForm }: FormPreviewProps) {
                         )}
                       </div>
                       {isFreePlan && (
-                        <p className="text-sm text-muted-foreground">Upgrade to Pro to enable voice input</p>
+                        <p className="text-sm text-muted-foreground">
+                          Upgrade to Pro to enable voice input
+                        </p>
                       )}
                     </div>
                     <Switch

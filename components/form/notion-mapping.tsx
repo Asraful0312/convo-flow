@@ -1,15 +1,27 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Loader2, Link, Save } from "lucide-react";
-import { toast } from "sonner";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { Link, Loader2, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 type NotionMappingProps = {
   form: {
@@ -41,12 +53,16 @@ export default function NotionMapping({ form }: NotionMappingProps) {
   const getDbProperties = useAction(api.notion.getDatabaseProperties);
   const updateMapping = useMutation(api.forms.updateFormIntegrationMapping);
 
-  const [databases, setDatabases] = useState<{ id: string; title: string }[]>([]);
+  const [databases, setDatabases] = useState<{ id: string; title: string }[]>(
+    [],
+  );
   const [isFetchingDatabases, setIsFetchingDatabases] = useState(false);
   const [selectedDb, setSelectedDb] = useState<string | null>(null);
   const [properties, setProperties] = useState<NotionProperty[]>([]);
   const [isFetchingProperties, setIsFetchingProperties] = useState(false);
-  const [fieldMapping, setFieldMapping] = useState<{ [key: string]: string }>({});
+  const [fieldMapping, setFieldMapping] = useState<{ [key: string]: string }>(
+    {},
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -64,7 +80,7 @@ export default function NotionMapping({ form }: NotionMappingProps) {
     if (notionMapping?.databaseId) {
       setSelectedDb(notionMapping.databaseId);
       const initialMapping: { [key: string]: string } = {};
-      notionMapping.mapping.forEach(m => {
+      notionMapping.mapping.forEach((m) => {
         initialMapping[m.notionPropertyName] = m.questionId;
       });
       setFieldMapping(initialMapping);
@@ -97,7 +113,8 @@ export default function NotionMapping({ form }: NotionMappingProps) {
           .map(([notionPropertyName, questionId]) => ({
             questionId,
             notionPropertyName,
-            notionPropertyId: properties.find(p => p.name === notionPropertyName)?.id || "",
+            notionPropertyId:
+              properties.find((p) => p.name === notionPropertyName)?.id || "",
           })),
       };
       await updateMapping({
@@ -108,20 +125,29 @@ export default function NotionMapping({ form }: NotionMappingProps) {
       toast.success("Notion mapping saved successfully!");
     } catch (error) {
       toast.error("Failed to save Notion mapping.");
+      console.error(error);
     } finally {
       setIsSaving(false);
     }
   };
 
   if (notionIntegration === undefined) {
-    return <div className="flex justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+    return (
+      <div className="flex justify-center">
+        <Loader2 className="w-6 h-6 animate-spin" />
+      </div>
+    );
   }
 
   if (!notionIntegration) {
     return (
       <div className="text-center">
         <p className="mb-4">The Notion integration is not connected.</p>
-        <Button onClick={() => router.push('/dashboard/settings?selected=integrations')}>
+        <Button
+          onClick={() =>
+            router.push("/dashboard/settings?selected=integrations")
+          }
+        >
           <Link className="w-4 h-4 mr-2" />
           Connect Notion
         </Button>
@@ -137,7 +163,7 @@ export default function NotionMapping({ form }: NotionMappingProps) {
           Map your form questions to the properties in your Notion database.
         </p>
       </div>
-      
+
       <div className="space-y-2">
         <label className="font-medium">Select Notion Database</label>
         <Select
@@ -146,18 +172,28 @@ export default function NotionMapping({ form }: NotionMappingProps) {
           disabled={isFetchingDatabases}
         >
           <SelectTrigger>
-            <SelectValue placeholder={isFetchingDatabases ? "Loading databases..." : "Choose a database"} />
+            <SelectValue
+              placeholder={
+                isFetchingDatabases
+                  ? "Loading databases..."
+                  : "Choose a database"
+              }
+            />
           </SelectTrigger>
           <SelectContent>
-            {databases.map(db => (
-              <SelectItem key={db.id} value={db.id}>{db.title}</SelectItem>
+            {databases.map((db) => (
+              <SelectItem key={db.id} value={db.id}>
+                {db.title}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
       {isFetchingProperties && (
-        <div className="flex justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>
+        <div className="flex justify-center">
+          <Loader2 className="w-6 h-6 animate-spin" />
+        </div>
       )}
 
       {properties.length > 0 && (
@@ -166,18 +202,31 @@ export default function NotionMapping({ form }: NotionMappingProps) {
             <CardHeader>
               <CardTitle>Field Mapping</CardTitle>
               <CardDescription>
-                Select which form question should populate each Notion property. The first question of your form will be used for the Notion entry's title if it's not mapped below.
+                Select which form question should populate each Notion property.
+                The first question of your form will be used for the Notion
+                entry&apos;s title if it&apos;s not mapped below.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {properties.map(prop => (
-                <div key={prop.id} className="grid grid-cols-2 gap-4 items-center">
-                  <div className="font-medium">{prop.name} <span className="text-xs text-muted-foreground">({prop.type})</span></div>
+              {properties.map((prop) => (
+                <div
+                  key={prop.id}
+                  className="grid grid-cols-2 gap-4 items-center"
+                >
+                  <div className="font-medium">
+                    {prop.name}{" "}
+                    <span className="text-xs text-muted-foreground">
+                      ({prop.type})
+                    </span>
+                  </div>
                   <Select
                     value={fieldMapping[prop.name] || ""}
                     onValueChange={(value) => {
                       const newValue = value === "UNMAPPED" ? "" : value;
-                      setFieldMapping(prev => ({ ...prev, [prop.name]: newValue }));
+                      setFieldMapping((prev) => ({
+                        ...prev,
+                        [prop.name]: newValue,
+                      }));
                     }}
                   >
                     <SelectTrigger>
@@ -185,8 +234,10 @@ export default function NotionMapping({ form }: NotionMappingProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="UNMAPPED">-- Unmapped --</SelectItem>
-                      {form.questions.map(q => (
-                        <SelectItem key={q._id} value={q._id}>{q.text}</SelectItem>
+                      {form.questions.map((q) => (
+                        <SelectItem key={q._id} value={q._id}>
+                          {q.text}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -196,7 +247,11 @@ export default function NotionMapping({ form }: NotionMappingProps) {
           </Card>
           <div className="flex justify-end">
             <Button onClick={handleSaveMapping} disabled={isSaving}>
-              {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
               Save Mapping
             </Button>
           </div>

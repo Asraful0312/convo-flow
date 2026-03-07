@@ -91,7 +91,7 @@ export default function FormSubmissionPage() {
         <AnimatedGroup variants={transitionVariants as any}>
           <div className="flex flex-col items-center justify-center h-full ">
             <h1 className=" max-w-4xl mx-auto text-balance  text-center text-3xl md:text-6xl ">
-              Sorry, you can't access this form until its published.
+              Sorry, you can&apos;t access this form until its published.
             </h1>
 
             <div className="flex flex-col md:flex-row gap-2 items-center justify-center mt-7">

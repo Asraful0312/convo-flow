@@ -1,16 +1,16 @@
 "use client";
 
-import Link from "next/link";
+import CandidLogo from "@/components/shared/candid-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Sparkles } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import CandidLogo from "@/components/shared/candid-logo";
 import { ConvexError } from "convex/values";
+import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
+import { toast } from "sonner";
 
 export default function SignUpPage() {
   const { signIn } = useAuthActions();
@@ -36,7 +36,9 @@ export default function SignUpPage() {
       setSubmitting(false);
       // New users need to create a workspace first
       // Pass name in URL so NameChangeProvider can update it
-      router.push(`/dashboard/workspaces/new?name=${encodeURIComponent(name)}&newUser=true`);
+      router.push(
+        `/dashboard/workspaces/new?name=${encodeURIComponent(name)}&newUser=true`,
+      );
     } catch (error: any) {
       const errorMessage =
         error instanceof ConvexError

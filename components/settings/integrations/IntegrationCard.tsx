@@ -1,7 +1,8 @@
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { AlertCircle, Check } from "lucide-react";
+import Image from "next/image";
 
 type Integration = {
   name: string;
@@ -40,10 +41,12 @@ export default function IntegrationCard({
     >
       <div className="flex flex-wrap gap-2 items-center justify-between">
         <div className="flex items-center gap-3">
-          <img
+          <Image
             src={integration.iconSrc}
             alt={integration.name}
             className="h-8 w-8 object-contain"
+            width={32}
+            height={32}
           />
           <div>
             <div className="flex items-center gap-2">

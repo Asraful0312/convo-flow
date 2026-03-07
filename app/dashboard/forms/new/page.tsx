@@ -11,7 +11,14 @@ import type { Question } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useAction, useQuery } from "convex/react";
 import { motion } from "framer-motion";
-import { ArrowUp, Eye, Loader2, MessageSquare, Sparkles, Wand2 } from "lucide-react";
+import {
+  ArrowUp,
+  Eye,
+  Loader2,
+  MessageSquare,
+  Sparkles,
+  Wand2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -55,11 +62,11 @@ export default function NewFormPage() {
   const user = useQuery(api.auth.loggedInUser);
   const userRole = useQuery(
     api.users.getRole,
-    user?.activeWorkspaceId ? { workspaceId: user.activeWorkspaceId } : "skip"
+    user?.activeWorkspaceId ? { workspaceId: user.activeWorkspaceId } : "skip",
   );
 
   const generateFormAction = useAction(api.ai.generateForm);
-  const { textareaRef, adjustHeight } = useAutoResizeTextarea({
+  const { textareaRef } = useAutoResizeTextarea({
     minHeight: 60,
     maxHeight: 200,
   });
@@ -163,7 +170,6 @@ export default function NewFormPage() {
     }
   };
 
-
   const handleRefine = async (refinement: string) => {
     if (!refinement.trim() || !generatedForm) return;
     setIsGenerating(true);
@@ -224,7 +230,8 @@ export default function NewFormPage() {
           onClick={() => setMobileTab("chat")}
           className={cn(
             "flex-1 gap-2",
-            mobileTab === "chat" && "bg-[#F56A4D]/10 text-[#F56A4D] hover:bg-[#F56A4D]/20"
+            mobileTab === "chat" &&
+              "bg-[#F56A4D]/10 text-[#F56A4D] hover:bg-[#F56A4D]/20",
           )}
           size="sm"
         >
@@ -236,7 +243,8 @@ export default function NewFormPage() {
           onClick={() => setMobileTab("preview")}
           className={cn(
             "flex-1 gap-2",
-            mobileTab === "preview" && "bg-[#F56A4D]/10 text-[#F56A4D] hover:bg-[#F56A4D]/20"
+            mobileTab === "preview" &&
+              "bg-[#F56A4D]/10 text-[#F56A4D] hover:bg-[#F56A4D]/20",
           )}
           size="sm"
         >
@@ -246,19 +254,21 @@ export default function NewFormPage() {
       </div>
 
       {/* LEFT: AI Chat */}
-      <div 
+      <div
         className={cn(
           "w-full lg:w-[45%] xl:w-[40%] border-r border-border flex flex-col bg-white dark:bg-zinc-900 relative z-10 shadow-xl transition-all h-full",
-          mobileTab === "chat" ? "flex" : "hidden lg:flex"
+          mobileTab === "chat" ? "flex" : "hidden lg:flex",
         )}
       >
         {/* Header */}
         <div className="p-6 border-b border-border bg-white/50 dark:bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-10">
-            <h1 className="text-xl font-bold flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#F56A4D]" />
-                AI Form Generator
-            </h1>
-            <p className="text-sm text-muted-foreground">Describe your form and let AI build it for you.</p>
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-[#F56A4D]" />
+            AI Form Generator
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Describe your form and let AI build it for you.
+          </p>
         </div>
 
         {/* Conversation */}
@@ -278,15 +288,17 @@ export default function NewFormPage() {
                     >
                       <div className="flex items-start gap-3 relative z-10">
                         <div className="p-2 rounded-lg bg-muted group-hover:bg-white dark:group-hover:bg-zinc-800 transition-colors">
-                            <Wand2 className="w-4 h-4 text-muted-foreground group-hover:text-[#F56A4D] transition-colors" />
+                          <Wand2 className="w-4 h-4 text-muted-foreground group-hover:text-[#F56A4D] transition-colors" />
                         </div>
-                        <p className="text-sm leading-relaxed text-muted-foreground group-hover:text-foreground transition-colors">{prompt}</p>
+                        <p className="text-sm leading-relaxed text-muted-foreground group-hover:text-foreground transition-colors">
+                          {prompt}
+                        </p>
                       </div>
                     </button>
                   ))}
                 </div>
               </div>
-              
+
               <div className="bg-muted/30 rounded-xl p-6 border border-border/50">
                 <h3 className="font-semibold text-sm mb-3 text-foreground/80">
                   Pro Tips
@@ -294,15 +306,21 @@ export default function NewFormPage() {
                 <ul className="space-y-3 text-sm text-muted-foreground">
                   <li className="flex items-start gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#F56A4D] mt-1.5 shrink-0" />
-                    <span>Be specific about the information you need to collect</span>
+                    <span>
+                      Be specific about the information you need to collect
+                    </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#F56A4D] mt-1.5 shrink-0" />
-                    <span>Mention the purpose (survey, registration, quiz)</span>
+                    <span>
+                      Mention the purpose (survey, registration, quiz)
+                    </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#F56A4D] mt-1.5 shrink-0" />
-                    <span>You can refine the form iteratively after generation</span>
+                    <span>
+                      You can refine the form iteratively after generation
+                    </span>
                   </li>
                 </ul>
               </div>
@@ -323,10 +341,10 @@ export default function NewFormPage() {
                   )}
                   <div
                     className={cn(
-                        "max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed shadow-sm",
-                        msg.role === "user"
-                            ? "bg-[#F56A4D] text-white rounded-tr-sm"
-                            : "bg-white dark:bg-zinc-800 border border-border rounded-tl-sm"
+                      "max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed shadow-sm",
+                      msg.role === "user"
+                        ? "bg-[#F56A4D] text-white rounded-tr-sm"
+                        : "bg-white dark:bg-zinc-800 border border-border rounded-tl-sm",
                     )}
                   >
                     <p>{msg.content}</p>
@@ -338,12 +356,12 @@ export default function NewFormPage() {
                   )}
                 </motion.div>
               ))}
-              
+
               {isGenerating && (
-                <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex gap-4 justify-start"
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex gap-4 justify-start"
                 >
                   <div className="w-8 h-8 rounded-full bg-linear-to-br from-[#F56A4D] to-[#f97316] flex items-center justify-center shrink-0 shadow-md mt-1">
                     <Sparkles className="w-4 h-4 text-white" />
@@ -379,50 +397,58 @@ export default function NewFormPage() {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   if (description.trim() && !isGenerating) {
-                      generatedForm ? handleRefine(description) : handleGenerate();
+                    if (generatedForm) {
+                      handleRefine(description);
+                    } else {
+                      handleGenerate();
+                    }
                   }
                 }
               }}
             />
             <div className="absolute bottom-3 right-3">
-                <Button
-                    size="icon"
-                    onClick={
-                    generatedForm
-                        ? () => handleRefine(description)
-                        : handleGenerate
-                    }
-                    disabled={!description.trim() || isGenerating}
-                    className={cn(
-                        "h-8 w-8 rounded-lg transition-all",
-                        description.trim() 
-                            ? "bg-[#F56A4D] hover:bg-[#F56A4D]/90 text-white shadow-md" 
-                            : "bg-muted text-muted-foreground hover:bg-muted"
-                    )}
-                >
-                    {isGenerating ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                        <ArrowUp className="w-4 h-4" />
-                    )}
-                </Button>
+              <Button
+                size="icon"
+                onClick={
+                  generatedForm
+                    ? () => handleRefine(description)
+                    : handleGenerate
+                }
+                disabled={!description.trim() || isGenerating}
+                className={cn(
+                  "h-8 w-8 rounded-lg transition-all",
+                  description.trim()
+                    ? "bg-[#F56A4D] hover:bg-[#F56A4D]/90 text-white shadow-md"
+                    : "bg-muted text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {isGenerating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ArrowUp className="w-4 h-4" />
+                )}
+              </Button>
             </div>
           </div>
           <p className="text-xs text-center text-muted-foreground mt-3">
-            Press <kbd className="px-1 py-0.5 rounded bg-muted border border-border text-[10px] font-sans">Enter</kbd> to send
+            Press{" "}
+            <kbd className="px-1 py-0.5 rounded bg-muted border border-border text-[10px] font-sans">
+              Enter
+            </kbd>{" "}
+            to send
           </p>
         </div>
       </div>
 
       {/* RIGHT: Preview + Settings */}
-      <div 
+      <div
         className={cn(
           "flex-1 bg-muted/30 relative transition-all h-full overflow-hidden",
-          mobileTab === "preview" ? "flex flex-col" : "hidden lg:flex flex-col"
+          mobileTab === "preview" ? "flex flex-col" : "hidden lg:flex flex-col",
         )}
       >
         <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[16px_16px] opacity-50 pointer-events-none" />
-        
+
         {isGenerating && !generatedForm ? (
           <div className="h-full flex items-center justify-center p-12 relative z-10">
             <div className="text-center space-y-6 max-w-md bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-xl border border-border/50">
@@ -431,12 +457,12 @@ export default function NewFormPage() {
               </div>
               <div className="space-y-2">
                 <TextDotsLoader
-                    size="lg"
-                    text="Generating form"
-                    className="justify-center font-semibold text-lg"
+                  size="lg"
+                  text="Generating form"
+                  className="justify-center font-semibold text-lg"
                 />
                 <p className="text-sm text-muted-foreground">
-                    Our AI hamsters are working hard to build your form...
+                  Our AI hamsters are working hard to build your form...
                 </p>
               </div>
             </div>
@@ -452,10 +478,12 @@ export default function NewFormPage() {
                 <Sparkles className="w-12 h-12 text-white" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-2xl font-bold tracking-tight">Your form will appear here</h3>
+                <h3 className="text-2xl font-bold tracking-tight">
+                  Your form will appear here
+                </h3>
                 <p className="text-muted-foreground leading-relaxed">
-                    Describe what you want on the left, and watch AI generate a
-                    beautiful, interactive form in real-time.
+                  Describe what you want on the left, and watch AI generate a
+                  beautiful, interactive form in real-time.
                 </p>
               </div>
             </div>

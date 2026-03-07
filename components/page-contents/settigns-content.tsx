@@ -1,16 +1,21 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import BillingSection from "@/components/settings/billing-section";
-import { Preloaded, usePreloadedQuery, useQuery } from "convex/react";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
-import ProfileTab from "../settings/tabs/ProfileTab";
-import NotificationsTab from "../settings/tabs/NotificationsTab";
-import IntegrationsTab from "../settings/tabs/IntegrationsTab";
-import WebhooksTab from "../settings/tabs/WebhooksTab";
-import TeamTab from "../settings/tabs/TeamTab";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Preloaded, useQuery } from "convex/react";
 import { ShieldAlert } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import IntegrationsTab from "../settings/tabs/IntegrationsTab";
+import NotificationsTab from "../settings/tabs/NotificationsTab";
+import ProfileTab from "../settings/tabs/ProfileTab";
+import TeamTab from "../settings/tabs/TeamTab";
+import WebhooksTab from "../settings/tabs/WebhooksTab";
 
 type Props = {
   preloadedIntegrations: Preloaded<typeof api.integrations.getIntegrations>;
@@ -22,15 +27,17 @@ const restrictedTabs = ["integrations", "webhooks", "billing", "notifications"];
 export default function SettingsContent({ preloadedIntegrations }: Props) {
   const searchParams = useSearchParams();
   const activeTab = searchParams.get("selected") || "profile";
-  
+
   const user = useQuery(api.auth.loggedInUser);
   const userRole = useQuery(
     api.users.getRole,
-    user?.activeWorkspaceId ? { workspaceId: user.activeWorkspaceId } : "skip"
+    user?.activeWorkspaceId ? { workspaceId: user.activeWorkspaceId } : "skip",
   );
 
   // Only check restriction when role has loaded AND user is a viewer
-  const isRoleLoaded = user !== undefined && (user?.activeWorkspaceId ? userRole !== undefined : true);
+  const isRoleLoaded =
+    user !== undefined &&
+    (user?.activeWorkspaceId ? userRole !== undefined : true);
   const isViewer = userRole === "viewer";
 
   // Check if viewer is trying to access restricted tabs
@@ -44,7 +51,8 @@ export default function SettingsContent({ preloadedIntegrations }: Props) {
             </div>
             <CardTitle className="text-xl">Access Restricted</CardTitle>
             <CardDescription className="mt-2 text-sm leading-relaxed">
-              You don't have permission to access this section. Please contact your workspace admin to change your role.
+              You don&apos;t have permission to access this section. Please
+              contact your workspace admin to change your role.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -75,4 +83,3 @@ export default function SettingsContent({ preloadedIntegrations }: Props) {
 
   return renderTab();
 }
-

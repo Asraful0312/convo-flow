@@ -1,14 +1,14 @@
 "use client";
-import Link from "next/link";
+import CandidLogo from "@/components/shared/candid-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Sparkles } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import CandidLogo from "@/components/shared/candid-logo";
 import { ConvexError } from "convex/values";
+import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function SignInPage() {
   const { signIn } = useAuthActions();

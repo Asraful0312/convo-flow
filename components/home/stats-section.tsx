@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
-import { SlidingNumber } from "../ui/sliding-number";
 import { motion, useInView } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { SlidingNumber } from "../ui/sliding-number";
 
 const StatsSection = () => {
   const [completionRate, setCompletionRate] = useState(0);
@@ -16,12 +16,8 @@ const StatsSection = () => {
   useEffect(() => {
     if (!isInView) return;
 
-    let rateInterval: NodeJS.Timeout;
-    let speedInterval: NodeJS.Timeout;
-    let insightInterval: NodeJS.Timeout;
-
     // animate 60%
-    rateInterval = setInterval(() => {
+    const rateInterval: NodeJS.Timeout = setInterval(() => {
       setCompletionRate((v) => {
         if (v >= 60) {
           clearInterval(rateInterval);
@@ -32,7 +28,7 @@ const StatsSection = () => {
     }, 20);
 
     // animate 80%
-    speedInterval = setInterval(() => {
+    const speedInterval: NodeJS.Timeout = setInterval(() => {
       setFormSpeed((v) => {
         if (v >= 80) {
           clearInterval(speedInterval);
@@ -43,7 +39,7 @@ const StatsSection = () => {
     }, 15);
 
     // animate 10x (we’ll count up to 10)
-    insightInterval = setInterval(() => {
+    const insightInterval: NodeJS.Timeout = setInterval(() => {
       setInsights((v) => {
         if (v >= 10) {
           clearInterval(insightInterval);

@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { useAction, useQuery } from "convex/react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
 import { SubscriptionTier } from "@/lib/types";
+import { useAction, useQuery } from "convex/react";
 import { Building2, Check, Sparkles, Users, X } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const plans = [
   {
@@ -96,19 +96,19 @@ const plans = [
     highlighted: false,
     icon: Building2,
   },
-]
+];
 
 export default function PricingPage() {
   const router = useRouter();
-  const user = useQuery(api.auth.loggedInUser)
+  const user = useQuery(api.auth.loggedInUser);
   const userRole = useQuery(
     api.users.getRole,
-    user?.activeWorkspaceId ? { workspaceId: user.activeWorkspaceId } : "skip"
+    user?.activeWorkspaceId ? { workspaceId: user.activeWorkspaceId } : "skip",
   );
   const createCheckoutSession = useAction(api.stripe.createCheckoutSession);
   const getPortalUrl = useAction(api.stripe.getPortalUrl);
-  const [isLoading, setIsLoading] = useState<string | null>(null)
-  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   // Redirect viewers - they cannot access billing/pricing
   useEffect(() => {
@@ -119,11 +119,12 @@ export default function PricingPage() {
 
   const handleSubscribe = async (tier: SubscriptionTier) => {
     if (tier === "enterprise" || tier === "free") {
-      window.location.href = "mailto:sales@candid.app?subject=Enterprise Plan Inquiry"
-      return
+      window.location.href =
+        "mailto:sales@candid.app?subject=Enterprise Plan Inquiry";
+      return;
     }
 
-    setIsLoading(tier)
+    setIsLoading(tier);
     try {
       const url = await createCheckoutSession({ tier });
       window.location.href = url;
@@ -131,32 +132,36 @@ export default function PricingPage() {
       console.error(err);
       alert("Error creating checkout session.");
     } finally {
-      setIsLoading(null)
+      setIsLoading(null);
     }
-  }
+  };
 
   const handleManageSubscription = async () => {
     setIsLoading("manage");
     try {
-        const url = await getPortalUrl({});
-        window.location.href = url;
+      const url = await getPortalUrl({});
+      window.location.href = url;
     } catch (err) {
-        console.error(err);
-        alert("Error redirecting to billing portal.");
+      console.error(err);
+      alert("Error redirecting to billing portal.");
     } finally {
-        setIsLoading(null);
+      setIsLoading(null);
     }
-  }
+  };
 
-  const currentTier = user?.subscriptionTier || "free"
+  const currentTier = user?.subscriptionTier || "free";
 
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mb-12 text-center">
-          <h1 className="mb-4 font-heading text-4xl font-bold text-(--ink-night)">Choose your plan</h1>
-          <p className="text-lg text-muted-foreground">Start free, upgrade when you need more. Cancel anytime.</p>
+          <h1 className="mb-4 font-heading text-4xl font-bold text-(--ink-night)">
+            Choose your plan
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            Start free, upgrade when you need more. Cancel anytime.
+          </p>
         </div>
 
         {/* Current Plan Banner */}
@@ -165,9 +170,12 @@ export default function PricingPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="mb-1 font-heading text-lg font-semibold text-(--ink-night)">
-                  Current Plan: {plans.find((p) => p.tier === currentTier)?.name}
+                  Current Plan:{" "}
+                  {plans.find((p) => p.tier === currentTier)?.name}
                 </h3>
-                <p className="text-sm text-muted-foreground">You can manage your subscription in the billing portal.</p>
+                <p className="text-sm text-muted-foreground">
+                  You can manage your subscription in the billing portal.
+                </p>
               </div>
               <Button
                 variant="outline"
@@ -184,12 +192,13 @@ export default function PricingPage() {
         {/* Pricing Cards */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {plans.map((plan) => {
-            const Icon = plan.icon
-            const isCurrentPlan = currentTier === plan.tier
+            const Icon = plan.icon;
+            const isCurrentPlan = currentTier === plan.tier;
             const canUpgrade =
               (currentTier === "free" && plan.tier !== "free") ||
-              (currentTier === "pro" && (plan.tier === "business" || plan.tier === "enterprise")) ||
-              (currentTier === "business" && plan.tier === "enterprise")
+              (currentTier === "pro" &&
+                (plan.tier === "business" || plan.tier === "enterprise")) ||
+              (currentTier === "business" && plan.tier === "enterprise");
 
             return (
               <Card
@@ -213,31 +222,46 @@ export default function PricingPage() {
                   </div>
 
                   {/* Plan Name */}
-                  <h3 className="mb-2 font-heading text-2xl font-bold text-(--ink-night)">{plan.name}</h3>
+                  <h3 className="mb-2 font-heading text-2xl font-bold text-(--ink-night)">
+                    {plan.name}
+                  </h3>
 
                   {/* Price */}
                   <div className="mb-2">
-                    <span className="font-heading text-4xl font-bold text-(--ink-night)">{plan.price}</span>
+                    <span className="font-heading text-4xl font-bold text-(--ink-night)">
+                      {plan.price}
+                    </span>
                     {plan.period !== "contact us" && (
-                      <span className="ml-2 text-sm text-muted-foreground">{plan.period}</span>
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        {plan.period}
+                      </span>
                     )}
                   </div>
 
                   {/* Description */}
-                  <p className="mb-6 text-sm text-muted-foreground">{plan.description}</p>
+                  <p className="mb-6 text-sm text-muted-foreground">
+                    {plan.description}
+                  </p>
 
                   {/* Features */}
                   <ul className="mb-6 space-y-3">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-start gap-2">
                         <Check className="mt-0.5 h-4 w-4 shrink-0 text-(--candid-teal)" />
-                        <span className="text-sm text-muted-foreground">{feature}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {feature}
+                        </span>
                       </li>
                     ))}
                     {plan.limitations.map((limitation, index) => (
-                      <li key={`limit-${index}`} className="flex items-start gap-2 opacity-50">
+                      <li
+                        key={`limit-${index}`}
+                        className="flex items-start gap-2 opacity-50"
+                      >
                         <X className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">{limitation}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {limitation}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -271,7 +295,7 @@ export default function PricingPage() {
                   </Button>
                 </div>
               </Card>
-            )
+            );
           })}
         </div>
 
@@ -286,8 +310,9 @@ export default function PricingPage() {
                 Can I change plans anytime?
               </h3>
               <p className="text-sm text-muted-foreground">
-                Yes! You can upgrade or downgrade your plan at any time. Upgrades take effect immediately, while
-                downgrades take effect at the end of your current billing period.
+                Yes! You can upgrade or downgrade your plan at any time.
+                Upgrades take effect immediately, while downgrades take effect
+                at the end of your current billing period.
               </p>
             </Card>
             <Card className="bg-white p-6">
@@ -295,8 +320,9 @@ export default function PricingPage() {
                 What happens if I exceed my response limit?
               </h3>
               <p className="text-sm text-muted-foreground">
-                We'll notify you when you're approaching your limit. You can upgrade to a higher plan or purchase
-                additional responses as needed. Your forms will continue to work.
+                We&apos;ll notify you when you&apos;re approaching your limit.
+                You can upgrade to a higher plan or purchase additional
+                responses as needed. Your forms will continue to work.
               </p>
             </Card>
             <Card className="bg-white p-6">
@@ -304,7 +330,8 @@ export default function PricingPage() {
                 Do you offer annual billing?
               </h3>
               <p className="text-sm text-muted-foreground">
-                Yes! Annual billing is available with a 20% discount. Contact us to set up annual billing.
+                Yes! Annual billing is available with a 20% discount. Contact us
+                to set up annual billing.
               </p>
             </Card>
           </div>
@@ -315,10 +342,13 @@ export default function PricingPage() {
       {showCancelDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <Card className="w-full max-w-md bg-white p-6">
-            <h3 className="mb-4 font-heading text-xl font-bold text-(--ink-night)">Cancel Subscription?</h3>
+            <h3 className="mb-4 font-heading text-xl font-bold text-(--ink-night)">
+              Cancel Subscription?
+            </h3>
             <p className="mb-6 text-sm text-muted-foreground">
-              Are you sure you want to cancel your subscription? You'll have access to your current plan until the end
-              of your billing period, then you'll be moved to the Free plan.
+              Are you sure you want to cancel your subscription? You&apos;ll
+              have access to your current plan until the end of your billing
+              period, then you&apos;ll be moved to the Free plan.
             </p>
             <div className="flex gap-3">
               <Button
@@ -348,5 +378,5 @@ export default function PricingPage() {
         </div>
       )}
     </div>
-  )
+  );
 }
