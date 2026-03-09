@@ -12,10 +12,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
 import { motion } from "framer-motion";
-import { Copy, LogOut, Shield } from "lucide-react";
+import { Camera, Copy, LogOut, Shield } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 const containerVariants = {
@@ -31,9 +34,141 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
 
+const BRAND = "#F56A4D";
+
+// ─── SVG Circular Progress Ring ─────────────────────────────────────────────
+function ProgressRing({
+  progress,
+  size = 112,
+}: {
+  progress: number;
+  size?: number;
+}) {
+  const stroke = 4;
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (progress / 100) * circ;
+  return (
+    <svg
+      width={size}
+      height={size}
+      className="absolute inset-0 -rotate-90"
+      style={{ pointerEvents: "none" }}
+    >
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke="rgba(255,255,255,0.25)"
+        strokeWidth={stroke}
+      />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke={BRAND}
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={circ}
+        strokeDashoffset={offset}
+        style={{ transition: "stroke-dashoffset 0.15s ease" }}
+      />
+    </svg>
+  );
+}
+
 export default function ProfileTab() {
   const { signOut } = useAuthActions();
   const user = useQuery(api.auth.loggedInUser);
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+  const getFileUrl = useMutation(api.files.getFileUrl);
+  const updateUserProfile = useMutation(api.auth.updateUserProfile);
+
+  // Upload state
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const currentImage = previewUrl ?? user?.image;
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Upload handler ──────────────────────────────────────────────────────
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Show local preview immediately
+    const localUrl = URL.createObjectURL(file);
+    setPreviewUrl(localUrl);
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      // Step 1: Get a signed Convex upload URL
+      const uploadUrl = await generateUploadUrl();
+
+      // Step 2: Upload file with progress tracking via XHR
+      const storageId = await new Promise<Id<"_storage">>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", uploadUrl, true);
+        xhr.setRequestHeader("Content-Type", file.type);
+
+        xhr.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) {
+            setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const result = JSON.parse(xhr.responseText);
+              resolve(result.storageId as Id<"_storage">);
+            } catch {
+              reject(new Error("Could not parse upload response"));
+            }
+          } else {
+            reject(new Error(`Upload failed: HTTP ${xhr.status}`));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Network error during upload"));
+        xhr.send(file);
+      });
+
+      setUploadProgress(100);
+
+      // Step 3: Resolve storageId → public CDN URL
+      const publicUrl = await getFileUrl({ storageId });
+
+      if (!publicUrl) throw new Error("Could not get image URL");
+
+      // Step 4: Persist to user profile
+      await updateUserProfile({ image: publicUrl });
+
+      // Swap local blob with the real CDN URL
+      setPreviewUrl(publicUrl);
+      URL.revokeObjectURL(localUrl);
+
+      toast.success("Profile picture updated!");
+    } catch (err) {
+      console.error("Profile picture upload error:", err);
+      const msg =
+        err instanceof ConvexError
+          ? err.data
+          : "Upload failed. Please try again.";
+      toast.error(msg);
+      // Revert preview on error
+      setPreviewUrl(null);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   return (
     <motion.div
@@ -42,27 +177,73 @@ export default function ProfileTab() {
       animate="visible"
       className="space-y-8 w-full max-w-5xl mx-auto p-1"
     >
-      {/* Hero Header – Avatar + Rich Info */}
+      {/* Hero Header – Info */}
       <motion.div
         variants={itemVariants}
         className="flex flex-col sm:flex-row items-center sm:items-start gap-6 md:gap-8"
       >
-        <div className="flex flex-col gap-4 items-center">
-          {/* Avatar */}
-          <Avatar className="w-28 h-28 ring-4 ring-[#F56A4D]/20 shrink-0">
-            <AvatarImage src={user?.image} alt={user?.name} />
-            <AvatarFallback className="text-3xl bg-linear-to-br from-[#F56A4D] to-[#f78b6d] text-white">
-              {user?.name?.[0]?.toUpperCase() || "U"}
-            </AvatarFallback>
-          </Avatar>
+        {/* Name + Email */}
+        <div className="flex flex-col gap-1 items-center">
+          <CardContent className="space-y-5">
+            {/* Clickable Avatar */}
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className={`relative ${isUploading ? "cursor-wait" : "cursor-pointer"} group`}
+                onClick={() => !isUploading && fileInputRef.current?.click()}
+                title="Click to change profile picture"
+                role="button"
+                aria-label="Change profile picture"
+              >
+                <Avatar className="w-28 h-28 ring-4 ring-[#F56A4D]/20">
+                  <AvatarImage src={currentImage} alt={user?.name} />
+                  <AvatarFallback className="text-3xl bg-linear-to-br from-[#F56A4D] to-[#f78b6d] text-white">
+                    {user?.name?.[0]?.toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
 
-          {/* Name + Email */}
-          <div className="text-center sm:text-left">
-            <h1 className="text-2xl font-bold text-center">
-              {user?.name || "User"}
-            </h1>
-            <p className="text-muted-foreground text-center">{user?.email}</p>
-          </div>
+                {/* Upload progress ring + percentage */}
+                {isUploading && (
+                  <>
+                    <ProgressRing progress={uploadProgress} size={112} />
+                    <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+                      <span className="text-white text-sm font-bold tabular-nums">
+                        {uploadProgress}%
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {/* Hover overlay (idle state) */}
+                {!isUploading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <Camera className="w-6 h-6 text-white" />
+                    <span className="text-white text-xs mt-1 font-medium tracking-wide">
+                      Change
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                {isUploading
+                  ? `Uploading… ${uploadProgress}%`
+                  : "Click your photo to update it"}
+              </p>
+            </div>
+
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          </CardContent>
+          <h1 className="text-2xl font-bold text-center">
+            {user?.name || "User"}
+          </h1>
+          <p className="text-muted-foreground text-center">{user?.email}</p>
         </div>
 
         {/* Info Grid */}

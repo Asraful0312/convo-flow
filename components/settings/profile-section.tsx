@@ -24,31 +24,27 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
+// ─── Main Component ──────────────────────────────────────────────────────────
 export default function ProfileSection() {
   const user = useQuery(api.auth.loggedInUser);
   const updateUserProfile = useMutation(api.auth.updateUserProfile);
+
   const [name, setName] = useState("");
-  const [avatar, setAvatar] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  console.log("user", user);
-
   useEffect(() => {
-    if (user) {
-      setName(user.name ?? "");
-      setAvatar(user.image ?? "");
-    }
+    if (user) setName(user.name ?? "");
   }, [user]);
 
+  // ── Save name ───────────────────────────────────────────────────────────
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await updateUserProfile({ name, image: avatar });
+      await updateUserProfile({ name });
       toast.success("Profile updated successfully!");
     } catch (err) {
-      const errorMessage =
-        err instanceof ConvexError ? err.data : "Internal Error!";
-      toast.error(errorMessage);
+      const msg = err instanceof ConvexError ? err.data : "Internal Error!";
+      toast.error(msg);
     } finally {
       setIsSaving(false);
     }
@@ -56,7 +52,7 @@ export default function ProfileSection() {
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
-      {/* Profile Information */}
+      {/* ── Profile Information ─────────────────────────────────────────── */}
       <motion.div variants={itemVariants} className="md:col-span-1">
         <Card className="h-full border-0 shadow-sm">
           <CardHeader>
@@ -66,7 +62,8 @@ export default function ProfileSection() {
             </div>
             <CardDescription>Update your personal details</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5">
+            {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <Input
@@ -76,6 +73,8 @@ export default function ProfileSection() {
                 className="bg-background"
               />
             </div>
+
+            {/* Email (read-only) */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -86,28 +85,19 @@ export default function ProfileSection() {
                 className="bg-muted"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="avatar">Avatar URL</Label>
-              <Input
-                id="avatar"
-                value={avatar}
-                onChange={(e) => setAvatar(e.target.value)}
-                placeholder="https://example.com/avatar.jpg"
-                className="bg-background"
-              />
-            </div>
+
             <Button
               onClick={handleSave}
               disabled={isSaving}
               className="w-full bg-[#F56A4D] hover:bg-[#F56A4D]/90 text-white"
             >
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? "Saving…" : "Save Changes"}
             </Button>
           </CardContent>
         </Card>
       </motion.div>
 
-      {/* Password Reset */}
+      {/* ── Password Reset ──────────────────────────────────────────────── */}
       <motion.div variants={itemVariants} className="md:col-span-1">
         <Card className="h-full border-0 shadow-sm">
           <CardHeader>

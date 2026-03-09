@@ -32,6 +32,13 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/**",
       },
+      // Convex file storage
+      {
+        protocol: "https",
+        hostname: "*.convex.cloud",
+        port: "",
+        pathname: "/**",
+      },
     ],
   },
 };
