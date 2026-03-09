@@ -1,8 +1,8 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError, v } from "convex/values";
+import { api } from "./_generated/api";
 import { internalMutation, mutation } from "./_generated/server";
 import { assertAdmin } from "./auth_helpers";
-import { api, internal } from "./_generated/api";
-import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const addInvite = internalMutation({
   args: {
@@ -22,39 +22,87 @@ export const addInvite = internalMutation({
 
 export const updateRole = mutation({
   args: {
-    memberId: v.id("workspaceMembers"),
+    memberId: v.union(v.id("workspaceMembers"), v.id("invites")),
     role: v.union(v.literal("admin"), v.literal("editor"), v.literal("viewer")),
   },
   handler: async (ctx, { memberId, role }) => {
-    const member = await ctx.db.get(memberId);
-    if (!member) {
-      throw new ConvexError("Member not found.");
-    }
-
-    await assertAdmin(ctx, member.workspaceId);
-
-    await ctx.db.patch(memberId, { role });
-
-    const admin = await getAuthUserId(ctx);
-    if (!admin) {
+    const adminUserId = await getAuthUserId(ctx);
+    if (!adminUserId) {
       throw new ConvexError("Not authenticated");
     }
 
-    await ctx.runMutation(api.activities.logActivity, {
-      workspaceId: member.workspaceId,
-      userId: admin,
-      action: "member.updateRole",
-      details: { updatedUserId: member.userId, newRole: role },
-    });
+    const inviteId = ctx.db.normalizeId("invites", memberId as string);
+    if (inviteId) {
+      const invite = await ctx.db.get(inviteId);
+      if (!invite) throw new ConvexError("Invite not found.");
+      await assertAdmin(ctx, invite.workspaceId);
+      await ctx.db.patch(inviteId, { role });
+      await ctx.runMutation(api.activities.logActivity, {
+        workspaceId: invite.workspaceId,
+        userId: adminUserId,
+        action: "invite.updateRole",
+        details: { updatedEmail: invite.email, newRole: role },
+      });
+      return;
+    }
+
+    const wsMemberId = ctx.db.normalizeId(
+      "workspaceMembers",
+      memberId as string,
+    );
+    if (wsMemberId) {
+      const member = await ctx.db.get(wsMemberId);
+      if (!member) throw new ConvexError("Member not found.");
+      await assertAdmin(ctx, member.workspaceId);
+      await ctx.db.patch(wsMemberId, { role });
+      await ctx.runMutation(api.activities.logActivity, {
+        workspaceId: member.workspaceId,
+        userId: adminUserId,
+        action: "member.updateRole",
+        details: { updatedUserId: member.userId, newRole: role },
+      });
+      return;
+    }
+
+    throw new ConvexError("Invalid member or invite ID.");
   },
 });
 
 export const removeMember = mutation({
   args: {
-    memberId: v.id("workspaceMembers"),
+    memberId: v.union(v.id("workspaceMembers"), v.id("invites")),
+    status: v.string(),
   },
-  handler: async (ctx, { memberId }) => {
-    const member = await ctx.db.get(memberId);
+  handler: async (ctx, { memberId, status }) => {
+    const adminUserId = await getAuthUserId(ctx);
+    if (!adminUserId) {
+      throw new ConvexError("Not authenticated");
+    }
+
+    if (status === "pending") {
+      const inviteId = ctx.db.normalizeId("invites", memberId as string);
+      if (!inviteId) throw new ConvexError("Invalid invite ID.");
+      const invite = await ctx.db.get(inviteId);
+      if (!invite) throw new ConvexError("Invite not found.");
+
+      await assertAdmin(ctx, invite.workspaceId);
+      await ctx.db.delete(inviteId);
+
+      await ctx.runMutation(api.activities.logActivity, {
+        workspaceId: invite.workspaceId,
+        userId: adminUserId,
+        action: "invite.remove",
+        details: { removedEmail: invite.email },
+      });
+      return;
+    }
+
+    const wsMemberId = ctx.db.normalizeId(
+      "workspaceMembers",
+      memberId as string,
+    );
+    if (!wsMemberId) throw new ConvexError("Invalid member ID.");
+    const member = await ctx.db.get(wsMemberId);
     if (!member) {
       throw new ConvexError("Member not found.");
     }
@@ -66,7 +114,7 @@ export const removeMember = mutation({
       throw new ConvexError("Cannot remove the workspace owner.");
     }
 
-    await ctx.db.delete(memberId);
+    await ctx.db.delete(wsMemberId);
 
     // Check if the removed workspace was the user's active one
     const removedUser = await ctx.db.get(member.userId);
@@ -86,14 +134,9 @@ export const removeMember = mutation({
       });
     }
 
-    const admin = await getAuthUserId(ctx);
-    if (!admin) {
-      throw new ConvexError("Not authenticated");
-    }
-
     await ctx.runMutation(api.activities.logActivity, {
       workspaceId: member.workspaceId,
-      userId: admin,
+      userId: adminUserId,
       action: "member.remove",
       details: { removedUserId: member.userId },
     });

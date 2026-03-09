@@ -1,4 +1,4 @@
-import { Id } from "@/convex/_generated/dataModel";
+import { Id } from "../convex/_generated/dataModel";
 
 // Add this to your Message type definition in lib/form-types.ts
 export interface Message {

@@ -176,3 +176,13 @@ export interface AIInsight {
   confidence: number;
   data?: Record<string, unknown>;
 }
+
+export type UnifiedMember = {
+  _id: string;
+  role: "admin" | "editor" | "viewer";
+  status: "active" | "pending";
+  name: string;
+  email: string;
+  image?: string;
+  userId?: string; // Optional because invites don't have this yet
+};

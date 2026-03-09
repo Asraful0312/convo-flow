@@ -9,14 +9,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { api } from "@/convex/_generated/api";
-import { Doc } from "@/convex/_generated/dataModel";
+import { Id } from "@/convex/_generated/dataModel";
+import { UnifiedMember } from "@/lib/types";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 
-type Member = Doc<"workspaceMembers">;
-
 type Props = {
-  member: Member;
+  member: UnifiedMember;
   isOwner: boolean;
   currentUserRole: "admin" | "editor" | "viewer";
 };
@@ -26,20 +25,32 @@ export function MemberActions({ member, isOwner, currentUserRole }: Props) {
   const removeMember = useMutation(api.serverMutation.removeMember);
 
   const handleRoleChange = (role: "admin" | "editor" | "viewer") => {
-    toast.promise(updateRole({ memberId: member._id, role }), {
-      loading: "Updating role...",
-      success: "Role updated!",
-      error: (err) => err.data || "Failed to update role.",
-    });
+    toast.promise(
+      updateRole({
+        memberId: member._id as Id<"workspaceMembers"> | Id<"invites">,
+        role,
+      }),
+      {
+        loading: "Updating role...",
+        success: "Role updated!",
+        error: (err) => err.data || "Failed to update role.",
+      },
+    );
   };
 
   const handleRemove = () => {
     if (confirm("Are you sure you want to remove this member?")) {
-      toast.promise(removeMember({ memberId: member._id }), {
-        loading: "Removing member...",
-        success: "Member removed!",
-        error: (err) => err.data || "Failed to remove member.",
-      });
+      toast.promise(
+        removeMember({
+          memberId: member._id as Id<"workspaceMembers"> | Id<"invites">,
+          status: member.status,
+        }),
+        {
+          loading: "Removing member...",
+          success: "Member removed!",
+          error: (err) => err.data || "Failed to remove member.",
+        },
+      );
     }
   };
 

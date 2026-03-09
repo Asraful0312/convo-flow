@@ -40,23 +40,61 @@ export const list = query({
   handler: async (ctx, { workspaceId }) => {
     await assertViewer(ctx, workspaceId);
 
-    const members = await ctx.db
-      .query("workspaceMembers")
-      .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-      .collect();
+    // 1. Fetch data in parallel for better performance
+    const [inviteMembers, members] = await Promise.all([
+      ctx.db
+        .query("invites")
+        .withIndex("by_workspace_and_email", (q) =>
+          q.eq("workspaceId", workspaceId),
+        )
+        .collect(),
+      ctx.db
+        .query("workspaceMembers")
+        .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
+        .collect(),
+    ]);
 
+    // 2. Fetch User profiles for active members
     const users = await Promise.all(
       members.map((member) => ctx.db.get(member.userId)),
     );
 
-    return members.map((member) => {
+    type UnifiedMember = {
+      _id: string;
+      role: "admin" | "editor" | "viewer";
+      status: "active" | "pending";
+      name: string;
+      email: string;
+      image?: string;
+      userId?: string; // Optional because invites don't have this yet
+    };
+
+    // 3. Map Active Members to Unified Format
+    const activeMembers: UnifiedMember[] = members.map((member) => {
       const user = users.find((u) => u?._id === member.userId);
       return {
-        ...member,
+        _id: member._id,
+        userId: member.userId,
+        role: member.role as any,
+        status: "active",
         name: user?.name ?? "Unknown",
         email: user?.email ?? "No email",
         image: user?.image,
       };
     });
+
+    // 4. Map Invites to Unified Format
+    const pendingInvites: UnifiedMember[] = inviteMembers.map((invite) => ({
+      _id: invite._id,
+      role: invite.role as any,
+      status: "pending",
+      name: invite.email.split("@")[0], // Fallback name from email
+      email: invite.email,
+      image: undefined, // Invites usually don't have images yet
+    }));
+
+    // 5. Merge and return
+    console.log("marge and return", [...activeMembers, ...pendingInvites]);
+    return [...activeMembers, ...pendingInvites];
   },
 });

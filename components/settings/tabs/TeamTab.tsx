@@ -49,6 +49,8 @@ export default function TeamTab() {
     workspaceId ? { workspaceId } : "skip",
   );
 
+  console.log("members", members);
+
   if (!workspaceId || members === undefined || !user) {
     return (
       <div className="space-y-6">
@@ -120,6 +122,7 @@ export default function TeamTab() {
                 <TableHead className="pl-6">Member</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right pr-6">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -144,7 +147,7 @@ export default function TeamTab() {
                   <TableCell className="text-muted-foreground">
                     {member.email}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="uppercase">
                     <Badge
                       variant="outline"
                       className={
@@ -155,6 +158,15 @@ export default function TeamTab() {
                     >
                       {member.role}
                     </Badge>
+                  </TableCell>
+                  <TableCell className={`text-muted-foreground uppercase`}>
+                    <span
+                      className={
+                        member.status === "active" ? "text-[#F56A4D]" : ""
+                      }
+                    >
+                      {member.status}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right pr-6">
                     <MemberActions
