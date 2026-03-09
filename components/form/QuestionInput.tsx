@@ -181,7 +181,7 @@ export default function QuestionInput({
             size="sm"
             onClick={onBack}
             disabled={isProcessing || isTyping}
-            className="text-muted-foreground hover:text-foreground -ml-2"
+            className="text-muted-foreground -ml-2 hover:text-white"
             aria-label="Go back to previous question"
           >
             ← Back

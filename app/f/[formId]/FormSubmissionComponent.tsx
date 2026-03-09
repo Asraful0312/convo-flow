@@ -6,6 +6,7 @@ import FormHeader from "@/components/form/FormHeader";
 import MapConfirmation from "@/components/form/MapConfirmation";
 import OverLimitScreen from "@/components/form/OverLimitScreen";
 import QuestionInput from "@/components/form/QuestionInput";
+import SaveResumeModal from "@/components/form/SaveResumeModal";
 import VoiceUI from "@/components/form/VoiceUI";
 import WelcomeScreen from "@/components/form/WelcomeScreen";
 import { Label } from "@/components/ui/label";
@@ -16,10 +17,9 @@ import { Message } from "@/lib/form-types";
 import confetti from "canvas-confetti";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { use, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
-import SaveResumeModal from "@/components/form/SaveResumeModal";
 
 export default function FormSubmissionComponent({
   params,
@@ -81,6 +81,7 @@ export default function FormSubmissionComponent({
   } | null>(null);
   const [locationData, setLocationData] = useState<null | any>(null);
   const [isReviewing, setIsReviewing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // Autosave hook
   const useLocalStorage = (key: string, initialValue: any) => {
@@ -134,24 +135,48 @@ export default function FormSubmissionComponent({
   const backgroundColor = form?.settings.branding?.backgroundColor || "#ffffff";
   const font = form?.settings.branding?.font || "Inter";
 
-  console.log("THEME DEBUG:", { primaryColor, secondaryColor, backgroundColor, font, settings: form?.settings });
+  console.log("THEME DEBUG:", {
+    primaryColor,
+    secondaryColor,
+    backgroundColor,
+    font,
+    settings: form?.settings,
+  });
 
   useEffect(() => {
     if (primaryColor) {
-      document.documentElement.style.setProperty("--candid-coral", primaryColor);
+      document.documentElement.style.setProperty(
+        "--candid-coral",
+        primaryColor,
+      );
       document.documentElement.style.setProperty("--primary", primaryColor);
-      document.documentElement.style.setProperty("--color-primary", primaryColor);
-      document.documentElement.style.setProperty("--primary-foreground", "#ffffff");
+      document.documentElement.style.setProperty(
+        "--color-primary",
+        primaryColor,
+      );
+      document.documentElement.style.setProperty(
+        "--primary-foreground",
+        "#ffffff",
+      );
       document.documentElement.style.setProperty("--ring", primaryColor);
       document.documentElement.style.setProperty("--color-ring", primaryColor);
     }
     if (secondaryColor) {
       document.documentElement.style.setProperty("--secondary", secondaryColor);
-      document.documentElement.style.setProperty("--color-secondary", secondaryColor);
+      document.documentElement.style.setProperty(
+        "--color-secondary",
+        secondaryColor,
+      );
     }
     if (backgroundColor) {
-      document.documentElement.style.setProperty("--background", backgroundColor);
-      document.documentElement.style.setProperty("--color-background", backgroundColor);
+      document.documentElement.style.setProperty(
+        "--background",
+        backgroundColor,
+      );
+      document.documentElement.style.setProperty(
+        "--color-background",
+        backgroundColor,
+      );
     }
     if (font) {
       document.documentElement.style.setProperty("--font-sans", font);
@@ -161,7 +186,6 @@ export default function FormSubmissionComponent({
       document.head.appendChild(link);
       document.body.style.fontFamily = `"${font}", sans-serif`;
     }
-
 
     return () => {
       document.documentElement.style.removeProperty("--candid-coral");
@@ -189,7 +213,6 @@ export default function FormSubmissionComponent({
   const handleSubmitAnswerRef = useRef<any>(null);
 
   const isResuming = useRef(false);
-
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
@@ -439,10 +462,10 @@ export default function FormSubmissionComponent({
         // Check if the last message was already asking this question
         const lastMessage = savedState.messages[savedState.messages.length - 1];
         const currentQuestion = questions[savedState.currentQuestionIndex];
-        
-        const alreadyAsked = 
-          lastMessage && 
-          lastMessage.role === "assistant" && 
+
+        const alreadyAsked =
+          lastMessage &&
+          lastMessage.role === "assistant" &&
           lastMessage.questionId === currentQuestion._id;
 
         if (!alreadyAsked) {
@@ -520,9 +543,12 @@ export default function FormSubmissionComponent({
           }
 
           // Format voice transcript based on question type
-          const formatVoiceTranscript = (text: string, questionType?: string): string => {
+          const formatVoiceTranscript = (
+            text: string,
+            questionType?: string,
+          ): string => {
             if (!text) return text;
-            
+
             // For email questions: remove spaces, lowercase, common voice replacements
             if (questionType === "email") {
               return text
@@ -537,7 +563,7 @@ export default function FormSubmissionComponent({
                 .replace(/hotmail\.com/gi, "hotmail.com")
                 .replace(/outlook\.com/gi, "outlook.com");
             }
-            
+
             // For URL questions: remove spaces, add common replacements
             if (questionType === "url") {
               return text
@@ -547,30 +573,33 @@ export default function FormSubmissionComponent({
                 .replace(/\bslash\b/gi, "/") // "slash" -> /
                 .replace(/\bdash\b/gi, "-"); // "dash" -> -
             }
-            
+
             // For phone questions: keep only numbers and common phone chars
             if (questionType === "phone") {
               return text.replace(/[^\d\s\-\+\(\)]/g, "");
             }
-            
+
             return text;
           };
 
           const currentQuestionType = questions?.[currentQuestionIndex]?.type;
-          
+
           // Update UI with interim transcript for live feedback
           const displayText = formatVoiceTranscript(
             finalTranscriptRef.current + interimTranscript,
-            currentQuestionType
+            currentQuestionType,
           );
           setInputValue(displayText);
 
           if (finalTranscriptPart) {
             // Format and store the final transcript
-            const formattedFinal = formatVoiceTranscript(finalTranscriptPart, currentQuestionType);
+            const formattedFinal = formatVoiceTranscript(
+              finalTranscriptPart,
+              currentQuestionType,
+            );
             finalTranscriptRef.current = formatVoiceTranscript(
               finalTranscriptRef.current + formattedFinal,
-              currentQuestionType
+              currentQuestionType,
             );
             setInputValue(finalTranscriptRef.current);
 
@@ -683,17 +712,15 @@ export default function FormSubmissionComponent({
     return messages[personality] || messages.friendly;
   };
 
-// ... (skip to completion messages)
+  // ... (skip to completion messages)
 
-        const completionMessages: Record<string, string> = {
-          professional:
-            "Submission received. Thank you for your detailed responses.",
-          friendly:
-            "All done! You're a star. Thanks for your time!",
-          casual: "Done! Thanks for the chat. Catch you later!",
-          formal:
-            "Your submission has been successfully recorded. Thank you for your participation.",
-        };
+  const completionMessages: Record<string, string> = {
+    professional: "Submission received. Thank you for your detailed responses.",
+    friendly: "All done! You're a star. Thanks for your time!",
+    casual: "Done! Thanks for the chat. Catch you later!",
+    formal:
+      "Your submission has been successfully recorded. Thank you for your participation.",
+  };
 
   const isTextBasedQuestion = (type: string) => {
     const nonTextTypes = [
@@ -963,7 +990,9 @@ export default function FormSubmissionComponent({
           const errorMessage: Message = {
             id: `error-${Date.now()}`,
             role: "assistant",
-            content: validation.reason || "Hmm, that doesn't seem quite right. Could you try answering that again?",
+            content:
+              validation.reason ||
+              "Hmm, that doesn't seem quite right. Could you try answering that again?",
             timestamp: Date.now(),
           };
           setMessages((prev) => {
@@ -977,10 +1006,12 @@ export default function FormSubmissionComponent({
       } catch (error: any) {
         setIsProcessing(false);
         // Handle rate limit or other errors with a friendly message
-        const errorContent = error?.data?.includes?.("Too many requests") || error?.message?.includes?.("rate limit")
-          ? "I'm getting a lot of requests right now! Please wait a moment and try again. 😊"
-          : "Oops, something went wrong on my end. Let me try that again in a moment.";
-        
+        const errorContent =
+          error?.data?.includes?.("Too many requests") ||
+          error?.message?.includes?.("rate limit")
+            ? "I'm getting a lot of requests right now! Please wait a moment and try again. 😊"
+            : "Oops, something went wrong on my end. Let me try that again in a moment.";
+
         const errorMessage: Message = {
           id: `error-${Date.now()}`,
           role: "assistant",
@@ -1003,7 +1034,9 @@ export default function FormSubmissionComponent({
       role: "user",
       content:
         typeof answer === "string"
-          ? (answer === "" ? "Skipped" : answer)
+          ? answer === ""
+            ? "Skipped"
+            : answer
           : Array.isArray(answer)
             ? answer.join(", ")
             : typeof answer === "object" && "fileName" in answer
@@ -1104,7 +1137,7 @@ export default function FormSubmissionComponent({
 
     if (nextIndex < questions!.length) {
       setCurrentQuestionIndex(nextIndex);
-      
+
       // Delay asking the next question slightly to allow state updates to settle
       // and to give a natural pause
       if (!voiceEnabled) {
@@ -1119,22 +1152,24 @@ export default function FormSubmissionComponent({
     }
   };
 
-    useEffect(() => {
+  useEffect(() => {
     handleSubmitAnswerRef.current = handleSubmitAnswer;
   }, [handleSubmitAnswer]);
-
 
   const handleBack = () => {
     // Find the previous question in the history
     const assistantQuestions = messages.filter(
-      (m) => m.role === "assistant" && m.questionId
+      (m) => m.role === "assistant" && m.questionId,
     );
 
     // We need at least 2 questions to go back (current + previous)
     if (assistantQuestions.length < 2) return;
 
-    const previousQuestionMessage = assistantQuestions[assistantQuestions.length - 2];
-    const targetIndex = messages.findIndex(m => m.id === previousQuestionMessage.id);
+    const previousQuestionMessage =
+      assistantQuestions[assistantQuestions.length - 2];
+    const targetIndex = messages.findIndex(
+      (m) => m.id === previousQuestionMessage.id,
+    );
 
     if (targetIndex === -1) return;
 
@@ -1145,7 +1180,7 @@ export default function FormSubmissionComponent({
 
     // Update current question index
     const previousQuestionIndex = questions!.findIndex(
-      (q: any) => q._id === previousQuestionMessage.questionId
+      (q: any) => q._id === previousQuestionMessage.questionId,
     );
 
     if (previousQuestionIndex !== -1) {
@@ -1154,21 +1189,27 @@ export default function FormSubmissionComponent({
       // But we might want to re-focus or reset state
       setIsTyping(false);
       setIsProcessing(false);
-      
+
       // Optionally speak the question again if voice is enabled
-      // speakText(previousQuestionMessage.content); 
+      // speakText(previousQuestionMessage.content);
     }
   };
-  
+
   const handleBackToEdit = () => {
     // 1. Find the last user message (the answer to the current question)
-    const lastUserMessageIndex = messages.findLastIndex(m => m.role === "user");
-    
+    const lastUserMessageIndex = messages.findLastIndex(
+      (m) => m.role === "user",
+    );
+
     if (lastUserMessageIndex !== -1) {
       const lastMessage = messages[lastUserMessageIndex];
-      
+
       // 2. Restore input value if it was text
-      if (typeof lastMessage.content === "string" && !lastMessage.content.startsWith("Uploaded") && !lastMessage.content.startsWith("Selected")) {
+      if (
+        typeof lastMessage.content === "string" &&
+        !lastMessage.content.startsWith("Uploaded") &&
+        !lastMessage.content.startsWith("Selected")
+      ) {
         setInputValue(lastMessage.content);
       }
 
@@ -1179,7 +1220,9 @@ export default function FormSubmissionComponent({
 
       // 4. Reset currentQuestionIndex to the question we are re-answering
       const questionId = lastMessage.questionId;
-      const questionIndex = questions?.findIndex((q: any) => q._id === questionId);
+      const questionIndex = questions?.findIndex(
+        (q: any) => q._id === questionId,
+      );
       if (questionIndex !== undefined && questionIndex !== -1) {
         setCurrentQuestionIndex(questionIndex);
       }
@@ -1191,13 +1234,15 @@ export default function FormSubmissionComponent({
     setIsTyping(false);
   };
 
-  const canGoBack = messages.filter((m) => m.role === "assistant" && m.questionId).length > 1;
+  const canGoBack =
+    messages.filter((m) => m.role === "assistant" && m.questionId).length > 1;
 
   const completeForm = async (idOverride?: Id<"responses">) => {
     const finalResponseId = idOverride || responseId;
     if (!finalResponseId) return;
 
     setIsTyping(true);
+    setSubmitting(true);
 
     try {
       await saveConversation({
@@ -1215,6 +1260,8 @@ export default function FormSubmissionComponent({
     } catch (error) {
       console.error("Error completing form:", error);
       setIsTyping(false);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -1316,8 +1363,7 @@ export default function FormSubmissionComponent({
         const completionMessages: Record<string, string> = {
           professional:
             "Submission received. Thank you for your detailed responses.",
-          friendly:
-            "All done! You're a star. Thanks for your time!",
+          friendly: "All done! You're a star. Thanks for your time!",
           casual: "Done! Thanks for the chat. Catch you later!",
           formal:
             "Your submission has been successfully recorded. Thank you for your participation.",
@@ -1446,7 +1492,8 @@ export default function FormSubmissionComponent({
       />
       {isOffline && (
         <div className="bg-yellow-500 text-white px-4 py-2 text-center text-sm font-medium">
-          You are currently offline. Your progress is saved locally and will sync when you reconnect.
+          You are currently offline. Your progress is saved locally and will
+          sync when you reconnect.
         </div>
       )}
       <FormHeader
@@ -1510,87 +1557,169 @@ export default function FormSubmissionComponent({
                 </button>
                 <button
                   onClick={() => completeForm()}
-                  className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity font-medium"
+                  disabled={submitting}
+                  className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-all font-medium flex items-center justify-center gap-2"
                   style={{ backgroundColor: primaryColor }}
                 >
-                  Submit Form
+                  Submit Form{" "}
+                  {submitting && (
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  )}
                 </button>
               </div>
             </div>
           ) : (
             <>
-              <ChatMessages messages={messages} form={form} isTyping={isTyping} />
-              {isCompleted && <CompletionScreen secondaryColor={secondaryColor} />}
+              <ChatMessages
+                messages={messages}
+                form={form}
+                isTyping={isTyping}
+              />
+              {isCompleted && (
+                <CompletionScreen secondaryColor={secondaryColor} />
+              )}
               <div ref={messagesEndRef} />
             </>
           )}
         </div>
       </div>
 
-      {!isCompleted && !isReviewing && currentQuestion && !isTyping && !isProcessing && (
-        <div
-          className="border-t backdrop-blur-sm sticky bottom-0 transition-colors duration-300"
-          style={{
-            backgroundColor: backgroundColor ? `${backgroundColor}CC` : "rgba(255,255,255,0.8)", // Fallback to hex+alpha if possible, or just rely on valid hex
-            borderTopColor: "rgba(0,0,0,0.05)"
-          }}
-        >
-          <div className="container mx-auto px-4 py-6 max-w-3xl">
-            {locationToConfirm ? (
-              <MapConfirmation
-                address={locationToConfirm}
-                onConfirm={handleLocationConfirmation}
-              />
-            ) : voiceEnabled &&
-              currentQuestion &&
-              isTextBasedQuestion(currentQuestion.type) ? (
-              <div className="flex flex-col items-center space-y-4">
-                <VoiceUI
+      {!isCompleted &&
+        !isReviewing &&
+        currentQuestion &&
+        !isTyping &&
+        !isProcessing && (
+          <div
+            className="border-t backdrop-blur-sm sticky bottom-0 transition-colors duration-300"
+            style={{
+              backgroundColor: backgroundColor
+                ? `${backgroundColor}CC`
+                : "rgba(255,255,255,0.8)", // Fallback to hex+alpha if possible, or just rely on valid hex
+              borderTopColor: "rgba(0,0,0,0.05)",
+            }}
+          >
+            <div className="container mx-auto px-4 py-6 max-w-3xl">
+              {locationToConfirm ? (
+                <MapConfirmation
+                  address={locationToConfirm}
+                  onConfirm={handleLocationConfirmation}
+                />
+              ) : voiceEnabled &&
+                currentQuestion &&
+                isTextBasedQuestion(currentQuestion.type) ? (
+                <div className="flex flex-col items-center space-y-4">
+                  <VoiceUI
+                    audioLevel={audioLevel}
+                    isRecording={isRecording}
+                    isSpeaking={isSpeaking}
+                    transcript={inputValue}
+                    onToggleRecording={toggleRecording}
+                    question={currentQuestion.text}
+                    isProcessing={isProcessing}
+                    isTyping={isTyping}
+                    onSubmit={() => handleSubmitAnswer(inputValue)}
+                    primaryColor={primaryColor}
+                  />
+                  <div className="flex items-center space-x-2 pt-4">
+                    <Switch
+                      id="auto-submit-switch"
+                      checked={autoSubmit}
+                      onCheckedChange={setAutoSubmit}
+                    />
+                    <Label htmlFor="auto-submit-switch">
+                      Auto-submit answer
+                    </Label>
+                  </div>
+                </div>
+              ) : (
+                <QuestionInput
                   audioLevel={audioLevel}
                   isRecording={isRecording}
-                  isSpeaking={isSpeaking}
-                  transcript={inputValue}
                   onToggleRecording={toggleRecording}
-                  question={currentQuestion.text}
+                  voiceEnabled={voiceEnabled}
+                  question={currentQuestion}
+                  inputValue={inputValue}
+                  onInputChange={setInputValue}
+                  onSubmit={handleSubmitAnswer}
                   isProcessing={isProcessing}
+                  isUploading={isUploading}
                   isTyping={isTyping}
-                  onSubmit={() => handleSubmitAnswer(inputValue)}
+                  multipleChoiceAnswers={multipleChoiceAnswers}
+                  onMultipleChoiceChange={handleMultipleChoiceChange}
                   primaryColor={primaryColor}
+                  onFileChange={handleFileChange}
+                  onKeyPress={handleKeyPress}
+                  pendingFile={pendingFile}
+                  onRemoveFile={handleRemoveFile}
+                  onSubmitFile={handleSubmitFile}
+                  onBack={handleBack}
+                  canGoBack={canGoBack}
                 />
-                <div className="flex items-center space-x-2 pt-4">
-                  <Switch
-                    id="auto-submit-switch"
-                    checked={autoSubmit}
-                    onCheckedChange={setAutoSubmit}
-                  />
-                  <Label htmlFor="auto-submit-switch">Auto-submit answer</Label>
+              )}
+
+              {isProcessing && (
+                <div className="flex items-center justify-center h-full gap-2 text-sm text-gray-500 font-medium py-2">
+                  <span>Processing</span>
+                  <div className="typing-pulse opacity-75 mt-1">
+                    <div
+                      className="dot"
+                      style={{
+                        backgroundColor: primaryColor,
+                        width: "4px",
+                        height: "4px",
+                      }}
+                    />
+                    <div
+                      className="dot"
+                      style={{
+                        backgroundColor: primaryColor,
+                        width: "4px",
+                        height: "4px",
+                      }}
+                    />
+                    <div
+                      className="dot"
+                      style={{
+                        backgroundColor: primaryColor,
+                        width: "4px",
+                        height: "4px",
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <QuestionInput
-                audioLevel={audioLevel}
-                isRecording={isRecording}
-                onToggleRecording={toggleRecording}
-                voiceEnabled={voiceEnabled}
-                question={currentQuestion}
-                inputValue={inputValue}
-                onInputChange={setInputValue}
-                onSubmit={handleSubmitAnswer}
-                isProcessing={isProcessing}
-                isUploading={isUploading}
-                isTyping={isTyping}
-                multipleChoiceAnswers={multipleChoiceAnswers}
-                onMultipleChoiceChange={handleMultipleChoiceChange}
-                primaryColor={primaryColor}
-                onFileChange={handleFileChange}
-                onKeyPress={handleKeyPress}
-                pendingFile={pendingFile}
-                onRemoveFile={handleRemoveFile}
-                onSubmitFile={handleSubmitFile}
-                onBack={handleBack}
-                canGoBack={canGoBack}
-              />
-            )}
+              )}
+            </div>
+          </div>
+        )}
+
+      {isProcessing && (
+        <div className="flex items-center justify-center h-full mb-12 gap-2 text-sm text-gray-500 font-medium py-2">
+          <span>Processing</span>
+          <div className="typing-pulse opacity-75 mt-1">
+            <div
+              className="dot"
+              style={{
+                backgroundColor: primaryColor,
+                width: "4px",
+                height: "4px",
+              }}
+            />
+            <div
+              className="dot"
+              style={{
+                backgroundColor: primaryColor,
+                width: "4px",
+                height: "4px",
+              }}
+            />
+            <div
+              className="dot"
+              style={{
+                backgroundColor: primaryColor,
+                width: "4px",
+                height: "4px",
+              }}
+            />
           </div>
         </div>
       )}
