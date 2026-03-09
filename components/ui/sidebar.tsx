@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import Link, { LinkProps } from "next/link";
+import { usePathname } from "next/navigation";
 import React, { createContext, useContext, useState } from "react";
 
 interface Links {
@@ -164,12 +165,17 @@ export const SidebarLink = ({
   props?: LinkProps;
 }) => {
   const { open, animate } = useSidebar();
+  const path = usePathname();
+  console.log("path", path, link.href);
   return (
     <Link
       href={link.href}
       className={cn(
         "flex items-center justify-start gap-2 group/sidebar py-2",
         className,
+        path === link.href
+          ? "bg-[#F56A4D] text-white dark:bg-neutral-800 px-1 rounded-sm"
+          : "",
       )}
       {...props}
     >
@@ -179,7 +185,10 @@ export const SidebarLink = ({
           display: animate ? (open ? "inline-block" : "none") : "inline-block",
           opacity: animate ? (open ? 1 : 0) : 1,
         }}
-        className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block p-0! m-0!"
+        className={cn(
+          "text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block p-0! m-0!",
+          path === link.href ? "text-white" : "",
+        )}
       >
         {link.label}
       </motion.span>
