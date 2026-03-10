@@ -8,7 +8,7 @@ const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 const FROM =
   process.env.NODE_ENV === "prod"
-    ? "no-reply@imagetotextnow.xyz"
+    ? "no-reply@candidforms.ai"
     : "onboarding@resend.dev";
 
 export const sendInviteEmail = internalAction({

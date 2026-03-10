@@ -62,7 +62,7 @@ export default function ResponseDetailPage({
     try {
       await deleteResponse({ responseId: response._id });
       toast.success("Response deleted successfully");
-      router.push(`/dashboard/forms`);
+      router.push(`/dashboard/forms/${formId}/responses`);
     } catch (error) {
       toast.error("Failed to delete response");
       console.error("Failed to delete response:", error);

@@ -1,10 +1,10 @@
-import { Suspense } from "react";
-import FormSubmissionComponent from "./FormSubmissionComponent";
-import { fetchQuery } from "convex/nextjs";
+import Loader from "@/components/loader-grid";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { fetchQuery } from "convex/nextjs";
 import { redirect } from "next/navigation";
-import Loader from "@/components/loader-grid";
+import { Suspense } from "react";
+import FormSubmissionComponent from "./FormSubmissionComponent";
 
 export default async function FormSubmissionPage({
   params,
